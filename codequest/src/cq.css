@@ -1,0 +1,129 @@
+:root {
+    --dark: #000;
+    --secondary: rgba(48, 7, 229, 0.17);
+    --light: #fff;
+    --primary: rgba(0, 0, 0, 0.49);
+  }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+   overflow: hidden;
+  }
+  
+  .head {
+    background-color: var(--dark);
+    color: var(--light);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 2%;
+  }
+  
+  .head img {
+    max-width: 50px;
+    height: auto;
+  }
+  #profile {
+    font-size: 2rem;
+    margin-left: 2%;
+  }
+  #home{
+    font-size: 2rem;
+   margin-left: 1995%;
+   color: var(--light);
+  }
+  
+  .main {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .left {
+    background-color: var(--secondary);
+    width: 20%;
+    height: 100vh; /* Full viewport height */
+    overflow-y: auto; /* Enable vertical scrolling */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .left a {
+    text-decoration: none;
+    color: var(--light);
+    height: 20%; /* Each anchor tag takes 20% of the .left container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--dark);
+    margin-bottom: 0.5rem; /* Optional spacing */
+    border-radius: 5px;
+  }
+  
+  .left a:last-child {
+    margin-bottom: 0; /* Remove bottom margin from the last anchor */
+  }
+  #java:focus{
+    color: var(--secondary);
+  }
+  .right {
+    flex-grow: 1; /* Allow the .right section to grow as needed */
+    background-color: var(--secondary); /* Background color for the .right section */
+    padding: 2rem; /* Inner spacing */
+    display: flex; /* Flexbox layout */
+    flex-direction: column; /* Stack children vertically */
+    justify-content: flex-end; /* Align search-container at the bottom */
+    align-items: center; /* Center search-container horizontally */
+    box-sizing: border-box; /* Include padding in width/height calculations */
+    height:85vh;
+    width: 80%;
+  }
+  
+  .search-container {
+    width: 100%; /* Set search-container width to 80% of the parent */
+    margin-bottom: 1rem; /* Optional spacing at the bottom */
+    display: flex;
+  }
+  
+  #search {
+    width: 70%; /* Input takes full width of the search container */
+    padding: 1rem 1rem; /* Add padding for better usability */
+    font-size: 1rem; /* Adjust font size */
+    border: 1px solid var(--light); /* Add a border */
+    border-radius: 5px; /* Rounded corners */
+    box-sizing: border-box; /* Include padding in width/height calculations */
+    margin-left: 5%;
+  }
+  .plus-icon {
+    background-color:var(--dark); 
+    height: fit-content;
+    width: fit-content;
+    margin-left: 5%;
+    border: none;
+  }
+  .plus-icon i{
+    color: var(--light);
+    font-size: 3.2rem;
+  }
+  
+  .messages-container {
+    flex-grow: 1; /* Fills the remaining vertical space */
+    overflow-y: auto;
+    padding: 15px;
+    background-color: #e9ecef;
+    width: 100%;
+    margin-bottom: 2%;
+
+}
+
+.message {
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.message.highlight {
+    background-color: #ffeb3b; /* Highlight for matching messages */
+}

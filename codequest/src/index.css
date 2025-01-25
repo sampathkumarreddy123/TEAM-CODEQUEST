@@ -58,6 +58,7 @@ body {
 .left a:last-child {
   margin-bottom: 0; /* Remove bottom margin from the last anchor */
 }
+
 .right {
   flex-grow: 1; /* Allow the .right section to grow as needed */
   background-color: var(--secondary); /* Background color for the .right section */
@@ -96,5 +97,26 @@ body {
 .plus-icon i{
   color: var(--light);
   font-size: 3.2rem;
+}
+.messages-container {
+  flex-grow: 1; /* Fills the remaining vertical space */
+  overflow-y: auto;
+  padding: 15px;
+  background-color: #e9ecef;
+  width: 100%;
+  margin-bottom: 2%;
+
+}
+
+.message {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.message.highlight {
+  background-color: #ffeb3b; /* Highlight for matching messages */
 }
 
