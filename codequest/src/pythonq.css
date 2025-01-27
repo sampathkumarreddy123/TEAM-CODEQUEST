@@ -63,9 +63,13 @@
   .left a:last-child {
     margin-bottom: 0; /* Remove bottom margin from the last anchor */
   }
-  #java:focus{
-    color: var(--secondary);
-  }
+/* In your `index.css` or any linked stylesheet */
+.nav-link.active {
+  background-color: #007bff; /* Highlight color */
+  color: white; /* Text color when active */
+  border: 2px solid #0056b3; /* Optional border for distinction */
+}
+
   .right {
     flex-grow: 1; /* Allow the .right section to grow as needed */
     background-color: var(--secondary); /* Background color for the .right section */

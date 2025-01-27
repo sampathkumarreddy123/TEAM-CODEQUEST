@@ -1,78 +1,35 @@
-      document.addEventListener("DOMContentLoaded", function () {
-            const plusIcon = document.querySelector(".plus-icon i");
-            const searchInput = document.getElementById("search");
-            const plusButton = document.querySelector(".plus-icon");
-            const messagesContainer = document.querySelector(".messages-container");
-            const messages = []; // Store previous messages
+document.addEventListener("DOMContentLoaded", function () {
+    const clearButton = document.getElementById("clearButton"); // Assuming you have a button to clear data
 
-            // Change icon to "send" when input field is focused
-            searchInput.addEventListener("focus", function () {
-                if (plusIcon.classList.contains("fa-plus")) {
-                    plusIcon.classList.remove("fa-plus");
-                    plusIcon.classList.add("fa-paper-plane");
-                }
-            });
+    // Clear all data from localStorage when the button is clicked
+    clearButton.addEventListener("click", function () {
+        localStorage.clear();  // Clear all stored data
+        alert("All data has been cleared!");
+        
+        // Optionally, refresh the page or update the UI
+        location.reload();  // This will reload the page to reflect the changes
+    });
+});
+// Wait for the DOM to load
+document.addEventListener("DOMContentLoaded", () => {
+    const navLinks = document.querySelectorAll(".nav-link");
 
-            // Handle click on the send button
-            plusButton.addEventListener("click", function () {
-                if (plusIcon.classList.contains("fa-paper-plane")) {
-                    const userInput = searchInput.value.trim();
-                    if (userInput) {
-                        // Store the new message
-                        messages.push(userInput);
+    // Function to set active class
+    const setActiveLink = () => {
+        const currentPage = window.location.pathname.split("/").pop(); // Get current page filename
+        navLinks.forEach(link => {
+            // Check if the link's href matches the current page
+            if (link.getAttribute("href") === currentPage) {
+                link.classList.add("active");
+            } else {
+                link.classList.remove("active");
+            }
+        });
+    };
 
-                        // Add the new message to the container
-                        const newMessage = document.createElement("div");
-                        newMessage.className = "message";
-                        newMessage.textContent = userInput;
-                        messagesContainer.prepend(newMessage); // Add new messages at the top
+    // Call on page load
+    setActiveLink();
 
-                        // Reset the input field and icon
-                        searchInput.value = "";
-                        plusIcon.classList.remove("fa-paper-plane");
-                        plusIcon.classList.add("fa-plus");
-                    } else {
-                        alert("Please enter a message before sending.");
-                    }
-                }
-            });
-
-            // Search functionality
-            searchInput.addEventListener("input", function () {
-                const searchQuery = searchInput.value.trim().toLowerCase();
-
-                // Clear all displayed messages
-                messagesContainer.innerHTML = "";
-
-                // Filter matching messages
-                const matchingMessages = messages.filter((message) =>
-                    message.toLowerCase().includes(searchQuery)
-                );
-
-                // Display matching messages first, highlighted
-                matchingMessages.forEach((message) => {
-                    const matchMessage = document.createElement("div");
-                    matchMessage.className = "message highlight";
-                    matchMessage.textContent = message;
-                    messagesContainer.appendChild(matchMessage);
-                });
-
-                // Display all other messages below matches
-                messages.forEach((message) => {
-                    if (!searchQuery || !message.toLowerCase().includes(searchQuery)) {
-                        const otherMessage = document.createElement("div");
-                        otherMessage.className = "message";
-                        otherMessage.textContent = message;
-                        messagesContainer.appendChild(otherMessage);
-                    }
-                });
-            });
-
-            // Reset the icon if the input loses focus and is empty
-            searchInput.addEventListener("blur", function () {
-                if (!searchInput.value.trim()) {
-                    plusIcon.classList.remove("fa-paper-plane");
-                    plusIcon.classList.add("fa-plus");
-                }
-            });
-        })
+    // Optionally re-run when navigation happens (useful for SPA-like behavior)
+    window.addEventListener("popstate", setActiveLink);
+});
