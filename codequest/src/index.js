@@ -33,3 +33,4 @@ document.addEventListener("DOMContentLoaded", () => {
     // Optionally re-run when navigation happens (useful for SPA-like behavior)
     window.addEventListener("popstate", setActiveLink);
 });
+

@@ -1,0 +1,108 @@
+:root {
+    --dark: #000;
+    --secondary: rgba(48, 7, 229, 0.17);
+    --light: #fff;
+    --primary: rgba(0, 0, 0, 0.49);
+  }
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+   overflow: hidden;
+  }
+  
+  .head {
+    background-color: var(--dark);
+    color: var(--light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2%;
+  }
+  
+  .head img {
+    max-width: 50px;
+    height: auto;
+  }
+  .main{
+    width: 100%;
+    height: 100%;
+}
+  .right {
+    flex-grow: 1; /* Allow the .right section to grow as needed */
+    background-color: var(--secondary); /* Background color for the .right section */
+    padding: 2rem; /* Inner spacing */
+    display: flex; /* Flexbox layout */
+    flex-direction: column; /* Stack children vertically */
+    justify-content: flex-end; /* Align search-container at the bottom */
+    align-items: center; /* Center search-container horizontally */
+    box-sizing: border-box; /* Include padding in width/height calculations */
+    height:85vh;
+    width: 100%;
+  }
+  .answers-container{
+    width: 70%;
+  }
+  .reply-container {
+    width: 100%; /* Set search-container width to 80% of the parent */
+    margin-bottom: 1rem; /* Optional spacing at the bottom */
+    display: flex;
+    margin-top: 2%;
+  }
+  #reply {
+    width: 70%; /* Input takes full width of the search container */
+    padding: 1rem 1rem; /* Add padding for better usability */
+    font-size: 1rem; /* Adjust font size */
+    border: 1px solid var(--light); /* Add a border */
+    border-radius: 5px; /* Rounded corners */
+    box-sizing: border-box; /* Include padding in width/height calculations */
+    margin-left: 5%;
+  }
+  .plus-icon {
+    background-color:var(--dark); 
+    height: fit-content;
+    width: fit-content;
+    margin-left: 5%;
+    border: none;
+  }
+  .plus-icon i{
+    color: var(--light);
+    font-size: 3.2rem;
+  }
+  .reply {
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}
+
+.your-reply {
+    background-color: #d1ecf1;
+    border-left: 5px solid #0c5460;
+}
+
+.other-reply {
+    background-color: #f8f9fa;
+    border-left: 5px solid #ccc;
+    display: flex;
+    align-items: center;
+}
+
+.profile-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.code-block {
+    background-color: #282c34;
+    color: #ffffff;
+    font-family: "Courier New", monospace;
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+}
+
+.reply-text {
+    word-wrap: break-word;
+}
