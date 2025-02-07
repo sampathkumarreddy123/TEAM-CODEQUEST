@@ -1,0 +1,54 @@
+:root {
+    --dark: #000;
+    --secondary: rgba(48, 7, 229, 0.17);
+    --light: #fff;
+    --primary: rgba(0, 0, 0, 0.49);
+}
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+
+}
+.header {
+    background-color: var(--dark);
+    height: 10vh;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 2rem;
+}
+.header .home i{
+    color: var(--light);
+    font-size: 20px;
+}
+.profile-page{
+    background-color: var(--primary);
+    height: 90vh;
+    display: flex;
+}
+.profile{
+    background-color: var(--secondary);
+    width: 30%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    line-height: 1.5;
+}
+.profile img{
+    height: 20rem;
+    width: 20rem;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 2rem;
+}
+.profile button{
+    cursor: pointer;
+    height: 35px;
+    width: 40%;
+    background-color: var(--light);
+    border-radius: 15px;
+}
