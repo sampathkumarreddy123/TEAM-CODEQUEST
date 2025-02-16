@@ -225,6 +225,82 @@
 // });
 
 
+// document.addEventListener("DOMContentLoaded", function () {
+//     const API_URL = "http://localhost:3000";  
+
+//     const searchInput = document.getElementById("search");
+//     const plusButton = document.querySelector(".plus-icon");
+//     const messagesContainer = document.querySelector(".messages-container");
+
+//     // ✅ Fetch and display all questions
+//     async function fetchQuestions() {
+//         try {
+//             console.log("Fetching questions..."); // ✅ Debug log
+//             const response = await fetch(`${API_URL}/questions`);
+//             console.log("Response status:", response.status); // ✅ Log HTTP status
+    
+//             if (!response.ok) throw new Error("Failed to fetch questions");
+    
+//             const questions = await response.json();
+//             console.log("Fetched questions:", questions); // ✅ Log the data
+//             displayMessages(questions);
+//         } catch (error) {
+//             console.error("❌ Error fetching questions:", error);
+//             messagesContainer.innerHTML = "<p style='color: red;'>Failed to load questions</p>";
+//         }
+//     }
+    
+
+//     // ✅ Display fetched questions
+//     function displayMessages(questions) {
+//         messagesContainer.innerHTML = "";
+//         if (!questions.length) {
+//             messagesContainer.innerHTML = "<p>No questions found.</p>";
+//             return;
+//         }
+
+//         questions.forEach((question) => {
+//             const questionDiv = document.createElement("div");
+//             questionDiv.className = "message";
+//             questionDiv.textContent = question.questionText;
+
+//             // ✅ Store question ID in sessionStorage and navigate to details page
+//             questionDiv.addEventListener("click", function () {
+//                 sessionStorage.setItem("selectedQuestionId", question._id);
+//                 sessionStorage.setItem("selectedQuestionText", question.questionText);
+//                 window.location.href = "messageDetails.html"; // Navigate to details page
+//             });
+
+//             messagesContainer.appendChild(questionDiv);
+//         });
+//     }
+
+//     // ✅ Post a new question
+//     if (plusButton) {
+//         plusButton.addEventListener("click", async function () {
+//             const userInput = searchInput.value.trim();
+//             if (!userInput) return;
+
+//             try {
+//                 const response = await fetch(`${API_URL}/questions`, {  
+//                     method: "POST",
+//                     headers: { "Content-Type": "application/json" },
+//                     body: JSON.stringify({ questionText: userInput }),
+//                 });
+
+//                 if (!response.ok) throw new Error("Failed to post question");
+
+//                 searchInput.value = "";
+//                 fetchQuestions(); // Refresh questions
+//             } catch (error) {
+//                 console.error("Error posting question:", error);
+//             }
+//         });
+//     }
+
+//     // ✅ Load questions on page load
+//     fetchQuestions();
+// });
 document.addEventListener("DOMContentLoaded", function () {
     const API_URL = "http://localhost:3000";  
 
@@ -235,12 +311,17 @@ document.addEventListener("DOMContentLoaded", function () {
     // ✅ Fetch and display all questions
     async function fetchQuestions() {
         try {
+            console.log("🚀 Fetching questions...");
             const response = await fetch(`${API_URL}/questions`);
+            console.log("Response status:", response.status);
+
             if (!response.ok) throw new Error("Failed to fetch questions");
 
             const questions = await response.json();
+            console.log("✅ Questions fetched:", questions);
             displayMessages(questions);
         } catch (error) {
+            console.error("❌ Error fetching questions:", error);
             messagesContainer.innerHTML = "<p style='color: red;'>Failed to load questions</p>";
         }
     }
@@ -276,18 +357,23 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!userInput) return;
 
             try {
-                const response = await fetch(`${API_URL}/questions`, {  
+                console.log("🚀 Posting question:", userInput);
+                const response = await fetch(`${API_URL}/questions`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ questionText: userInput }),
                 });
 
-                if (!response.ok) throw new Error("Failed to post question");
+                console.log("Response status:", response.status);
+                const data = await response.json();
+                console.log("Server response:", data);
+
+                if (!response.ok) throw new Error(data.error || "Failed to post question");
 
                 searchInput.value = "";
                 fetchQuestions(); // Refresh questions
             } catch (error) {
-                console.error("Error posting question:", error);
+                console.error("❌ Error posting question:", error);
             }
         });
     }
