@@ -5,27 +5,24 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById("search");
     const plusButton = document.querySelector(".plus-icon");
     const messagesContainer = document.querySelector(".messages-container");
-    const clearButton = document.getElementById("clearButton");
+    const logoutBtn = document.getElementById("logoutBtn");
 
     // ✅ Fetch and display all questions
-    async function fetchQuestions() {
-        try {
-            console.log("🚀 Fetching questions...");
-            const response = await fetch(`${API_URL}/questions`);
-
-            if (!response.ok) throw new Error("Failed to fetch questions");
-
-            const questions = await response.json();
-            console.log("✅ Questions fetched:", questions);
-            displayMessages(questions);
-        } catch (error) {
-            console.error("❌ Error fetching questions:", error);
-            messagesContainer.innerHTML = "<p style='color: red;'>Failed to load questions</p>";
-        }
+    function fetchQuestions() {
+        fetch('/questions', {
+            method: 'GET',
+            credentials: 'include' // Ensure cookies are sent with the request
+        })
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+        })
+        .then(data => displayQuestions(data))
+        .catch(error => console.error('❌ Error fetching questions:', error));
     }
 
     // ✅ Display fetched questions
-    function displayMessages(questions) {
+    function displayQuestions(questions) {
         messagesContainer.innerHTML = "";
         if (!questions.length) {
             messagesContainer.innerHTML = "<p>No questions found.</p>";
@@ -58,6 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log("🚀 Posting question:", userInput);
                 const response = await fetch(`${API_URL}/questions`, {
                     method: "POST",
+                    credentials: "include",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ questionText: userInput }),
                 });
@@ -75,26 +73,28 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ✅ Clear all questions
-    // if (clearButton) {
-    //     clearButton.addEventListener("click", async function () {
-    //         try {
-    //             console.log("🚀 Clearing all questions...");
-    //             const response = await fetch(`${API_URL}/clear-questions`, { method: "DELETE" });
+    // ✅ Logout functionality
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async function () {
+            try {
+                const response = await fetch("/logout", {
+                    method: "POST",
+                    credentials: "include" // Send cookies with the request
+                });
 
-    //             if (!response.ok) throw new Error("Failed to clear questions");
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Logout failed");
+                }
 
-    //             fetchQuestions(); // Refresh after clearing
-    //         } catch (error) {
-    //             console.error("❌ Error clearing questions:", error);
-    //         }
-    //     });
-    // }
+                // ✅ After logout, redirect to GitHub authentication
+                window.location.href = "/auth/github";
+            } catch (error) {
+                console.error("❌ Error logging out:", error);
+            }
+        });
+    }
 
-    // ✅ Load questions on page load
     fetchQuestions();
 });
-
-
-
 
