@@ -1,54 +1,101 @@
-:root {
-    --dark: #000;
-    --secondary: rgba(48, 7, 229, 0.17);
-    --light: #fff;
-    --primary: rgba(0, 0, 0, 0.49);
-}
-*{
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
+/* General Styles */
+body {
     font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
 
-}
-.header {
-    background-color: var(--dark);
-    height: 10vh;
+/* Header Styling */
+.head {
+    background-color: #343a40;
+    color: white;
+    padding: 15px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 0 2rem;
+    justify-content: space-between;
 }
-.header .home i{
-    color: var(--light);
-    font-size: 20px;
+
+.logo {
+    height: 40px;
 }
-.profile-page{
-    background-color: var(--primary);
-    height: 90vh;
+
+#profile {
+    font-size: 24px;
+    color: white;
+    cursor: pointer;
+}
+
+/* Profile Page Layout */
+.profilePage {
     display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 80vh;
+    padding-right: 100px;
 }
-.profile{
-    background-color: var(--secondary);
-    width: 30%;
+
+/* Vertical Line */
+.profile-container {
+    display: flex;
+    align-items: center;
+}
+
+.vertical-line {
+    width: 2px;
+    margin-top: 80px;
+    height: 620px;
+    background-color: black;
+    margin-right: 40px;
+}
+
+/* Profile Details */
+.profile-details {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 2rem;
-    line-height: 1.5;
+    align-items: flex-start;
 }
-.profile img{
-    height: 20rem;
-    width: 20rem;
+
+.profile-details h1 {
+    position: relative;
+    left: 20px;
+    bottom: 110px;
+    color: #333;
+    font-weight: bold;
+    text-align: left;
+}
+
+.profile-details img {
+    position: relative;
     border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 2rem;
+    border: 2px solid black;
+    width: 200px;
+    height: 200px;
+    bottom: 90px;
+    left: 60px;
 }
-.profile button{
+
+#profileUsername {
+    position: relative;
+    bottom: 50PX;
+    left: 30px;
+    font-size: 25px;
+    font-weight: bold;
+    color: #333;
+    text-align: left;
+}
+
+/* Button Styling */
+#backBtn {
+    position: relative;
+    left: 570px;
+    top: -8px;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.8rem;
+    border-radius: var(--border-radius);
+    border: none;
+    background-color:  #007bff;
+    color: white;
     cursor: pointer;
-    height: 35px;
-    width: 40%;
-    background-color: var(--light);
-    border-radius: 15px;
+    transition: background-color 0.3s ease;
 }

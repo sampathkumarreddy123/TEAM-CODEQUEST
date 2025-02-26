@@ -1,28 +1,24 @@
 
+
 import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
-import fs from "fs";
-import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import axios from "axios";
 import dotenv from "dotenv";
+
 dotenv.config({ path: './src/.env' });
 
 const clientID = process.env.GITHUB_CLIENT_ID;
 const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-const sessionSecret = process.env.SESSION_SECRET;
+const MONGO_URI = process.env.MONGO_URI;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const MONGO_URI = "mongodb+srv://sampathkumarreddy:sampath317.@cluster0.irpbz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
-
-app.get('/favicon.ico', (req, res) => res.status(204).end());
-
 app.use(express.json());
-app.use(cors());
+app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 app.use(cookieParser());
 
 const __dirname = path.resolve();
@@ -37,17 +33,21 @@ mongoose.connect(MONGO_URI, {})
 
 const userSchema = new mongoose.Schema({
     githubId: String,
+    username: String,
+    avatarUrl: String,
     token: String,
     createdAt: { type: Date, default: Date.now }
 });
 
 const questionSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     questionText: String,
     createdAt: { type: Date, default: Date.now }
 });
 
 const answerSchema = new mongoose.Schema({
-    questionId: mongoose.Schema.Types.ObjectId,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    questionId: { type: mongoose.Schema.Types.ObjectId, ref: "Question" },
     answerText: String,
     createdAt: { type: Date, default: Date.now }
 });
@@ -59,21 +59,14 @@ const Answer = mongoose.model("Answer", answerSchema);
 // ✅ GitHub Authentication
 app.get("/auth/github", (req, res) => {
     const redirectUri = "http://localhost:3000/auth/github/callback";
-
-    if (!clientID) {
-        return res.status(500).send("GitHub Client ID is not defined");
-    }
-
+    if (!clientID) return res.status(500).send("GitHub Client ID is not defined");
     const githubLoginUrl = `https://github.com/login/oauth/authorize?client_id=${clientID}&redirect_uri=${redirectUri}`;
     res.redirect(githubLoginUrl);
 });
 
 app.get("/auth/github/callback", async (req, res) => {
     const code = req.query.code;
-
-    if (!code) {
-        return res.status(400).send("Code is missing");
-    }
+    if (!code) return res.status(400).send("Code is missing");
 
     try {
         const response = await axios.post("https://github.com/login/oauth/access_token", {
@@ -85,13 +78,32 @@ app.get("/auth/github/callback", async (req, res) => {
         });
 
         const accessToken = response.data.access_token;
+        if (!accessToken) return res.status(400).send("Failed to get access token");
 
-        if (!accessToken) {
-            return res.status(400).send("Failed to get access token");
+        const userResponse = await axios.get("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+
+        const { id, login, avatar_url } = userResponse.data;
+
+        let user = await User.findOne({ githubId: id });
+        if (!user) {
+            user = new User({
+                githubId: id,
+                username: login,
+                avatarUrl: avatar_url,
+                token: accessToken
+            });
+            await user.save();
+        } else {
+            user.token = accessToken;
+            await user.save();
         }
 
-        // Store token in cookies
         res.cookie('token', accessToken, { httpOnly: true, sameSite: 'Strict' });
+        res.cookie('username', login, { sameSite: 'Strict' });
+        res.cookie('avatarUrl', avatar_url, { sameSite: 'Strict' });
+
         res.redirect("/index.html");
     } catch (error) {
         console.error("❌ Error exchanging code for access token:", error);
@@ -100,17 +112,57 @@ app.get("/auth/github/callback", async (req, res) => {
 });
 
 // ✅ Middleware to Verify Token
-function verifyToken(req, res, next) {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).send('Unauthorized');
+async function verifyToken(req, res, next) {
+    try {
+        const token = req.cookies.token;
+        if (!token) return res.status(401).json({ error: "Unauthorized" });
 
-    next();
+        const user = await User.findOne({ token });
+        if (!user) return res.status(401).json({ error: "Invalid token" });
+
+        req.user = user;
+        next();
+    } catch (error) {
+        res.status(500).json({ error: "Token verification failed" });
+    }
 }
+
+app.get("/profile", verifyToken, (req, res) => {
+    res.json({
+        username: req.user.username,
+        avatarUrl: req.user.avatarUrl
+    });
+});
+
+// ✅ Check authentication status
+app.get("/auth/status", async (req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) return res.status(401).json({ loggedIn: false });
+
+        const user = await User.findOne({ token });
+        if (!user) return res.status(401).json({ loggedIn: false });
+
+        res.json({ loggedIn: true, username: user.username });
+    } catch (error) {
+        console.error("❌ Error checking auth status:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 // ✅ Logout
 app.post("/logout", (req, res) => {
-    res.clearCookie("token");
-    res.json({ message: "Logout successful" });
+    try {
+        res.clearCookie("token", { httpOnly: true, sameSite: "Strict" });
+        res.clearCookie("username", { sameSite: "Strict" });
+        res.clearCookie("avatarUrl", { sameSite: "Strict" });
+
+        console.log("✅ Token removed successfully");
+        res.status(200).json({ redirectUrl: "/auth/github" });
+    } catch (error) {
+        console.error("❌ Error during logout:", error);
+        res.status(500).json({ error: "Logout failed" });
+    }
 });
 
 // ✅ Post a new question
@@ -119,7 +171,7 @@ app.post("/questions", verifyToken, async (req, res) => {
         const { questionText } = req.body;
         if (!questionText) return res.status(400).json({ error: "Question text is required" });
 
-        const newQuestion = new Question({ questionText });
+        const newQuestion = new Question({ userId: req.user._id, questionText });
         await newQuestion.save();
         res.status(201).json({ message: "Question posted successfully!", question: newQuestion });
     } catch (error) {
@@ -131,7 +183,7 @@ app.post("/questions", verifyToken, async (req, res) => {
 // ✅ Get all questions
 app.get('/questions', verifyToken, async (req, res) => {
     try {
-        const questions = await Question.find();
+        const questions = await Question.find().populate("userId", "username avatarUrl");
         res.json(questions);
     } catch (error) {
         res.status(500).send('Error fetching questions');
@@ -141,7 +193,13 @@ app.get('/questions', verifyToken, async (req, res) => {
 // ✅ Get all answers for a question
 app.get("/answers/:questionId", verifyToken, async (req, res) => {
     try {
-        const answers = await Answer.find({ questionId: req.params.questionId }).sort({ createdAt: -1 });
+        const question = await Question.findById(req.params.questionId);
+        if (!question) return res.status(404).json({ error: "Invalid Question" });
+
+        const answers = await Answer.find({ questionId: req.params.questionId })
+            .sort({ createdAt: -1 })
+            .populate("userId", "username avatarUrl");
+
         res.json(answers);
     } catch (error) {
         console.error("❌ Error fetching answers:", error);
@@ -157,7 +215,7 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
 
         if (!answerText) return res.status(400).json({ error: "Answer text is required" });
 
-        const newAnswer = new Answer({ questionId, answerText });
+        const newAnswer = new Answer({ userId: req.user._id, questionId, answerText });
         await newAnswer.save();
 
         res.status(201).json({ message: "Answer posted successfully!", answer: newAnswer });
