@@ -58,31 +58,51 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // ✅ Display fetched questions
-    function displayQuestions(questions) {
-        messagesContainer.innerHTML = "";
-        if (!questions.length) {
-            messagesContainer.innerHTML = "<p>No questions found.</p>";
-            return;
-        }
-
-        questions.forEach((question) => {
-            const questionDiv = document.createElement("div");
-            questionDiv.classList.add("message");
-            questionDiv.textContent = question.questionText;
-
-            // ✅ Store question ID in cookies and navigate to details page
-           // ✅ Store selected question in sessionStorage before navigating
-questionDiv.addEventListener("click", function () {
-    sessionStorage.setItem("selectedQuestionId", question._id);
-    sessionStorage.setItem("selectedQuestionText", question.questionText);
-    window.location.href = "messageDetails.html";
-});
-
-
-            messagesContainer.appendChild(questionDiv);
-        });
+function displayQuestions(questions) {
+    messagesContainer.innerHTML = "";
+    if (!questions.length) {
+        const noQuestionsMsg = document.createElement("p");
+        noQuestionsMsg.textContent = "No questions found.";
+        messagesContainer.appendChild(noQuestionsMsg);
+        return;
     }
+
+    questions.forEach((question) => {
+        const questionDiv = document.createElement("div");
+        questionDiv.classList.add("message");
+
+        // ✅ User avatar
+        const avatarImg = document.createElement("img");
+        avatarImg.src = question.userId?.avatarUrl || "default-avatar.png"; // Default avatar if none exists
+        avatarImg.alt = "User Avatar";
+        avatarImg.classList.add("user-avatar"); // Adding a class for styling
+
+        // ✅ Question text
+        const questionText = document.createElement("p");
+        questionText.textContent = question.questionText;
+        questionText.classList.add("question-text"); // Adding a class for styling
+
+        // ✅ Posted time
+        const postedTime = document.createElement("p");
+        postedTime.textContent = "Posted on: " + new Date(question.createdAt).toLocaleString();
+        postedTime.id = "posted-time"; // Adding ID for styling
+
+        // ✅ Append elements inside questionDiv
+        questionDiv.appendChild(avatarImg);
+        questionDiv.appendChild(questionText);
+        questionDiv.appendChild(postedTime);
+
+        // ✅ Store selected question in sessionStorage before navigating
+        questionDiv.addEventListener("click", function () {
+            sessionStorage.setItem("selectedQuestionId", question._id);
+            sessionStorage.setItem("selectedQuestionText", question.questionText);
+            window.location.href = "messageDetails.html";
+        });
+
+        messagesContainer.appendChild(questionDiv);
+    });
+}
+
 
     if (plusButton) {
         plusButton.addEventListener("click", async function () {

@@ -1,10 +1,10 @@
 
-
 document.addEventListener("DOMContentLoaded", async function () {
     const API_URL = "http://localhost:3000";
 
     const selectedMessage = document.getElementById("selected-message");
     const answersContainer = document.querySelector(".answers-container");
+    const noAnswersText = document.getElementById("no-answers");
     const replyInput = document.getElementById("reply");
     const sendReplyButton = document.getElementById("sendReply");
 
@@ -14,7 +14,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (!questionId || !questionText) {
         selectedMessage.textContent = "❌ Invalid Question";
-        answersContainer.innerHTML = "<p style='color: red;'>Question data missing.</p>";
+        noAnswersText.textContent = "Question data missing.";
         return;
     }
 
@@ -34,41 +34,70 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
     
             const answers = await response.json();
-            console.log("✅ Received answers:", answers);  // Log answers received
+            console.log("✅ Received answers:", answers);  
             renderAnswers(answers);
         } catch (error) {
             console.error("❌ Error fetching answers:", error);
-            answersContainer.innerHTML = "<p style='color: red;'>Error loading answers</p>";
+            noAnswersText.textContent = "Error loading answers";
         }
     }
-    
 
     function renderAnswers(answers) {
-        answersContainer.innerHTML = "";
-    
+        answersContainer.innerHTML = ""; // Clear previous content
+
         if (!answers.length) {
-            console.log("ℹ️ No answers found for this question.");
-            answersContainer.innerHTML = "<p>No answers yet.</p>";
+            noAnswersText.style.display = "block"; // Show "No answers yet."
             return;
         }
-    
+
+        noAnswersText.style.display = "none"; // Hide "No answers yet."
+
         answers.forEach((answer) => {
             console.log("📝 Rendering answer:", answer);
-            
+
             // Ensure userId exists before accessing properties
             const username = answer.userId?.username || "Anonymous";
             const avatarUrl = answer.userId?.avatarUrl || "default-avatar.png";
-    
+            const postedTime = new Date(answer.createdAt).toLocaleString();
+
+            // ✅ Create answer div
             const answerDiv = document.createElement("div");
-            answerDiv.className = "answer";
-            answerDiv.innerHTML = `
-                <p><strong>${username}:</strong> ${answer.answerText}</p>
-                <img src="${avatarUrl}" alt="Avatar" width="30">
-            `;
+            answerDiv.className = "answer p-3 border mb-2 bg-white";
+
+            // ✅ Create avatar image
+            const avatarImg = document.createElement("img");
+            avatarImg.src = avatarUrl;
+            avatarImg.alt = "Avatar";
+            avatarImg.width = 30;
+            avatarImg.id = "userProfile";
+
+            // ✅ Create user info container
+            const userInfo = document.createElement("div");
+            userInfo.appendChild(avatarImg);
+
+            // ✅ Create username text
+            const usernameText = document.createElement("strong");
+            usernameText.id = "userName"
+            usernameText.textContent = username;
+            userInfo.appendChild(usernameText);
+
+            // ✅ Create answer text
+            const answerText = document.createElement("p");
+            answerText.textContent = answer.answerText;
+
+            // ✅ Create posted time
+            const postedTimeText = document.createElement("small");
+            postedTimeText.textContent = `Posted on: ${postedTime}`;
+            postedTimeText.id = "postedTime"
+
+            // ✅ Append all elements
+            answerDiv.appendChild(userInfo);
+            answerDiv.appendChild(answerText);
+            answerDiv.appendChild(postedTimeText);
+
             answersContainer.appendChild(answerDiv);
         });
     }
-    
 
     // ✅ Post an answer
     sendReplyButton.addEventListener("click", async function () {
@@ -96,4 +125,3 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ✅ Load answers on page load
     fetchAnswers();
 });
-

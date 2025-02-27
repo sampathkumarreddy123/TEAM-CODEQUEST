@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 function displayProfile(profile) {
+    console.log(profile)
     const profileAvatar = document.getElementById("profileAvatar");
     const profileUsername = document.getElementById("profileUsername");
 
