@@ -75,17 +75,27 @@ function displayQuestions(questions) {
         const avatarImg = document.createElement("img");
         avatarImg.src = question.userId?.avatarUrl || "default-avatar.png"; // Default avatar if none exists
         avatarImg.alt = "User Avatar";
-        avatarImg.classList.add("user-avatar"); // Adding a class for styling
+        avatarImg.classList.add("user-avatar");
+
+        // ✅ Redirect to user's profile when avatar is clicked
+        avatarImg.addEventListener("click", function (event) {
+            event.stopPropagation(); // Prevent triggering the question click event
+            if (question.userId?._id) {
+                window.location.href = `/profile.html?userId=${question.userId._id}`;
+            } else {
+                console.error("❌ No user ID found for this question.");
+            }
+        });
 
         // ✅ Question text
         const questionText = document.createElement("p");
         questionText.textContent = question.questionText;
-        questionText.classList.add("question-text"); // Adding a class for styling
+        questionText.classList.add("question-text");
 
         // ✅ Posted time
         const postedTime = document.createElement("p");
         postedTime.textContent = "Posted on: " + new Date(question.createdAt).toLocaleString();
-        postedTime.id = "posted-time"; // Adding ID for styling
+        postedTime.id = "posted-time";
 
         // ✅ Append elements inside questionDiv
         questionDiv.appendChild(avatarImg);

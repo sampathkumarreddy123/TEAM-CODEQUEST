@@ -44,60 +44,67 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     function renderAnswers(answers) {
         answersContainer.innerHTML = ""; // Clear previous content
-
+    
         if (!answers.length) {
             noAnswersText.style.display = "block"; // Show "No answers yet."
             return;
         }
-
+    
         noAnswersText.style.display = "none"; // Hide "No answers yet."
-
+    
         answers.forEach((answer) => {
             console.log("📝 Rendering answer:", answer);
-
-            // Ensure userId exists before accessing properties
+    
+            const userId = answer.userId?._id; // Get the user's ID
             const username = answer.userId?.username || "Anonymous";
             const avatarUrl = answer.userId?.avatarUrl || "default-avatar.png";
             const postedTime = new Date(answer.createdAt).toLocaleString();
-
+    
             // ✅ Create answer div
             const answerDiv = document.createElement("div");
             answerDiv.className = "answer p-3 border mb-2 bg-white";
-
+    
+            // ✅ Create avatar link
+            const profileLink = document.createElement("a");
+            profileLink.href = `/profile.html?userId=${userId}`; // ✅ Pass userId correctly
+    
             // ✅ Create avatar image
             const avatarImg = document.createElement("img");
             avatarImg.src = avatarUrl;
             avatarImg.alt = "Avatar";
             avatarImg.width = 30;
             avatarImg.id = "userProfile";
-
+    
+            profileLink.appendChild(avatarImg); // Wrap avatar with profile link
+    
             // ✅ Create user info container
             const userInfo = document.createElement("div");
-            userInfo.appendChild(avatarImg);
-
+            userInfo.appendChild(profileLink); // ✅ Use the profile link for avatar
+    
             // ✅ Create username text
             const usernameText = document.createElement("strong");
-            usernameText.id = "userName"
+            usernameText.id = "userName";
             usernameText.textContent = username;
             userInfo.appendChild(usernameText);
-
+    
             // ✅ Create answer text
             const answerText = document.createElement("p");
             answerText.textContent = answer.answerText;
-
+    
             // ✅ Create posted time
             const postedTimeText = document.createElement("small");
             postedTimeText.textContent = `Posted on: ${postedTime}`;
-            postedTimeText.id = "postedTime"
-
+            postedTimeText.id = "postedTime";
+    
             // ✅ Append all elements
             answerDiv.appendChild(userInfo);
             answerDiv.appendChild(answerText);
             answerDiv.appendChild(postedTimeText);
-
+    
             answersContainer.appendChild(answerDiv);
         });
     }
+    
 
     // ✅ Post an answer
     sendReplyButton.addEventListener("click", async function () {

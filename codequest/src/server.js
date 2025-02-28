@@ -127,11 +127,28 @@ async function verifyToken(req, res, next) {
     }
 }
 
+// ✅ Fetch logged-in user's profile
 app.get("/profile", verifyToken, (req, res) => {
     res.json({
         username: req.user.username,
         avatarUrl: req.user.avatarUrl
     });
+});
+
+// ✅ Fetch another user's profile by ID
+app.get("/users/:userId", async (req, res) => {
+    try {
+        const user = await User.findById(req.params.userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        res.json({
+            username: user.username,
+            avatarUrl: user.avatarUrl || "https://via.placeholder.com/100"
+        });
+    } catch (error) {
+        console.error("❌ Error fetching user profile:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
 });
 
 // ✅ Check authentication status
@@ -204,24 +221,6 @@ app.get("/answers/:questionId", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("❌ Error fetching answers:", error);
         res.status(500).json({ error: "Failed to fetch answers" });
-    }
-});
-
-// ✅ Post an answer
-app.post("/answers/:questionId", verifyToken, async (req, res) => {
-    try {
-        const { answerText } = req.body;
-        const { questionId } = req.params;
-
-        if (!answerText) return res.status(400).json({ error: "Answer text is required" });
-
-        const newAnswer = new Answer({ userId: req.user._id, questionId, answerText });
-        await newAnswer.save();
-
-        res.status(201).json({ message: "Answer posted successfully!", answer: newAnswer });
-    } catch (error) {
-        console.error("❌ Error posting answer:", error);
-        res.status(500).json({ error: "Failed to post answer" });
     }
 });
 
