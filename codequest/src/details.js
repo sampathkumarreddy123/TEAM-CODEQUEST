@@ -105,7 +105,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
     
-
     // ✅ Post an answer
     sendReplyButton.addEventListener("click", async function () {
         const userReply = replyInput.value.trim();

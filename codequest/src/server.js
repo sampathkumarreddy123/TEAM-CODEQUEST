@@ -224,6 +224,30 @@ app.get("/answers/:questionId", verifyToken, async (req, res) => {
     }
 });
 
+// ✅ Post an answer
+app.post("/answers/:questionId", verifyToken, async (req, res) => {
+    try {
+        const { answerText } = req.body;
+        if (!answerText) return res.status(400).json({ error: "Answer text is required" });
+
+        const question = await Question.findById(req.params.questionId);
+        if (!question) return res.status(404).json({ error: "Invalid Question" });
+
+        const newAnswer = new Answer({
+            userId: req.user._id,
+            questionId: req.params.questionId,
+            answerText
+        });
+
+        await newAnswer.save();
+        res.status(201).json({ message: "Answer posted successfully!", answer: newAnswer });
+    } catch (error) {
+        console.error("❌ Error posting answer:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -231,3 +255,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
+

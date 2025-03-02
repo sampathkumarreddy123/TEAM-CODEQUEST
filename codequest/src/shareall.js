@@ -177,7 +177,13 @@ function displayQuestions(questions) {
             }
         });
     }
-
+    document.addEventListener("click", (event) => {
+        if (event.target.classList.contains("profile-icon")) {
+            const userId = event.target.dataset.userId; // Assuming userId is stored in data-user-id attribute
+            window.location.href = `profile.html?userId=${userId}`;
+        }
+    });
+    
     // ✅ Run authentication check and fetch questions
     checkAuthStatus();
     fetchQuestions();
