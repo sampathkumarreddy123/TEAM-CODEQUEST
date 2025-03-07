@@ -67,6 +67,11 @@ body {
   height: 89%;
 }
 
+.answer p {
+  white-space: pre-line;
+}
+
+
 /* ✅ Space between answers */
 .answer {
   padding: 12px;
@@ -94,6 +99,36 @@ body {
   border-radius: 50%;
   margin-right: 10px;
 }
+
+/* ✅ Style for the textarea */
+#reply {
+  margin-top: 20px;
+  width: 600px;
+  height: 60px;
+  border: 2px solid #ccc;
+  border-radius: 2px;
+  padding: 8px;
+  font-size: 16px;
+  resize: none; /* Prevent resizing */
+  white-space: pre-line; /* ✅ Ensures newlines are displayed correctly */
+}
+
+
+/* ✅ Plus button styling */
+.submit-answer-btn {
+  font-size: 24px;
+  color: white;
+  background-color: #007bff;
+  padding: 10px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: 0.3s ease-in-out;
+}
+
+.submit-answer-btn:hover {
+  background-color: #0056b3;
+}
+
 
 .code-block {
   background-color: #282c34;

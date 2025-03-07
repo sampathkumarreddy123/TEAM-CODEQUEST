@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const answersContainer = document.querySelector(".answers-container");
     const noAnswersText = document.getElementById("no-answers");
     const replyInput = document.getElementById("reply");
-    const sendReplyButton = document.getElementById("sendReply");
+    const sendReplyButton = document.querySelector(".submit-answer-btn"); // ✅ Select the plus button
 
     // ✅ Retrieve selected question from sessionStorage
     const questionId = sessionStorage.getItem("selectedQuestionId");
@@ -64,48 +64,48 @@ document.addEventListener("DOMContentLoaded", async function () {
             const answerDiv = document.createElement("div");
             answerDiv.className = "answer p-3 border mb-2 bg-white";
     
-            // ✅ Create avatar link
-            const profileLink = document.createElement("a");
-            profileLink.href = `/profile.html?userId=${userId}`; // ✅ Pass userId correctly
+            // ✅ Create user info container
+            const userInfo = document.createElement("div");
+            userInfo.className = "d-flex align-items-center mb-2";
     
-            // ✅ Create avatar image
+            // ✅ Create avatar image with profile link
+            const profileLink = document.createElement("a");
+            profileLink.href = `/profile.html?userId=${userId}`;
+            profileLink.className = "me-2";
+
             const avatarImg = document.createElement("img");
             avatarImg.src = avatarUrl;
             avatarImg.alt = "Avatar";
             avatarImg.width = 30;
-            avatarImg.id = "userProfile";
-    
-            profileLink.appendChild(avatarImg); // Wrap avatar with profile link
-    
-            // ✅ Create user info container
-            const userInfo = document.createElement("div");
-            userInfo.appendChild(profileLink); // ✅ Use the profile link for avatar
-    
+            avatarImg.className = "rounded-circle";
+
+            profileLink.appendChild(avatarImg);
+            userInfo.appendChild(profileLink);
+
             // ✅ Create username text
             const usernameText = document.createElement("strong");
-            usernameText.id = "userName";
             usernameText.textContent = username;
             userInfo.appendChild(usernameText);
-    
+
+            // ✅ Create posted time
+            const postedTimeText = document.createElement("small");
+            postedTimeText.textContent = ` • ${postedTime}`;
+            postedTimeText.className = "text-muted ms-2";
+            userInfo.appendChild(postedTimeText);
+
             // ✅ Create answer text
             const answerText = document.createElement("p");
             answerText.textContent = answer.answerText;
-    
-            // ✅ Create posted time
-            const postedTimeText = document.createElement("small");
-            postedTimeText.textContent = `Posted on: ${postedTime}`;
-            postedTimeText.id = "postedTime";
-    
+            answerText.className = "m-0";
+
             // ✅ Append all elements
             answerDiv.appendChild(userInfo);
             answerDiv.appendChild(answerText);
-            answerDiv.appendChild(postedTimeText);
-    
             answersContainer.appendChild(answerDiv);
         });
     }
     
-    // ✅ Post an answer
+    // ✅ Post an answer using plus button
     sendReplyButton.addEventListener("click", async function () {
         const userReply = replyInput.value.trim();
         if (!userReply) return;

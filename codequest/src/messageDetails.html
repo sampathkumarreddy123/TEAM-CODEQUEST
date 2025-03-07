@@ -12,28 +12,24 @@
 </head>
 <body>
     <div class="head d-flex justify-content-between align-items-center p-3">
-        <img src="assets/logo.png" alt="CodeQuest Logo" class="logo">
-        <a href="index.html" id="logoutBtn" class="btn btn-secondary button">Back</a>
+        <img src="assets/codequest_logo.png" alt="CodeQuest Logo" class="logo">
+        <a href="index.html" id="logoutBtn" class="btn btn-secondary">Back</a>
     </div>
-      
-    <!-- <div class="right flex-grow-1  d-flex flex-column justify-content-end align-items-center"> -->
-        <div class="main p-1 bg-light w-100">
-            <h2 id="selected-message" class="border"></h2>
+    
+    <div class="main p-3 bg-light w-100">
+        <h2 id="selected-message" class="border"></h2>
 
-            <!-- ✅ Answers section -->
-            <div class="answers-container border">
-                <p id="no-answers" class="text-muted">No answers yet.</p>
-            </div>
+        <!-- ✅ Answers Section -->
+        <div class="answers-container border p-3 bg-white">
+            <p id="no-answers" class="text-muted">No answers yet.</p>
         </div>
 
-        <!-- ✅ Updated input box (single-line instead of textarea) -->
-        <div class="reply-container w-100  d-flex align-items-center">
-            <input type="text" id="reply" class="form-control me-2" placeholder="Write your answer...">
-            <button id="sendReply" class="plus-icon btn btn-primary">
-                <i class="fa fa-plus"></i>
-            </button>
+        <!-- ✅ New Answer Submission Section -->
+        <div class="answer-box mt-3 d-flex align-items-center">
+            <textarea id="reply" class="form-control" placeholder="Type your answer here..."></textarea>
+            <i class="fa fa-plus submit-answer-btn ms-2"></i> <!-- ✅ Plus button replaces Post Answer -->
         </div>
-    <!-- </div> -->
+    </div>
 
     <script src="details.js"></script>
 </body>
