@@ -1,12 +1,12 @@
 :root {
-  --dark: #2c2c38;
-  --secondary: #6c757d;
-  --light: #ffffff;
-  --primary: #4a90e2;
-  --hover: #357acb;
-  --background: #f1f3f5;
-  --danger: #dc3545;
-  --danger-hover: #c82333;
+  /* --dark: #2c2c38; */
+  /* --secondary: #6c757d; */
+  --light: #fff;
+  --background: #F5F5DC;
+  --primary: #B6A28E;
+  --secondary: #333333;
+  --danger: #E07B39;
+  --normal: #B2CAD5;
   --border-radius: 8px;
 }
 
@@ -14,19 +14,20 @@ body {
   margin: 0;
   font-family: 'lato';
   overflow: hidden;
-  background-color: var(--background);
+  background-color: var(--primary);
   color: var(--dark);
 }
 
 .head {
-  background-color: var(--dark);
+  background-color: var(--primary);
   color: var(--light);
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem 2rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); */
   height: 60px; /* Fixed navbar height */
+  width: 100%;
 }
 
 .head img {
@@ -37,32 +38,33 @@ body {
 .logo{
   width: 60px;
 }
-
 #profile {
-  font-size: 1.5rem;
-  color: var(--light);
+  font-size: 2.0rem;
+  color: var(--background);
   cursor: pointer;
   transition: color 0.3s ease;
+  margin-left: 88%;
+  
 }
 
 #profile:hover {
-  color: var(--primary);
+  color: var(--secondary);
 }
 
 #logoutBtn {
-  font-size: 0.8rem;
-  padding: 0.35rem 0.8rem;
+  font-size: 1.rem;
+  padding: 0.45rem 0.8rem;
   border-radius: var(--border-radius);
   border: none;
   background-color: var(--danger);
-  color: var(--light);
+  color: var(--secondary);
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
-#logoutBtn:hover {
+/* #logoutBtn:hover {
   background-color: var(--danger-hover);
-}
+} */
 
 .main {
   display: flex;
@@ -70,44 +72,44 @@ body {
   height: calc(100vh - 60px); /* Adjust height to fit below navbar */
   justify-content: center;
   align-items: flex-start; /* Align elements towards the top */
-  padding-top: 10px;
+  /* padding-top: 1%; */
   position: relative;
 }
 
 .right {
   flex-grow: 1;
-  background-color: var(--light);
-  padding: 1.5rem;
+  /* background-color: var(--light); */
+  /* padding: 1.5rem; */
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  border-radius: var(--border-radius);
-  width: 50%; /* Adjusted width */
-  height: 80vh; /* Increased height */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  /* border-radius: var(--border-radius); */
+  width: 50%; 
+  height: 77vh; 
+  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08); */
   position: relative;
-  margin-top: 0; /* Ensure it starts just below navbar */
+  margin-top: 0; 
   overflow: hidden;
-}
+} 
 
 /* Questions container positioned under navbar */
 .messages-container {
   flex-grow: 1;
   overflow-y: auto;
-  padding: 15px;
-  background-color: #e9ecef;
+  padding: 1%;
+  background-color:var(--normal);
   width: 100%;
-  border-radius: var(--border-radius);
+  /* border-radius: var(--border-radius); */
   border: 1px solid #ced4da;
-  height: calc(100% - 60px); /* Ensure space for input bar */
+  height: 100% /* Ensure space for input bar */
 }
 
 /* Question box style */
 .message {
-  padding: 12px;
-  margin-bottom: 8px;
-  border-radius: var(--border-radius);
+  /* padding: 12px; */
+  margin-bottom: 1%;
+  /* border-radius: var(--border-radius); */
   background-color: #f7f9fc;
   border: 1px solid #d6d8db;
   color: #495057;
@@ -127,19 +129,20 @@ body {
   align-items: center;
   gap: 10px;
   padding: 10px;
-  background-color: var(--light);
+  /* background-color: var(--light); */
   position: fixed;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  border-top: 1px solid #d6d8db;
+  /* border-top: 1px solid #d6d8db; */
   max-width: 50%;
+  background-color: var(--primary);
 }
 
 /* Input field */
 #search {
   width: 100%;
-  padding: 0.6rem;
+  padding: 1rem;
   font-size: 0.95rem;
   border: 1px solid var(--secondary);
   border-radius: var(--border-radius);
@@ -155,24 +158,30 @@ body {
 
 /* Add question button */
 .plus-icon {
-  background-color: var(--primary);
+  background-color: var(--background);
   border: none;
   border-radius: var(--border-radius);
-  padding: 0.5rem 0.8rem;
+  padding: 1rem 1.2rem;
   cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
   transition: background-color 0.3s ease;
+  color: var(--secondary);
+  font-size: 1.4rem;
 }
 
-.plus-icon i {
-  color: var(--light);
+/* .plus-icon i {
+  color: var(--secondary);
   font-size: 1.2rem;
 }
-
+.plus-icon i:hover {
+  color: var(--primary);
+  font-size: 1.2rem;
+} */
 .plus-icon:hover {
-  background-color: var(--hover);
+  background-color: var(--secondary);
+  color: var(--background);
 }
 
 .user-avatar {

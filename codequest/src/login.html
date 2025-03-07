@@ -12,18 +12,25 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background-color: #F5F5DC;
         }
         .container {
+            display: flex;
             width: 350px;
             padding: 20px;
             border-radius: 8px;
-            background-color: #ffffff;
+            background-color: #B6A28E;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
         h1 {
             text-align: center;
             color: #333333;
+        }
+        img{
+           margin: 5%;
         }
         input {
             width: calc(100% - 20px);
@@ -34,13 +41,13 @@
             font-size: 16px;
         }
         button {
-            width: 100%;
-            padding: 10px;
-            background-color: #4caf50;
-            color: white;
+            width: 80%;
+            padding: 3%;
+            background-color: #E07B39;
+            color: #000;;
             border: none;
             border-radius: 5px;
-            font-size: 16px;
+            font-size: 1em;
             cursor: pointer;
             margin: 10px 0;
         }
@@ -48,10 +55,10 @@
             background-color: #45a049;
         }
         .github-button {
-            background-color: #333333;
+            background-color: #E07B39;
         }
         .github-button:hover {
-            background-color: #222222;
+            background-color: #E07B39;
         }
         .error {
             color: red;
@@ -64,8 +71,8 @@
 
 <body>
     <div class="container">
-        
-        <button class="github-button" onclick="githubLogin()">Login with GitHub</button>
+        <img src="assets/logo.png" class="logo" alt="CodeQuest Logo">
+        <button class="github-button" onclick="githubLogin()"><b>Login with GitHub</b></button>
     </div>
 
     <script>

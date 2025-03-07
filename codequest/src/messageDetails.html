@@ -13,27 +13,27 @@
 <body>
     <div class="head d-flex justify-content-between align-items-center p-3">
         <img src="assets/logo.png" alt="CodeQuest Logo" class="logo">
-        <a href="index.html" class="btn btn-secondary">Back</a>
+        <a href="index.html" id="logoutBtn" class="btn btn-secondary button">Back</a>
     </div>
-
-    <div class="right flex-grow-1 p-3 bg-secondary d-flex flex-column justify-content-end align-items-center">
+      
+    <!-- <div class="right flex-grow-1  d-flex flex-column justify-content-end align-items-center"> -->
         <div class="main p-3 bg-light w-100">
-            <h2 id="selected-message" class="p-3 mb-3 border bg-white"></h2>
+            <h2 id="selected-message" class="border"></h2>
 
             <!-- ✅ Answers section -->
-            <div class="answers-container p-3 bg-white mb-3 border">
+            <div class="answers-container border">
                 <p id="no-answers" class="text-muted">No answers yet.</p>
             </div>
         </div>
 
         <!-- ✅ Updated input box (single-line instead of textarea) -->
-        <div class="reply-container w-100 p-3 d-flex align-items-center">
+        <div class="reply-container w-100  d-flex align-items-center">
             <input type="text" id="reply" class="form-control me-2" placeholder="Write your answer...">
             <button id="sendReply" class="plus-icon btn btn-primary">
                 <i class="fa fa-plus"></i>
             </button>
         </div>
-    </div>
+    <!-- </div> -->
 
     <script src="details.js"></script>
 </body>
