@@ -176,4 +176,5 @@ body {
   font-size: 1.5rem;
   padding: 0.5%;
   background-color: var(--background);
+  border-radius: 8px;
 }

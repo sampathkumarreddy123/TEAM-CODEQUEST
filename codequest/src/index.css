@@ -107,13 +107,16 @@ body {
 
 /* Question box style */
 .message {
-  /* padding: 12px; */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-bottom: 1%;
-  /* border-radius: var(--border-radius); */
   background-color: #f7f9fc;
   border: 1px solid #d6d8db;
   color: #495057;
   font-size: 0.95rem;
+  border-radius: 8px;
+  padding: 10%;
 }
 
 .message.highlight {
