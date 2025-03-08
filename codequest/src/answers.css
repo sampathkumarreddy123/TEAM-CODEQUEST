@@ -1,7 +1,7 @@
 :root {
   --light: #fff;
   --background: #F5F5DC;
-  --primary: #006A67;
+  --primary: #343a40;
   --secondary: #333333;
   --danger: #E07B39;
   --normal: #B2CAD5;
@@ -15,17 +15,19 @@ body {
 }
 
 .head {
-  background-color: var(--primary);
-  color: var(--light);
+  background-color: #343a40;
+  color: white;
+  padding: 14px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1%;
+  justify-content: space-between;
+  width: 100%;
+  /* position: fixed; */
+  padding-left: 20px;
 }
 
 .head img {
-  max-width: 50px;
-  height: auto;
+ height: 60px;
 }
 #logoutBtn {
   font-size: 1.rem;
@@ -65,6 +67,13 @@ body {
   box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
   overflow-y: auto;
   height: 89%;
+}
+.answer-box {
+  display: flex;
+  align-items: end;
+  margin-top: 12px; /* Adjusted from mt-3 */
+  margin-bottom: 15px;
+  padding-top: 0px; /* Negative padding is not valid, so changed to 0 */
 }
 
 .answer p {
@@ -118,15 +127,16 @@ body {
 .submit-answer-btn {
   font-size: 24px;
   color: white;
-  background-color: #007bff;
-  padding: 10px;
+  background-color: #E07B39;
+  padding: 13px;
+  padding-bottom: 10px;
   border-radius: 50%;
   cursor: pointer;
   transition: 0.3s ease-in-out;
 }
 
 .submit-answer-btn:hover {
-  background-color: #0056b3;
+  background-color: #E07B39;
 }
 
 

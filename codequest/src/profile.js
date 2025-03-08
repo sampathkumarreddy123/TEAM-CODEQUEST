@@ -64,7 +64,7 @@ function displayProfile(profile) {
 
 // ✅ Back button redirects to home page
 document.getElementById("backBtn").addEventListener("click", () => {
-    window.location.href = "/index.html";
+    window.location.href = "/dashboard.html";
 });
 
 

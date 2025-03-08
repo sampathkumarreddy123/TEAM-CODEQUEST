@@ -1,23 +1,29 @@
 /* General Styles */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
+    background-color: #d4e9ff;
     margin: 0;
     padding: 0;
+    height: 100vh;
 }
 
 /* Header Styling */
 .head {
     background-color: #343a40;
     color: white;
-    padding: 15px;
+    padding: 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
+    position: fixed;
+    padding-left: 20px;
+
+
 }
 
 .logo {
-    height: 40px;
+    height: 60px;
 }
 
 #profile {
@@ -31,13 +37,14 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 80vh;
+    height: 100%;
 }
 
 /* Vertical Line */
 .profile-container {
     display: flex;
     align-items: center;
+    justify-content: center;
 }
 
 .vertical-line {
@@ -52,35 +59,38 @@ body {
 .profile-details {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
+    /* flex-direction: column;
+    align-items: flex-start; */
 }
 
 .profile-details h1 {
-    position: relative;
+    /* position: relative;
     left: 20px;
-    bottom: 110px;
+    bottom: 110px; */
     color: #333;
     font-weight: bold;
     text-align: left;
 }
 
 .profile-details img {
-    position: relative;
+    /* position: relative; */
     border-radius: 50%;
-    border: 2px solid black;
-    width: 200px;
-    height: 200px;
-    bottom: 90px;
+    border: 5px solid #343a40;
+    width: 250px;
+    height: 250px;
 }
 
 #profileUsername {
-    position: relative;
+    /* position: relative;
     bottom: 50PX;
-    left: 30px;
-    font-size: 25px;
-    font-weight: bold;
+    left: 30px; */
+    font-size: 35px;
+    font-weight:bolder;
     color: #333;
     text-align: left;
+    padding: 20px;
 }
 
 /* Button Styling */

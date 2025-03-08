@@ -104,7 +104,7 @@ app.get("/auth/github/callback", async (req, res) => {
         res.cookie('username', login, { sameSite: 'Strict' });
         res.cookie('avatarUrl', avatar_url, { sameSite: 'Strict' });
 
-        res.redirect("/index.html");
+        res.redirect("/dashboard.html");
     } catch (error) {
         console.error("❌ Error exchanging code for access token:", error);
         res.status(500).send("Internal Server Error");
@@ -249,7 +249,7 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
 
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 app.listen(PORT, () => {
