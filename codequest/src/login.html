@@ -3,83 +3,381 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login & Sign Up</title>
+    <title>Login - CodeQuest</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        :root {
+            --bg-base: whitesmoke;
+            --bg-surface: white;
+            --bg-muted: whitesmoke;
+            --border-light: #e5e5e5;
+            --border-medium: #d4d4d4;
+            --text-primary: #171717;
+            --text-secondary: #525252;
+            --text-muted: #737373;
+            --primary-btn: #1f2937;
+            --primary-btn-hover: #111827;
+            --accent-btn: #2563eb;
+            --accent-btn-hover: #1d4ed8;
+            --radius-lg: 16px;
+            --radius-md: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            background-color: #F5F5DC;
+            padding: 0;
         }
-        .container {
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background-color: var(--bg-base);
             display: flex;
-            width: 350px;
-            padding: 20px;
-            border-radius: 8px;
-            background-color: #B6A28E;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            justify-content: center;
             align-items: center;
-            flex-direction: column;
+            justify-content: center;
+            color: var(--text-primary);
+            padding: 20px;
         }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 42px 36px;
+            box-shadow: 0 10px 25px #e5e5e5, 0 1px 3px #d4d4d4;
+            text-align: center;
+        }
+
+        .brand-header {
+            margin-bottom: 28px;
+        }
+
+        .logo-container {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            background-color: whitesmoke;
+            border: 1px solid var(--border-light);
+            padding: 10px 22px;
+            border-radius: 999px;
+            gap: 10px;
+        }
+
+        .logo-container img {
+            height: 36px;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #111827;
+        }
+
         h1 {
-            text-align: center;
-            color: #333333;
+            font-size: 1.65rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            color: #111827;
         }
-        img{
-           margin: 5%;
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.5;
         }
-        input {
-            width: calc(100% - 20px);
-            padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #cccccc;
-            border-radius: 5px;
-            font-size: 16px;
+
+        .actions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 24px;
         }
-        button {
-            width: 80%;
-            padding: 3%;
-            background-color: #E07B39;
-            color: #000;;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.98rem;
+            font-weight: 600;
             cursor: pointer;
-            margin: 10px 0;
+            border: none;
+            transition: all 0.2s ease;
+            text-decoration: none;
         }
-        button:hover {
-            background-color: #45a049;
+
+        .btn-github {
+            background-color: #24292f;
+            color: white;
+            border: 1px solid #24292f;
         }
-        .github-button {
-            background-color: #E07B39;
+
+        .btn-github:hover {
+            background-color: #000000;
+            box-shadow: 0 4px 12px #d4d4d4;
         }
-        .github-button:hover {
-            background-color: #E07B39;
+
+        .btn-github i {
+            font-size: 1.25rem;
         }
-        .error {
-            color: red;
-            font-size: 14px;
+
+        .divider {
+            display: flex;
+            align-items: center;
             text-align: center;
-            margin-top: 5px;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 12px 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .divider:not(:empty)::before {
+            margin-right: 12px;
+        }
+
+        .divider:not(:empty)::after {
+            margin-left: 12px;
+        }
+
+        .demo-card {
+            background-color: whitesmoke;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            text-align: left;
+        }
+
+        .demo-card label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .input-group input {
+            flex: 1;
+            background-color: white;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            color: #171717;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px #dbeafe;
+        }
+
+        .btn-demo {
+            background-color: #2563eb;
+            color: white;
+            white-space: nowrap;
+            padding: 10px 18px;
+            width: auto;
+        }
+
+        .btn-demo:hover {
+            background-color: #1d4ed8;
+        }
+
+        .quick-guest-btn {
+            background-color: white;
+            border: 1px dashed var(--border-medium);
+            color: var(--text-secondary);
+            margin-top: 10px;
+            font-size: 0.88rem;
+            padding: 11px;
+        }
+
+        .quick-guest-btn:hover {
+            background-color: whitesmoke;
+            border-color: #737373;
+            color: #171717;
+        }
+
+        .features-pill-row {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .features-pill-row span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .features-pill-row i {
+            color: #2563eb;
+        }
+
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            margin-bottom: 16px;
+            display: none;
+            text-align: left;
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <img src="assets/codequest_logo.png" class="logo" alt="CodeQuest Logo">
-        <button class="github-button" onclick="githubLogin()"><b>Login with GitHub</b></button>
+    <div class="login-wrapper">
+        <div class="brand-header">
+            <div class="logo-container">
+                <img src="assets/codequest_logo.png" alt="CodeQuest Logo" onerror="this.style.display='none'">
+                <span class="brand-name">CODEQUEST</span>
+            </div>
+            <h1>Welcome Back</h1>
+            <p class="subtitle">Join our developer community to ask questions, solve programming bugs, and share knowledge.</p>
+        </div>
+
+        <div id="errorAlert" class="alert-error">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="errorMessage">Authentication failed. Please try again.</span>
+        </div>
+
+        <div class="actions-section">
+            <button class="btn btn-github" id="githubLoginBtn" onclick="githubLogin()">
+                <i class="fa-brands fa-github"></i>
+                <span>Continue with GitHub</span>
+            </button>
+
+            <div class="divider">or quick demo login</div>
+
+            <div class="demo-card">
+                <label for="demoUsernameInput">Enter Your Developer Name</label>
+                <div class="input-group">
+                    <input type="text" id="demoUsernameInput" placeholder="e.g. Alex Morgan" maxlength="25" />
+                    <button class="btn btn-demo" id="demoSubmitBtn" onclick="demoLogin()">
+                        <span>Sign In</span>
+                    </button>
+                </div>
+                <button class="btn quick-guest-btn" onclick="instantGuestLogin()">
+                    <i class="fa-solid fa-bolt"></i> Instant 1-Click Login (AlexMorgan)
+                </button>
+            </div>
+        </div>
+
+        <div class="features-pill-row">
+            <span><i class="fa-solid fa-comments"></i> Developer Q&A</span>
+            <span><i class="fa-solid fa-thumbs-up"></i> Upvoting</span>
+            <span><i class="fa-solid fa-code"></i> Code Solutions</span>
+        </div>
     </div>
 
     <script>
-        const API_URL = "http://localhost:3000";
-        function githubLogin() {
-            window.location.href = `${API_URL}/auth/github`;
+        async function checkAlreadyLoggedIn() {
+            try {
+                const res = await fetch('/auth/status');
+                const data = await res.json();
+                if (data.loggedIn) {
+                    window.location.href = '/dashboard.html';
+                }
+            } catch (e) {
+                console.log('Auth check error:', e);
+            }
         }
+        checkAlreadyLoggedIn();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+            const errType = urlParams.get('error');
+            if (errType === 'github_auth_failed') {
+                errorMessage.textContent = 'GitHub authorization could not be completed. You can use the Quick Demo login below!';
+            }
+            errorAlert.style.display = 'block';
+        }
+
+        function githubLogin() {
+            const btn = document.getElementById('githubLoginBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to GitHub...';
+            btn.style.pointerEvents = 'none';
+            window.location.href = '/auth/github';
+        }
+
+        async function demoLogin() {
+            const input = document.getElementById('demoUsernameInput');
+            const username = input.value.trim();
+            await performDemoLogin(username || 'DevExplorer');
+        }
+
+        async function instantGuestLogin() {
+            await performDemoLogin('AlexMorgan');
+        }
+
+        async function performDemoLogin(username) {
+            const submitBtn = document.getElementById('demoSubmitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+
+            try {
+                const res = await fetch('/auth/demo', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = data.redirectUrl || '/dashboard.html';
+                } else {
+                    alert(data.error || 'Failed to sign in');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Sign In';
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('Connection error. Please ensure the server is running.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Sign In';
+            }
+        }
+
+        document.getElementById('demoUsernameInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                demoLogin();
+            }
+        });
     </script>
 </body>
 </html>

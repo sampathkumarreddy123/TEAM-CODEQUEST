@@ -1,133 +1,477 @@
-
 document.addEventListener("DOMContentLoaded", async function () {
-    const API_URL = "http://localhost:3000";
+    let currentUser = null;
+    let questionData = null;
 
-    const selectedMessage = document.getElementById("selected-message");
-    const answersContainer = document.querySelector(".answers-container");
-    const noAnswersText = document.getElementById("no-answers");
+    // Retrieve Question ID from URL query or sessionStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const questionId = urlParams.get("questionId") || sessionStorage.getItem("selectedQuestionId");
+
+    // Header Elements
+    const headerUserAvatar = document.getElementById("headerUserAvatar");
+    const headerUsername = document.getElementById("headerUsername");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // Question Hero Elements
+    const questionTitle = document.getElementById("selected-message");
+    const questionAuthorAvatar = document.getElementById("questionAuthorAvatar");
+    const questionAuthorName = document.getElementById("questionAuthorName");
+    const questionAuthorLink = document.getElementById("questionAuthorLink");
+    const questionTime = document.getElementById("questionTime");
+    const questionSolvedBadge = document.getElementById("questionSolvedBadge");
+    const questionTagsRow = document.getElementById("questionTagsRow");
+    const likeQuestionBtn = document.getElementById("likeQuestionBtn");
+    const questionLikesCount = document.getElementById("questionLikesCount");
+    const shareQuestionBtn = document.getElementById("shareQuestionBtn");
+    const deleteQuestionBtn = document.getElementById("deleteQuestionBtn");
+
+    // Answers Elements
+    const answersContainer = document.getElementById("answersContainer");
+    const answersCountBadge = document.getElementById("answersCountBadge");
     const replyInput = document.getElementById("reply");
-    const sendReplyButton = document.querySelector(".submit-answer-btn"); // ✅ Select the plus button
+    const submitAnswerBtn = document.getElementById("submitAnswerBtn");
 
-    // ✅ Retrieve selected question from sessionStorage
-    const questionId = sessionStorage.getItem("selectedQuestionId");
-    const questionText = sessionStorage.getItem("selectedQuestionText");
-
-    if (!questionId || !questionText) {
-        selectedMessage.textContent = "❌ Invalid Question";
-        noAnswersText.textContent = "Question data missing.";
+    if (!questionId) {
+        if (questionTitle) questionTitle.textContent = "❌ Question Not Found";
+        if (answersContainer) {
+            answersContainer.innerHTML = `
+                <div class="empty-answers">
+                    <h4>Invalid or Missing Question</h4>
+                    <p>No question ID was provided. Please go back to the dashboard.</p>
+                    <a href="dashboard.html" class="btn btn-primary-cq mt-3">Back to Dashboard</a>
+                </div>
+            `;
+        }
         return;
     }
 
-    selectedMessage.textContent = questionText; // ✅ Display the selected question
+    // Helper: format real-time accurate timestamp
+    function formatTimeAgo(dateString) {
+        if (!dateString) return "Recently";
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
 
-    // ✅ Fetch and display answers
+        const timeStr = past.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        if (diffMins < 1) return `Just now (${timeStr})`;
+        if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? "" : "s"} ago (${timeStr})`;
+        if (diffHours < 24 && past.getDate() === now.getDate()) {
+            return `Today at ${timeStr}`;
+        }
+        if (diffHours < 48 && (now.getDate() - past.getDate() === 1 || diffHours < 24)) {
+            return `Yesterday at ${timeStr}`;
+        }
+
+        return past.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${timeStr}`;
+    }
+
+    // Helper: format markdown code blocks & inline code
+    function formatContent(text) {
+        let escaped = escapeHtml(text);
+        
+        // Multi-line code blocks ```code```
+        escaped = escaped.replace(/```([\s\S]*?)```/g, function (match, code) {
+            return `<div class="code-snippet-block">${code.trim()}</div>`;
+        });
+
+        // Inline code `code`
+        escaped = escaped.replace(/`([^`]+)`/g, '<span class="code-inline">$1</span>');
+        return escaped;
+    }
+
+    // Toast notification
+    function showToast(msg) {
+        const toastEl = document.getElementById("appToast");
+        const toastMsg = document.getElementById("toastMessage");
+        if (toastEl && toastMsg && window.bootstrap) {
+            toastMsg.textContent = msg;
+            const toast = new bootstrap.Toast(toastEl, { delay: 2500 });
+            toast.show();
+        } else {
+            alert(msg);
+        }
+    }
+
+    // 1. Check Auth Status
+    async function checkAuthStatus() {
+        try {
+            const response = await fetch("/auth/status", { credentials: "include" });
+            if (!response.ok) throw new Error("Auth failed");
+            const data = await response.json();
+
+            if (data.loggedIn) {
+                currentUser = data;
+                if (headerUsername) headerUsername.textContent = data.username;
+                const avatar = data.avatarUrl || "default-avatar.png";
+                if (headerUserAvatar) headerUserAvatar.src = avatar;
+            } else {
+                window.location.href = "/login.html";
+            }
+        } catch (error) {
+            console.error("Auth check error:", error);
+            window.location.href = "/login.html";
+        }
+    }
+
+    // 2. Fetch Question Details
+    async function fetchQuestionDetails() {
+        try {
+            const res = await fetch(`/questions/${questionId}`, { credentials: "include" });
+            if (!res.ok) throw new Error("Question not found");
+            questionData = await res.json();
+
+            if (questionTitle) questionTitle.innerHTML = formatContent(questionData.questionText);
+            
+            const author = questionData.userId;
+            const authorName = author?.username || "Anonymous";
+            const authorAvatar = author?.avatarUrl || "default-avatar.png";
+            const authorId = author?._id || "";
+
+            if (questionAuthorName) questionAuthorName.textContent = authorName;
+            if (questionAuthorAvatar) questionAuthorAvatar.src = authorAvatar;
+            if (questionAuthorLink) questionAuthorLink.href = `profile.html?userId=${authorId}`;
+            if (questionTime) questionTime.textContent = `Asked ${formatTimeAgo(questionData.createdAt)}`;
+
+            if (questionLikesCount) questionLikesCount.textContent = questionData.likes || 0;
+
+            // Solved badge
+            if (questionSolvedBadge) {
+                questionSolvedBadge.style.display = questionData.isSolved ? "inline-flex" : "none";
+            }
+
+            // Tags row
+            if (questionTagsRow) {
+                const tags = Array.isArray(questionData.tags) ? questionData.tags : [];
+                if (tags.length > 0) {
+                    questionTagsRow.innerHTML = tags.map(t => `<span class="q-tag-badge">#${escapeHtml(t)}</span>`).join("");
+                    questionTagsRow.style.display = "flex";
+                } else {
+                    questionTagsRow.style.display = "none";
+                }
+            }
+
+            // Like state
+            if (likeQuestionBtn && questionData.isLiked) {
+                likeQuestionBtn.classList.add("liked");
+                likeQuestionBtn.querySelector("i").className = "fa-solid fa-heart";
+            }
+
+            // Delete button for author
+            if (questionData.isOwner && deleteQuestionBtn) {
+                deleteQuestionBtn.style.display = "inline-flex";
+            }
+
+            document.title = `${questionData.questionText.slice(0, 40)}... - CodeQuest`;
+            return true;
+        } catch (error) {
+            console.error("Error fetching question details:", error);
+            sessionStorage.removeItem("selectedQuestionId");
+            sessionStorage.removeItem("selectedQuestionText");
+
+            const contentWrapper = document.querySelector(".content-wrapper");
+            if (contentWrapper) {
+                contentWrapper.innerHTML = `
+                    <div class="text-center py-5 bg-white border rounded-3 p-4 my-4" style="border: 1px solid var(--border-color); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);">
+                        <i class="fa-solid fa-circle-question text-primary mb-3" style="font-size: 3rem;"></i>
+                        <h2 class="fw-bold mb-2" style="color: var(--text-main);">Question Not Found</h2>
+                        <p class="text-muted mb-4" style="max-width: 440px; margin: 0 auto 24px;">This question is no longer available or was removed. Returning you to the community feed...</p>
+                        <a href="dashboard.html" class="btn btn-primary-cq">
+                            <i class="fa-solid fa-arrow-left me-1"></i> Return to Questions Feed
+                        </a>
+                    </div>
+                `;
+                setTimeout(() => {
+                    window.location.href = "dashboard.html";
+                }, 2000);
+            }
+            return false;
+        }
+    }
+
+    // 3. Fetch Answers
     async function fetchAnswers() {
         try {
-            console.log(`🚀 Fetching answers from: ${API_URL}/answers/${questionId}`);
-    
-            const response = await fetch(`${API_URL}/answers/${questionId}`, {
-                credentials: "include",
-            });
-    
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-    
+            const response = await fetch(`/answers/${questionId}`, { credentials: "include" });
+            if (!response.ok) throw new Error("Failed to load answers");
+
             const answers = await response.json();
-            console.log("✅ Received answers:", answers);  
             renderAnswers(answers);
         } catch (error) {
-            console.error("❌ Error fetching answers:", error);
-            noAnswersText.textContent = "Error loading answers";
+            console.error("Error fetching answers:", error);
+            answersContainer.innerHTML = `
+                <div class="empty-answers text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <h4>Failed to load answers</h4>
+                    <p>Could not retrieve discussion replies. Please refresh.</p>
+                </div>
+            `;
         }
     }
 
+    // 4. Render Answers List
     function renderAnswers(answers) {
-        answersContainer.innerHTML = ""; // Clear previous content
-    
+        answersContainer.innerHTML = "";
+
+        if (answersCountBadge) {
+            answersCountBadge.textContent = answers.length;
+        }
+
         if (!answers.length) {
-            noAnswersText.style.display = "block"; // Show "No answers yet."
+            answersContainer.innerHTML = `
+                <div class="empty-answers">
+                    <i class="fa-regular fa-comments"></i>
+                    <h4>No answers yet</h4>
+                    <p>Be the first to share your knowledge and help solve this question!</p>
+                </div>
+            `;
             return;
         }
-    
-        noAnswersText.style.display = "none"; // Hide "No answers yet."
-    
+
         answers.forEach((answer) => {
-            console.log("📝 Rendering answer:", answer);
-    
-            const userId = answer.userId?._id; // Get the user's ID
-            const username = answer.userId?.username || "Anonymous";
-            const avatarUrl = answer.userId?.avatarUrl || "default-avatar.png";
-            const postedTime = new Date(answer.createdAt).toLocaleString();
-    
-            // ✅ Create answer div
-            const answerDiv = document.createElement("div");
-            answerDiv.className = "answer p-3 border mb-2 bg-white";
-    
-            // ✅ Create user info container
-            const userInfo = document.createElement("div");
-            userInfo.className = "d-flex align-items-center mb-2";
-    
-            // ✅ Create avatar image with profile link
-            const profileLink = document.createElement("a");
-            profileLink.href = `/profile.html?userId=${userId}`;
-            profileLink.className = "me-2";
+            const card = document.createElement("div");
+            card.classList.add("answer-card");
 
-            const avatarImg = document.createElement("img");
-            avatarImg.src = avatarUrl;
-            avatarImg.alt = "Avatar";
-            avatarImg.width = 30;
-            avatarImg.className = "rounded-circle";
+            const authorName = answer.userId?.username || "Anonymous";
+            const authorAvatar = answer.userId?.avatarUrl || "default-avatar.png";
+            const authorId = answer.userId?._id || "";
+            const isQuestionAuthor = questionData && questionData.userId && (questionData.userId._id === authorId || questionData.userId === authorId);
+            const isOwner = !!answer.isOwner;
+            const isAcceptedSolution = !!answer.isAcceptedSolution;
 
-            profileLink.appendChild(avatarImg);
-            userInfo.appendChild(profileLink);
+            if (isAcceptedSolution) {
+                card.classList.add("is-solution");
+            } else if (isQuestionAuthor) {
+                card.classList.add("is-author");
+            }
 
-            // ✅ Create username text
-            const usernameText = document.createElement("strong");
-            usernameText.textContent = username;
-            userInfo.appendChild(usernameText);
+            // Can current user accept solutions? (Only question owner)
+            const canAcceptSolution = questionData && questionData.isOwner;
 
-            // ✅ Create posted time
-            const postedTimeText = document.createElement("small");
-            postedTimeText.textContent = ` • ${postedTime}`;
-            postedTimeText.className = "text-muted ms-2";
-            userInfo.appendChild(postedTimeText);
+            card.innerHTML = `
+                <div class="answer-top-row">
+                    <div class="answer-author-wrap">
+                        <a href="profile.html?userId=${authorId}">
+                            <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="answer-avatar" onerror="this.src='default-avatar.png'">
+                        </a>
+                        <div class="answer-meta">
+                            <a href="profile.html?userId=${authorId}" class="answer-author-name">${escapeHtml(authorName)}</a>
+                            ${isQuestionAuthor ? `<span class="author-badge">Author</span>` : ""}
+                            ${isAcceptedSolution ? `<span class="badge-accepted-solution"><i class="fa-solid fa-check"></i> Accepted Solution</span>` : ""}
+                            <span class="answer-time">• ${formatTimeAgo(answer.createdAt)}</span>
+                        </div>
+                    </div>
+                    <div class="answer-card-actions">
+                        ${canAcceptSolution ? `
+                            <button class="btn-accept-solution ${isAcceptedSolution ? "is-active" : ""}" title="${isAcceptedSolution ? "Unmark solution" : "Mark as accepted solution"}">
+                                <i class="fa-solid fa-check me-1"></i> ${isAcceptedSolution ? "Accepted" : "Accept Solution"}
+                            </button>
+                        ` : ""}
+                        ${isOwner ? `<button class="btn-del-answer" title="Delete your answer"><i class="fa-regular fa-trash-can"></i></button>` : ""}
+                    </div>
+                </div>
+                <div class="answer-content">${formatContent(answer.answerText)}</div>
+            `;
 
-            // ✅ Create answer text
-            const answerText = document.createElement("p");
-            answerText.textContent = answer.answerText;
-            answerText.className = "m-0";
+            // Accept solution button
+            const acceptBtn = card.querySelector(".btn-accept-solution");
+            if (acceptBtn) {
+                acceptBtn.addEventListener("click", async () => {
+                    await toggleAcceptSolution(answer._id);
+                });
+            }
 
-            // ✅ Append all elements
-            answerDiv.appendChild(userInfo);
-            answerDiv.appendChild(answerText);
-            answersContainer.appendChild(answerDiv);
+            // Delete answer button
+            const delBtn = card.querySelector(".btn-del-answer");
+            if (delBtn) {
+                delBtn.addEventListener("click", async () => {
+                    if (confirm("Are you sure you want to delete this answer?")) {
+                        await deleteAnswer(answer._id, card);
+                    }
+                });
+            }
+
+            answersContainer.appendChild(card);
         });
     }
-    
-    // ✅ Post an answer using plus button
-    sendReplyButton.addEventListener("click", async function () {
-        const userReply = replyInput.value.trim();
-        if (!userReply) return;
+
+    // 5. Toggle Accept Solution
+    async function toggleAcceptSolution(answerId) {
+        try {
+            const res = await fetch(`/questions/${questionId}/solve/${answerId}`, {
+                method: "POST",
+                credentials: "include"
+            });
+            if (!res.ok) throw new Error("Failed to update solution");
+            const data = await res.json();
+
+            showToast(data.isSolved ? "Marked as accepted solution!" : "Solution unmarked.");
+            await fetchQuestionDetails();
+            await fetchAnswers();
+        } catch (err) {
+            console.error("Error setting solution:", err);
+            alert("Could not update solution status.");
+        }
+    }
+
+    // 6. Submit Answer
+    async function submitAnswer() {
+        const text = replyInput.value.trim();
+        if (!text) {
+            replyInput.focus();
+            return;
+        }
+
+        submitAnswerBtn.disabled = true;
+        submitAnswerBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Posting...`;
 
         try {
-            const response = await fetch(`${API_URL}/answers/${questionId}`, {
+            const response = await fetch(`/answers/${questionId}`, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include", 
-                body: JSON.stringify({ answerText: userReply }),
+                body: JSON.stringify({ answerText: text })
             });
 
-            if (!response.ok) throw new Error("Failed to post answer");
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error || "Failed to post answer");
+            }
 
-            console.log("✅ Answer posted successfully");
             replyInput.value = "";
-            fetchAnswers(); // Refresh answers after posting
+            await fetchAnswers();
+            answersContainer.scrollIntoView({ behavior: "smooth", block: "end" });
+            showToast("Your answer was posted!");
         } catch (error) {
-            console.error("❌ Error posting answer:", error);
+            console.error("Error submitting answer:", error);
+            alert(error.message || "Could not post answer. Please try again.");
+        } finally {
+            submitAnswerBtn.disabled = false;
+            submitAnswerBtn.innerHTML = `<i class="fa-solid fa-paper-plane me-1"></i> Post Answer`;
         }
-    });
+    }
 
-    // ✅ Load answers on page load
-    fetchAnswers();
+    if (submitAnswerBtn) {
+        submitAnswerBtn.addEventListener("click", submitAnswer);
+    }
+
+    if (replyInput) {
+        replyInput.addEventListener("keydown", (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                submitAnswer();
+            }
+        });
+    }
+
+    // 7. Delete Answer
+    async function deleteAnswer(answerId, cardEl) {
+        try {
+            const res = await fetch(`/answers/${answerId}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+            if (!res.ok) throw new Error("Failed to delete answer");
+
+            cardEl.style.transition = "all 0.3s ease";
+            cardEl.style.opacity = "0";
+            setTimeout(() => {
+                cardEl.remove();
+                fetchAnswers();
+            }, 300);
+        } catch (err) {
+            console.error("Error deleting answer:", err);
+            alert("Could not delete answer.");
+        }
+    }
+
+    // 8. Like Question Hero Button
+    if (likeQuestionBtn) {
+        likeQuestionBtn.addEventListener("click", async () => {
+            try {
+                const res = await fetch(`/questions/${questionId}/like`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                if (!res.ok) throw new Error("Like failed");
+                const data = await res.json();
+
+                const icon = likeQuestionBtn.querySelector("i");
+                if (data.isLiked) {
+                    likeQuestionBtn.classList.add("liked");
+                    icon.className = "fa-solid fa-heart";
+                } else {
+                    likeQuestionBtn.classList.remove("liked");
+                    icon.className = "fa-regular fa-heart";
+                }
+                if (questionLikesCount) questionLikesCount.textContent = data.likes;
+            } catch (err) {
+                console.error("Error liking question:", err);
+            }
+        });
+    }
+
+    // 9. Share Question Link Button
+    if (shareQuestionBtn) {
+        shareQuestionBtn.addEventListener("click", () => {
+            const shareUrl = window.location.href;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("Question link copied to clipboard!");
+            }).catch(() => {
+                prompt("Copy this link:", shareUrl);
+            });
+        });
+    }
+
+    // 10. Delete Question Hero Button
+    if (deleteQuestionBtn) {
+        deleteQuestionBtn.addEventListener("click", async () => {
+            if (confirm("Are you sure you want to delete this question? This cannot be undone.")) {
+                try {
+                    const res = await fetch(`/questions/${questionId}`, {
+                        method: "DELETE",
+                        credentials: "include"
+                    });
+                    if (!res.ok) throw new Error("Failed to delete question");
+                    alert("Question deleted.");
+                    window.location.href = "dashboard.html";
+                } catch (err) {
+                    console.error("Error deleting question:", err);
+                    alert("Failed to delete question.");
+                }
+            }
+        });
+    }
+
+    // 11. Logout Button in Dropdown
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to sign out?")) return;
+            try {
+                const res = await fetch("/logout", { method: "POST", credentials: "include" });
+                const data = await res.json();
+                window.location.href = data.redirectUrl || "/login.html";
+            } catch (err) {
+                console.error("Logout error:", err);
+                window.location.href = "/login.html";
+            }
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Initial Execution
+    await checkAuthStatus();
+    const loaded = await fetchQuestionDetails();
+    if (loaded) {
+        await fetchAnswers();
+    }
 });

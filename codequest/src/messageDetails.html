@@ -1,36 +1,136 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Question Details</title>
+    <title>Question Details - CodeQuest</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="answers.css">
 </head>
 <body>
-    <div class="head d-flex justify-content-between align-items-center p-3">
-        <img src="assets/codequest_logo.png" alt="CodeQuest Logo" class="logo">
-        <a href="dashboard.html" id="logoutBtn" class="btn btn-secondary">Back</a>
-    </div>
-    
-    <div class="main p-3 bg-light w-100">
-        <h2 id="selected-message" class="border"></h2>
-
-        <!-- ✅ Answers Section -->
-        <div class="answers-container border p-3 bg-white">
-            <p id="no-answers" class="text-muted">No answers yet.</p>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="header-left">
+            <a href="dashboard.html" class="brand-link" title="CodeQuest Home">
+                <img src="assets/codequest_logo.png" class="brand-logo" alt="CodeQuest Logo" onerror="this.style.display='none'">
+                <span class="brand-title">CODEQUEST</span>
+            </a>
         </div>
 
-        <!-- ✅ New Answer Submission Section -->
-        <div class="answer-box">
-            <textarea id="reply" class="form-control" placeholder="Type your answer here..."></textarea>
-            <i class="fa fa-plus submit-answer-btn ms-2"></i> <!-- ✅ Plus button replaces Post Answer -->
+        <div class="header-right">
+            <a href="dashboard.html" class="btn btn-back">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Back to Questions</span>
+            </a>
+
+            <!-- User Menu Dropdown -->
+            <div class="dropdown">
+                <button class="user-chip-btn dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img id="headerUserAvatar" src="default-avatar.png" alt="Avatar" class="user-avatar-sm" onerror="this.src='default-avatar.png'">
+                    <span id="headerUsername" class="user-name-text">Developer</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end cq-dropdown" aria-labelledby="userMenuDropdown">
+                    <li><a class="dropdown-item" href="profile.html"><i class="fa-solid fa-user me-2"></i> My Profile</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item text-danger" id="logoutBtn"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</button></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="main-layout">
+        <div class="content-wrapper">
+            <!-- Breadcrumbs -->
+            <nav class="breadcrumb-nav">
+                <a href="dashboard.html"><i class="fa-solid fa-house me-1"></i>Questions</a>
+                <span class="separator">/</span>
+                <span class="current">Question Details</span>
+            </nav>
+
+            <!-- Question Hero Card -->
+            <div id="questionCard" class="question-hero-card">
+                <div class="hero-top-row">
+                    <a id="questionAuthorLink" href="#" class="author-chip">
+                        <img id="questionAuthorAvatar" src="default-avatar.png" alt="Author" class="author-avatar" onerror="this.src='default-avatar.png'">
+                        <div class="author-info">
+                            <span id="questionAuthorName" class="author-name">Loading...</span>
+                            <span id="questionTime" class="post-time">Posted on ...</span>
+                        </div>
+                    </a>
+                    <div class="hero-actions">
+                        <span id="questionSolvedBadge" class="badge-solved" style="display: none;">
+                            <i class="fa-solid fa-check"></i> Solved
+                        </span>
+                        <button id="likeQuestionBtn" class="btn-like-hero" title="Upvote this question">
+                            <i class="fa-regular fa-heart"></i>
+                            <span id="questionLikesCount">0</span>
+                        </button>
+                        <button id="shareQuestionBtn" class="btn-share-hero" title="Share link">
+                            <i class="fa-solid fa-share-nodes"></i> Share
+                        </button>
+                        <button id="deleteQuestionBtn" class="btn-del-hero" title="Delete question" style="display: none;">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="questionTagsRow" class="question-tags-row mb-3" style="display: none;"></div>
+
+                <div id="selected-message" class="question-title">Loading question...</div>
+            </div>
+
+            <!-- Answers Section Header -->
+            <div class="answers-header-bar">
+                <div class="d-flex align-items-center gap-2">
+                    <h2 class="answers-title">Discussion & Answers</h2>
+                    <span id="answersCountBadge" class="answers-count-badge">0</span>
+                </div>
+            </div>
+
+            <!-- Answers List -->
+            <div id="answersContainer" class="answers-container">
+                <div class="loading-state">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <p>Loading answers...</p>
+                </div>
+            </div>
+
+            <!-- Reply Box Composer -->
+            <div class="reply-composer-card">
+                <h3 class="composer-title"><i class="fa-solid fa-reply me-2 text-primary"></i>Your Answer</h3>
+                <p class="composer-hint">Explain clearly. You can paste code using `inline` or ```multiline code blocks```.</p>
+                
+                <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here..."></textarea>
+                
+                <div class="composer-footer">
+                    <span class="composer-kbd-hint"><i class="fa-regular fa-keyboard me-1"></i> Tip: Press <b>Ctrl + Enter</b> to post</span>
+                    <button id="submitAnswerBtn" class="btn btn-submit-reply">
+                        <i class="fa-solid fa-paper-plane me-1"></i> Post Answer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification for Share / Copy -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="appToast" class="toast align-items-center text-bg-dark border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMessage">Link copied to clipboard!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
         </div>
     </div>
 
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="answers.js"></script>
 </body>
 </html>

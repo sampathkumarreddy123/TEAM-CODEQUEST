@@ -1,21 +1,91 @@
-
 document.addEventListener("DOMContentLoaded", function () {
-    const API_URL = "http://localhost:3000";
+    let currentUser = null;
+    let searchDebounceTimer = null;
+    let currentSearchTerm = "";
+    let currentTag = "";
+    let currentTab = "latest";
 
-    const searchInput = document.getElementById("search");
-    const plusButton = document.querySelector(".plus-icon");
-    const messagesContainer = document.querySelector(".messages-container");
+    // DOM Elements
+    const searchInput = document.getElementById("searchInput");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
+    const searchFilterPill = document.getElementById("searchFilterPill");
+    const activeSearchQuery = document.getElementById("activeSearchQuery");
+    const removeFilterBtn = document.getElementById("removeFilterBtn");
+    const messagesContainer = document.getElementById("messagesContainer");
+    const questionCountBadge = document.getElementById("questionCountBadge");
+    const tagsPillsContainer = document.getElementById("tagsPillsContainer");
+    const tabButtons = document.querySelectorAll(".tab-btn");
+
+    const quickAskInput = document.getElementById("quickAskInput");
+    const quickAskBtn = document.getElementById("quickAskBtn");
+    const quickAskAvatar = document.getElementById("quickAskAvatar");
+
+    const headerUserAvatar = document.getElementById("headerUserAvatar");
+    const headerUsername = document.getElementById("headerUsername");
     const logoutBtn = document.getElementById("logoutBtn");
-    const profileIcon = document.getElementById("profile");
 
-    // ✅ Redirect to profile page when profile icon is clicked
-    if (profileIcon) {
-        profileIcon.addEventListener("click", () => {
-            window.location.href = "/profile.html";
-        });
+    const openAskModalBtn = document.getElementById("openAskModalBtn");
+    const modalQuestionText = document.getElementById("modalQuestionText");
+    const modalQuestionTags = document.getElementById("modalQuestionTags");
+    const modalSubmitBtn = document.getElementById("modalSubmitBtn");
+    const modalErrorMsg = document.getElementById("modalErrorMsg");
+    const askModalElement = document.getElementById("askQuestionModal");
+    let askModalInstance = null;
+    if (askModalElement && window.bootstrap) {
+        askModalInstance = new bootstrap.Modal(askModalElement);
     }
 
-    // ✅ Check login status and display username
+    // Helper: format real-time accurate timestamp
+    function formatTimeAgo(dateString) {
+        if (!dateString) return "Recently";
+        const now = new Date();
+        const past = new Date(dateString);
+        const diffMs = now - past;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+
+        const timeStr = past.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        if (diffMins < 1) return `Just now (${timeStr})`;
+        if (diffMins < 60) return `${diffMins} min${diffMins === 1 ? "" : "s"} ago (${timeStr})`;
+        if (diffHours < 24 && past.getDate() === now.getDate()) {
+            return `Today at ${timeStr}`;
+        }
+        if (diffHours < 48 && (now.getDate() - past.getDate() === 1 || diffHours < 24)) {
+            return `Yesterday at ${timeStr}`;
+        }
+
+        return past.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ` at ${timeStr}`;
+    }
+
+    // Helper: format markdown code blocks & inline code
+    function formatContent(text) {
+        let escaped = escapeHtml(text);
+        
+        // Multi-line code blocks ```code```
+        escaped = escaped.replace(/```([\s\S]*?)```/g, function (match, code) {
+            return `<div class="code-snippet-block">${code.trim()}</div>`;
+        });
+
+        // Inline code `code`
+        escaped = escaped.replace(/`([^`]+)`/g, '<span class="code-inline">$1</span>');
+        return escaped;
+    }
+
+    // Toast notification
+    function showToast(msg) {
+        const toastEl = document.getElementById("appToast");
+        const toastMsg = document.getElementById("toastMessage");
+        if (toastEl && toastMsg && window.bootstrap) {
+            toastMsg.textContent = msg;
+            const toast = new bootstrap.Toast(toastEl, { delay: 2500 });
+            toast.show();
+        } else {
+            alert(msg);
+        }
+    }
+
+    // 1. Check Authentication Status
     async function checkAuthStatus() {
         try {
             const response = await fetch("/auth/status", {
@@ -24,167 +94,468 @@ document.addEventListener("DOMContentLoaded", function () {
                 cache: "no-cache"
             });
 
-            if (!response.ok) throw new Error("Failed to check auth status");
-
+            if (!response.ok) throw new Error("Auth check failed");
             const data = await response.json();
 
             if (data.loggedIn) {
-                console.log("✅ Logged in as:", data.username);
-                profileIcon.style.display = "block"; // Show profile icon
+                currentUser = data;
+                if (headerUsername) headerUsername.textContent = data.username;
+                const avatar = data.avatarUrl || "default-avatar.png";
+                if (headerUserAvatar) headerUserAvatar.src = avatar;
+                if (quickAskAvatar) quickAskAvatar.src = avatar;
             } else {
-                console.log("❌ Not logged in");
-                profileIcon.style.display = "none"; // Hide profile icon
-                window.location.href = "/auth/github"; // Redirect to login
+                window.location.href = "/login.html";
             }
         } catch (error) {
             console.error("❌ Error checking auth status:", error);
+            window.location.href = "/login.html";
         }
     }
 
-    // ✅ Fetch and display all questions
+    // 2. Fetch Questions
     async function fetchQuestions() {
         try {
-            const response = await fetch(`${API_URL}/questions`, {
-                method: "GET",
-                credentials: "include"
-            });
+            messagesContainer.innerHTML = `
+                <div class="loading-state">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <p>Loading questions...</p>
+                </div>
+            `;
 
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            const params = new URLSearchParams();
+            if (currentSearchTerm) params.append("search", currentSearchTerm);
+            if (currentTag) params.append("tag", currentTag);
+            if (currentTab) params.append("tab", currentTab);
 
-            const data = await response.json();
-            displayQuestions(data);
+            const url = `/questions?${params.toString()}`;
+            const response = await fetch(url, { credentials: "include" });
+
+            if (!response.ok) throw new Error("Failed to load questions");
+
+            const questions = await response.json();
+            displayQuestions(questions);
+
+            if (questionCountBadge) {
+                questionCountBadge.textContent = `${questions.length} question${questions.length === 1 ? "" : "s"}`;
+            }
         } catch (error) {
             console.error("❌ Error fetching questions:", error);
+            messagesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                    <h3>Failed to load questions</h3>
+                    <p>Could not connect to the database. Please try refreshing.</p>
+                    <button class="btn btn-primary-cq" onclick="location.reload()">Retry</button>
+                </div>
+            `;
         }
     }
 
-function displayQuestions(questions) {
-    messagesContainer.innerHTML = "";
-    if (!questions.length) {
-        const noQuestionsMsg = document.createElement("p");
-        noQuestionsMsg.textContent = "No questions found.";
-        messagesContainer.appendChild(noQuestionsMsg);
-        return;
+    // 3. Display Questions List
+    function displayQuestions(questions) {
+        messagesContainer.innerHTML = "";
+
+        if (!questions.length) {
+            const hasFilter = !!(currentSearchTerm || currentTag || currentTab !== "latest");
+            messagesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <h3>${hasFilter ? "No questions match your filter" : "No questions yet!"}</h3>
+                    <p>${hasFilter ? "Try clearing your search query or selecting a different topic." : "Be the first to ask a question and start a discussion in the community!"}</p>
+                    ${hasFilter 
+                        ? `<button class="btn btn-primary-cq" id="emptyResetFilterBtn">Reset Filters</button>` 
+                        : `<button class="btn btn-primary-cq" id="emptyAskBtn"><i class="fa-solid fa-plus me-1"></i>Ask a Question</button>`
+                    }
+                </div>
+            `;
+
+            const emptyReset = document.getElementById("emptyResetFilterBtn");
+            if (emptyReset) emptyReset.addEventListener("click", resetAllFilters);
+
+            const emptyAsk = document.getElementById("emptyAskBtn");
+            if (emptyAsk) {
+                emptyAsk.addEventListener("click", () => {
+                    if (askModalInstance) askModalInstance.show();
+                    else if (quickAskInput) quickAskInput.focus();
+                });
+            }
+            return;
+        }
+
+        questions.forEach((question) => {
+            const card = document.createElement("div");
+            card.classList.add("question-card");
+            card.dataset.questionId = question._id;
+
+            const authorName = question.userId?.username || "Anonymous";
+            const authorAvatar = question.userId?.avatarUrl || "default-avatar.png";
+            const authorId = question.userId?._id || "";
+            const timeAgo = formatTimeAgo(question.createdAt);
+            const answerCount = question.answerCount || 0;
+            const likesCount = question.likes || 0;
+            const isLiked = !!question.isLiked;
+            const isOwner = !!question.isOwner;
+            const isSolved = !!question.isSolved;
+            const tags = Array.isArray(question.tags) ? question.tags : [];
+
+            // Render tags HTML
+            let tagsHtml = "";
+            if (tags.length > 0) {
+                tagsHtml = `<div class="question-tags-row">` + 
+                    tags.map(t => `<span class="q-tag-badge" data-filter-tag="${escapeHtml(t)}">#${escapeHtml(t)}</span>`).join("") + 
+                    `</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="card-top-row">
+                    <a href="profile.html?userId=${authorId}" class="author-chip" title="View ${escapeHtml(authorName)}'s profile">
+                        <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="author-avatar" onerror="this.src='default-avatar.png'" />
+                        <div class="author-info">
+                            <span class="author-name">${escapeHtml(authorName)}</span>
+                            <span class="post-time">${timeAgo}</span>
+                        </div>
+                    </a>
+                    <div class="card-top-badges">
+                        ${isSolved ? `<span class="badge-solved"><i class="fa-solid fa-check"></i> Solved</span>` : ""}
+                        ${isOwner ? `<button class="btn-card-del" title="Delete question"><i class="fa-regular fa-trash-can"></i></button>` : ""}
+                    </div>
+                </div>
+
+                <div class="question-body">${formatContent(question.questionText)}</div>
+
+                ${tagsHtml}
+
+                <div class="card-bottom-row">
+                    <div class="card-meta-left">
+                        <span class="meta-pill answers-pill">
+                            <i class="fa-regular fa-message"></i> ${answerCount} ${answerCount === 1 ? "answer" : "answers"}
+                        </span>
+                        <button class="btn-like ${isLiked ? "liked" : ""}" title="${isLiked ? "Unlike" : "Upvote"}">
+                            <i class="fa-${isLiked ? "solid" : "regular"} fa-heart"></i>
+                            <span class="like-count">${likesCount}</span>
+                        </button>
+                        <button class="btn-share" title="Share question link">
+                            <i class="fa-solid fa-share-nodes"></i> Share
+                        </button>
+                    </div>
+                    <div class="read-answers-hint">
+                        <span>View thread</span> <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </div>
+            `;
+
+            // Author chip click
+            const authorLink = card.querySelector(".author-chip");
+            if (authorLink) {
+                authorLink.addEventListener("click", (e) => e.stopPropagation());
+            }
+
+            // Tag badge click -> filter by this tag
+            card.querySelectorAll(".q-tag-badge").forEach(pill => {
+                pill.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const tag = pill.dataset.filterTag;
+                    applyTagFilter(tag);
+                });
+            });
+
+            // Upvote / Like Button
+            const likeBtn = card.querySelector(".btn-like");
+            if (likeBtn) {
+                likeBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    await toggleLike(question._id, likeBtn);
+                });
+            }
+
+            // Share Button
+            const shareBtn = card.querySelector(".btn-share");
+            if (shareBtn) {
+                shareBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const shareUrl = `${window.location.origin}/messageDetails.html?questionId=${question._id}`;
+                    navigator.clipboard.writeText(shareUrl).then(() => {
+                        showToast("Question link copied to clipboard!");
+                    }).catch(() => {
+                        prompt("Copy this link:", shareUrl);
+                    });
+                });
+            }
+
+            // Delete Button (Author only)
+            const delBtn = card.querySelector(".btn-card-del");
+            if (delBtn) {
+                delBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    if (confirm("Are you sure you want to delete this question?")) {
+                        await deleteQuestion(question._id, card);
+                    }
+                });
+            }
+
+            // Navigate to Question Details
+            card.addEventListener("click", () => {
+                sessionStorage.setItem("selectedQuestionId", question._id);
+                sessionStorage.setItem("selectedQuestionText", question.questionText);
+                window.location.href = `messageDetails.html?questionId=${question._id}`;
+            });
+
+            messagesContainer.appendChild(card);
+        });
     }
 
-    questions.forEach((question) => {
-        const questionDiv = document.createElement("div");
-        questionDiv.classList.add("message");
+    // 4. Toggle Like / Upvote
+    async function toggleLike(questionId, buttonEl) {
+        try {
+            const res = await fetch(`/questions/${questionId}/like`, {
+                method: "POST",
+                credentials: "include"
+            });
+            if (!res.ok) throw new Error("Failed to toggle like");
+            const data = await res.json();
 
-        // ✅ User avatar
-        const avatarImg = document.createElement("img");
-        avatarImg.src = question.userId?.avatarUrl || "default-avatar.png"; // Default avatar if none exists
-        avatarImg.alt = "User Avatar";
-        avatarImg.classList.add("user-avatar");
+            const heartIcon = buttonEl.querySelector("i");
+            const countSpan = buttonEl.querySelector(".like-count");
 
-        // ✅ Redirect to user's profile when avatar is clicked
-        avatarImg.addEventListener("click", function (event) {
-            event.stopPropagation(); // Prevent triggering the question click event
-            if (question.userId?._id) {
-                window.location.href = `/profile.html?userId=${question.userId._id}`;
+            if (data.isLiked) {
+                buttonEl.classList.add("liked");
+                heartIcon.className = "fa-solid fa-heart";
             } else {
-                console.error("❌ No user ID found for this question.");
+                buttonEl.classList.remove("liked");
+                heartIcon.className = "fa-regular fa-heart";
             }
-        });
+            if (countSpan) countSpan.textContent = data.likes;
+        } catch (err) {
+            console.error("Error liking question:", err);
+        }
+    }
 
-        // ✅ Question text
-        const questionText = document.createElement("p");
-        questionText.textContent = question.questionText;
-        questionText.classList.add("question-text");
+    // 5. Delete Question
+    async function deleteQuestion(questionId, cardEl) {
+        try {
+            const res = await fetch(`/questions/${questionId}`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+            if (!res.ok) throw new Error("Failed to delete");
 
-        // ✅ Posted time
-        const postedTime = document.createElement("p");
-        postedTime.textContent = "Posted on: " + new Date(question.createdAt).toLocaleString();
-        postedTime.id = "posted-time";
+            cardEl.style.transition = "all 0.3s ease";
+            cardEl.style.opacity = "0";
+            setTimeout(() => {
+                cardEl.remove();
+                fetchQuestions();
+            }, 300);
+        } catch (err) {
+            console.error("Error deleting question:", err);
+            alert("Could not delete question.");
+        }
+    }
 
-        // ✅ Append elements inside questionDiv
-        questionDiv.appendChild(avatarImg);
-        questionDiv.appendChild(questionText);
-        questionDiv.appendChild(postedTime);
+    // 6. Post New Question
+    async function submitQuestion(text, tagsInput = "") {
+        const cleanText = text.trim();
+        if (!cleanText) return false;
 
-        // ✅ Store selected question in sessionStorage before navigating
-        questionDiv.addEventListener("click", function () {
-            sessionStorage.setItem("selectedQuestionId", question._id);
-            sessionStorage.setItem("selectedQuestionText", question.questionText);
-            window.location.href = "messageDetails.html";
-        });
+        try {
+            const response = await fetch("/questions", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ questionText: cleanText, tags: tagsInput })
+            });
 
-        messagesContainer.appendChild(questionDiv);
-    });
-}
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || "Failed to post question");
+            }
 
+            resetAllFilters();
+            return true;
+        } catch (error) {
+            console.error("Error posting question:", error);
+            alert(error.message || "Failed to post question");
+            return false;
+        }
+    }
 
-    if (plusButton) {
-        plusButton.addEventListener("click", async function () {
-            const userInput = searchInput.value.trim();
-            if (!userInput) return;
-    
-            // Check if user is authenticated before posting
-            const authResponse = await fetch("/auth/status", { method: "GET", credentials: "include" });
-            const authData = await authResponse.json();
-    
-            if (!authData.loggedIn) {
-                console.error("❌ User not authenticated. Redirecting to login...");
-                window.location.href = "/auth/github";
+    // Quick Ask Handler
+    if (quickAskBtn && quickAskInput) {
+        quickAskBtn.addEventListener("click", async () => {
+            const text = quickAskInput.value;
+            if (!text.trim()) {
+                quickAskInput.focus();
                 return;
             }
-    
-            try {
-                console.log("🚀 Posting question:", userInput);
-                const response = await fetch(`${API_URL}/questions`, {
-                    method: "POST",
-                    credentials: "include",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ questionText: userInput }),
-                });
-    
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Failed to post question");
-                }
-    
-                searchInput.value = "";
-                fetchQuestions(); // Refresh questions
-            } catch (error) {
-                console.error("❌ Error posting question:", error);
+            quickAskBtn.disabled = true;
+            quickAskBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+            const ok = await submitQuestion(text);
+            quickAskBtn.disabled = false;
+            quickAskBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Post`;
+            if (ok) quickAskInput.value = "";
+        });
+
+        quickAskInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                quickAskBtn.click();
             }
         });
     }
-    
 
-    // ✅ Logout functionality
-    if (logoutBtn) {
-        logoutBtn.addEventListener("click", async function () {
-            logoutBtn.disabled = true; // Prevent multiple clicks
+    // Modal Ask Handler
+    if (openAskModalBtn) {
+        openAskModalBtn.addEventListener("click", () => {
+            if (modalQuestionText) modalQuestionText.value = "";
+            if (modalQuestionTags) modalQuestionTags.value = "";
+            if (modalErrorMsg) modalErrorMsg.style.display = "none";
+            if (askModalInstance) askModalInstance.show();
+        });
+    }
 
-            try {
-                const response = await fetch("/logout", {
-                    method: "POST",
-                    credentials: "include",
-                    cache: "no-cache"
-                });
+    if (modalSubmitBtn && modalQuestionText) {
+        modalSubmitBtn.addEventListener("click", async () => {
+            const text = modalQuestionText.value.trim();
+            const tags = modalQuestionTags ? modalQuestionTags.value.trim() : "";
 
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || "Logout failed");
+            if (!text) {
+                if (modalErrorMsg) {
+                    modalErrorMsg.textContent = "Please write a question before submitting.";
+                    modalErrorMsg.style.display = "block";
                 }
+                modalQuestionText.focus();
+                return;
+            }
 
-                console.log("✅ Successfully logged out");
-                window.location.href = "/auth/github"; // Redirect to GitHub login
-            } catch (error) {
-                console.error("❌ Error logging out:", error);
-                logoutBtn.disabled = false; // Re-enable button if there's an error
+            modalSubmitBtn.disabled = true;
+            modalSubmitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Posting...`;
+
+            const ok = await submitQuestion(text, tags);
+            modalSubmitBtn.disabled = false;
+            modalSubmitBtn.innerHTML = `<i class="fa-solid fa-plus"></i> Post Question`;
+
+            if (ok && askModalInstance) {
+                askModalInstance.hide();
             }
         });
     }
-    document.addEventListener("click", (event) => {
-        if (event.target.classList.contains("profile-icon")) {
-            const userId = event.target.dataset.userId; // Assuming userId is stored in data-user-id attribute
-            window.location.href = `profile.html?userId=${userId}`;
-        }
+
+    // 7. Search Input Handler
+    if (searchInput) {
+        searchInput.addEventListener("input", (e) => {
+            const query = e.target.value.trim();
+            currentSearchTerm = query;
+
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = query ? "block" : "none";
+            }
+
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(() => {
+                updateFilterPill();
+                fetchQuestions();
+            }, 300);
+        });
+    }
+
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener("click", () => {
+            searchInput.value = "";
+            currentSearchTerm = "";
+            clearSearchBtn.style.display = "none";
+            updateFilterPill();
+            fetchQuestions();
+        });
+    }
+
+    if (removeFilterBtn) {
+        removeFilterBtn.addEventListener("click", resetAllFilters);
+    }
+
+    // 8. Tags Filter Handling
+    function applyTagFilter(tag) {
+        currentTag = tag || "";
+        document.querySelectorAll(".tag-pill").forEach(p => {
+            p.classList.toggle("active", p.dataset.tag === currentTag);
+        });
+        updateFilterPill();
+        fetchQuestions();
+    }
+
+    if (tagsPillsContainer) {
+        tagsPillsContainer.querySelectorAll(".tag-pill").forEach(pill => {
+            pill.addEventListener("click", () => {
+                applyTagFilter(pill.dataset.tag);
+            });
+        });
+    }
+
+    // 9. Sort Tabs Handling
+    tabButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tabButtons.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            currentTab = btn.dataset.tab;
+            fetchQuestions();
+        });
     });
-    
-    // ✅ Run authentication check and fetch questions
+
+    function updateFilterPill() {
+        const parts = [];
+        if (currentSearchTerm) parts.push(`"${currentSearchTerm}"`);
+        if (currentTag) parts.push(`#${currentTag}`);
+
+        if (parts.length > 0) {
+            if (searchFilterPill) searchFilterPill.style.display = "flex";
+            if (activeSearchQuery) activeSearchQuery.textContent = parts.join(" and ");
+        } else {
+            if (searchFilterPill) searchFilterPill.style.display = "none";
+        }
+    }
+
+    function resetAllFilters() {
+        currentSearchTerm = "";
+        currentTag = "";
+        currentTab = "latest";
+        if (searchInput) searchInput.value = "";
+        if (clearSearchBtn) clearSearchBtn.style.display = "none";
+        if (searchFilterPill) searchFilterPill.style.display = "none";
+
+        document.querySelectorAll(".tag-pill").forEach(p => {
+            p.classList.toggle("active", p.dataset.tag === "");
+        });
+
+        tabButtons.forEach(b => {
+            b.classList.toggle("active", b.dataset.tab === "latest");
+        });
+
+        fetchQuestions();
+    }
+
+    // 10. Logout Button
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to sign out?")) return;
+            try {
+                const response = await fetch("/logout", { method: "POST", credentials: "include" });
+                const data = await response.json();
+                window.location.href = data.redirectUrl || "/login.html";
+            } catch (error) {
+                console.error("Logout error:", error);
+                window.location.href = "/login.html";
+            }
+        });
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // Initial Execution
     checkAuthStatus();
     fetchQuestions();
 });

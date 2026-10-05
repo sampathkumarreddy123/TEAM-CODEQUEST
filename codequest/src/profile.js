@@ -1,70 +1,193 @@
 document.addEventListener("DOMContentLoaded", async () => {
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("userId"); // ✅ Get userId from URL correctly
+    const userId = urlParams.get("userId");
 
-    if (userId) {
-        // ✅ Fetch and display the clicked user's profile
-        fetchUserProfile(userId);
-    } else {
-        // ✅ Fetch and display logged-in user's own profile
-        fetchOwnProfile();
-    }
-});
-
-// ✅ Fetch logged-in user's own profile
-async function fetchOwnProfile() {
-    try {
-        const response = await fetch("/profile", { credentials: "include" });
-
-        if (!response.ok) {
-            console.error("❌ Failed to fetch profile");
-            return;
-        }
-
-        const profile = await response.json();
-        displayProfile(profile);
-    } catch (error) {
-        console.error("❌ Error fetching profile:", error);
-    }
-}
-
-// ✅ Fetch another user's profile (from clicked avatar)
-async function fetchUserProfile(userId) {
-    try {
-        const response = await fetch(`/users/${userId}`); // ✅ Now using correct userId
-
-        if (!response.ok) {
-            console.error("❌ Failed to fetch user profile");
-            return;
-        }
-
-        const userProfile = await response.json();
-        displayProfile(userProfile);
-    } catch (error) {
-        console.error("❌ Error fetching user profile:", error);
-    }
-}
-
-// ✅ Display profile data
-function displayProfile(profile) {
-    console.log("📌 Profile Data:", profile);
-    
+    // Elements
     const profileAvatar = document.getElementById("profileAvatar");
     const profileUsername = document.getElementById("profileUsername");
+    const profileJoinDate = document.getElementById("profileJoinDate");
+    const profileRoleBadge = document.getElementById("profileRoleBadge");
+    const statQuestionsCount = document.getElementById("statQuestionsCount");
+    const statAnswersCount = document.getElementById("statAnswersCount");
+    const activityTitle = document.getElementById("activityTitle");
+    const activityCountBadge = document.getElementById("activityCountBadge");
+    const userQuestionsContainer = document.getElementById("userQuestionsContainer");
+    const backBtn = document.getElementById("backBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-    if (!profileAvatar || !profileUsername) {
-        console.error("❌ Profile elements not found");
-        return;
+    // Back button
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            window.location.href = "dashboard.html";
+        });
     }
 
-    // ✅ Fallback avatar and username if data is missing
-    profileAvatar.src = profile.avatarUrl || "https://via.placeholder.com/100";
-    profileUsername.textContent = profile.username || "Unknown User";
-}
+    // Working Logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            if (!confirm("Are you sure you want to sign out?")) return;
+            try {
+                const res = await fetch("/logout", {
+                    method: "POST",
+                    credentials: "include"
+                });
+                const data = await res.json();
+                window.location.href = data.redirectUrl || "/login.html";
+            } catch (err) {
+                console.error("Logout error:", err);
+                window.location.href = "/login.html";
+            }
+        });
+    }
 
-// ✅ Back button redirects to home page
-document.getElementById("backBtn").addEventListener("click", () => {
-    window.location.href = "/dashboard.html";
+    if (userId) {
+        // Fetch another user's profile
+        await fetchUserProfile(userId);
+    } else {
+        // Fetch own profile
+        await fetchOwnProfile();
+    }
+
+    // 1. Fetch Logged-in User's Profile
+    async function fetchOwnProfile() {
+        try {
+            const response = await fetch("/profile", { credentials: "include" });
+
+            if (response.status === 401) {
+                // Not authenticated
+                window.location.href = "/login.html";
+                return;
+            }
+
+            if (!response.ok) throw new Error("Failed to load profile");
+
+            const profile = await response.json();
+            displayProfile(profile, true);
+        } catch (error) {
+            console.error("Error fetching own profile:", error);
+            showErrorState("Could not load your profile. Please check if you are logged in.");
+        }
+    }
+
+    // 2. Fetch Another User's Profile
+    async function fetchUserProfile(id) {
+        try {
+            const response = await fetch(`/users/${id}`, { credentials: "include" });
+
+            if (!response.ok) throw new Error("Failed to load user profile");
+
+            const profile = await response.json();
+            displayProfile(profile, false);
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            showErrorState("User not found or database is unreachable.");
+        }
+    }
+
+    // 3. Display Profile Data
+    function displayProfile(profile, isOwn) {
+        if (profileAvatar) {
+            profileAvatar.src = profile.avatarUrl || "default-avatar.png";
+        }
+        if (profileUsername) {
+            profileUsername.textContent = profile.username || "Anonymous";
+        }
+        if (profileRoleBadge) {
+            profileRoleBadge.textContent = isOwn ? "You (Owner)" : "Community Member";
+        }
+        if (profileJoinDate) {
+            const joined = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "Recently";
+            profileJoinDate.textContent = `Member since ${joined}`;
+        }
+        if (statQuestionsCount) {
+            statQuestionsCount.textContent = profile.questionsCount ?? (profile.questions ? profile.questions.length : 0);
+        }
+        if (statAnswersCount) {
+            statAnswersCount.textContent = profile.answersCount ?? 0;
+        }
+
+        const usernameText = profile.username || "User";
+        if (activityTitle) {
+            activityTitle.textContent = isOwn ? "Your Questions" : `Questions by ${usernameText}`;
+        }
+
+        document.title = `${usernameText}'s Profile - CodeQuest`;
+
+        // Render questions
+        renderUserQuestions(profile.questions || []);
+    }
+
+    // 4. Render User's Questions List
+    function renderUserQuestions(questions) {
+        if (!userQuestionsContainer) return;
+
+        if (activityCountBadge) {
+            activityCountBadge.textContent = `${questions.length} question${questions.length === 1 ? "" : "s"}`;
+        }
+
+        if (!questions.length) {
+            userQuestionsContainer.innerHTML = `
+                <div class="empty-activity">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <h4>No questions posted yet</h4>
+                    <p>This user hasn't asked any questions in the community yet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        userQuestionsContainer.innerHTML = "";
+
+        questions.forEach((q) => {
+            const dateObj = new Date(q.createdAt);
+            const dateStr = dateObj.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            }) + " at " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const item = document.createElement("a");
+            item.className = "activity-item";
+            item.href = `messageDetails.html?questionId=${q._id}`;
+            item.innerHTML = `
+                <div class="activity-item-content">
+                    <div class="activity-item-text">${escapeHtml(q.questionText)}</div>
+                    <div class="activity-item-date"><i class="fa-regular fa-calendar-days me-1"></i> Asked on ${dateStr}</div>
+                </div>
+                <div class="activity-item-arrow">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            `;
+
+            item.addEventListener("click", () => {
+                sessionStorage.setItem("selectedQuestionId", q._id);
+                sessionStorage.setItem("selectedQuestionText", q.questionText);
+            });
+
+            userQuestionsContainer.appendChild(item);
+        });
+    }
+
+    function showErrorState(msg) {
+        if (userQuestionsContainer) {
+            userQuestionsContainer.innerHTML = `
+                <div class="empty-activity text-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <h4>Error</h4>
+                    <p>${escapeHtml(msg)}</p>
+                    <a href="dashboard.html" class="btn btn-primary-cq mt-3">Back to Dashboard</a>
+                </div>
+            `;
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
 });
-
-
