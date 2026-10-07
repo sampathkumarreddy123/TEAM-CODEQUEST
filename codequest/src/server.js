@@ -331,6 +331,48 @@ app.get("/tags", async (req, res) => {
     }
 });
 
+// ----------------- Real-Time Live Sync (SSE) -----------------
+let sseClients = [];
+
+app.get("/api/events", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    if (res.flushHeaders) res.flushHeaders();
+
+    const clientId = Date.now() + "_" + Math.random().toString(36).substring(2);
+    const newClient = { id: clientId, res };
+    sseClients.push(newClient);
+
+    // Initial connection message
+    res.write(`data: ${JSON.stringify({ type: "connected", clientId })}\n\n`);
+
+    req.on("close", () => {
+        sseClients = sseClients.filter(c => c.id !== clientId);
+    });
+});
+
+function broadcastEvent(type, payload) {
+    const data = JSON.stringify({ type, payload, timestamp: Date.now() });
+    sseClients.forEach(client => {
+        try {
+            client.res.write(`data: ${data}\n\n`);
+        } catch (e) {
+            // Client closed connection
+        }
+    });
+}
+
+// Keep-alive heartbeat every 20 seconds to prevent proxy / Render connection timeouts
+setInterval(() => {
+    sseClients.forEach(client => {
+        try {
+            client.res.write(": keepalive\n\n");
+        } catch (e) {}
+    });
+}, 20000);
+
 // ----------------- Questions Routes -----------------
 
 // Get all questions with search, tag filter, tabs, and answer counts
@@ -468,9 +510,12 @@ app.post("/questions", verifyToken, async (req, res) => {
         const populatedQuestion = await Question.findById(newQuestion._id)
             .populate("userId", "username avatarUrl");
 
+        const qObj = { ...populatedQuestion.toObject(), answerCount: 0 };
+        broadcastEvent("new_question", { question: qObj });
+
         res.status(201).json({
             message: "Question posted successfully!",
-            question: { ...populatedQuestion.toObject(), answerCount: 0, isOwner: true }
+            question: { ...qObj, isOwner: true }
         });
     } catch (error) {
         console.error("❌ Error posting question:", error);
@@ -500,6 +545,12 @@ app.post("/questions/:questionId/solve/:answerId", verifyToken, async (req, res)
         }
 
         await question.save();
+        broadcastEvent("question_solved", {
+            questionId: question._id,
+            isSolved: question.isSolved,
+            solvedAnswerId: question.solvedAnswerId
+        });
+
         res.json({
             success: true,
             isSolved: question.isSolved,
@@ -525,6 +576,7 @@ app.delete("/questions/:questionId", verifyToken, async (req, res) => {
 
         await Answer.deleteMany({ questionId: question._id });
         await Question.findByIdAndDelete(question._id);
+        broadcastEvent("question_deleted", { questionId: question._id });
 
         res.json({ success: true, message: "Question and associated answers deleted." });
     } catch (error) {
@@ -555,6 +607,8 @@ app.post("/questions/:questionId/like", verifyToken, async (req, res) => {
         }
 
         await question.save();
+        broadcastEvent("question_liked", { questionId: question._id, likes: question.likes });
+
         res.json({ success: true, likes: question.likes, isLiked });
     } catch (error) {
         console.error("❌ Error liking question:", error);
@@ -627,6 +681,12 @@ app.post("/answers/:answerId/like", verifyToken, async (req, res) => {
         }
 
         await answer.save();
+        broadcastEvent("answer_liked", {
+            questionId: answer.questionId,
+            answerId: answer._id,
+            likes: answer.likes
+        });
+
         res.json({ success: true, likes: answer.likes, isLiked });
     } catch (error) {
         console.error("❌ Error liking answer:", error);
@@ -658,6 +718,13 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
         const populatedAnswer = await Answer.findById(newAnswer._id)
             .populate("userId", "username avatarUrl");
 
+        const totalAnswers = await Answer.countDocuments({ questionId: question._id });
+        broadcastEvent("new_answer", {
+            questionId: question._id,
+            answer: { ...populatedAnswer.toObject(), likes: 0 },
+            answerCount: totalAnswers
+        });
+
         res.status(201).json({
             message: "Answer posted successfully!",
             answer: { ...populatedAnswer.toObject(), isOwner: true }
@@ -680,6 +747,8 @@ app.delete("/answers/:answerId", verifyToken, async (req, res) => {
             return res.status(403).json({ error: "Not authorized to delete this answer" });
         }
 
+        const qId = answer.questionId;
+
         // If this answer was the accepted solution, reset question solution
         await Question.updateOne(
             { solvedAnswerId: answer._id },
@@ -687,6 +756,14 @@ app.delete("/answers/:answerId", verifyToken, async (req, res) => {
         );
 
         await Answer.findByIdAndDelete(answer._id);
+        const remainingAnswers = await Answer.countDocuments({ questionId: qId });
+
+        broadcastEvent("answer_deleted", {
+            questionId: qId,
+            answerId: answer._id,
+            answerCount: remainingAnswers
+        });
+
         res.json({ success: true, message: "Answer deleted successfully" });
     } catch (error) {
         console.error("❌ Error deleting answer:", error);

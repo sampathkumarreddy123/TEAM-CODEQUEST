@@ -718,6 +718,55 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // ----------------- Real-Time Live Sync (SSE) -----------------
+    function setupRealtimeSync() {
+        if (!window.EventSource) return;
+
+        const eventSource = new EventSource("/api/events");
+
+        eventSource.onmessage = function (event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (!data || !data.type) return;
+
+                if (data.type === "new_answer" && String(data.payload.questionId) === String(questionId)) {
+                    // Another user posted an answer to this question!
+                    fetchAnswers();
+                    showToast("A new answer was just posted!");
+                } else if (data.type === "answer_deleted" && String(data.payload.questionId) === String(questionId)) {
+                    // An answer was deleted
+                    fetchAnswers();
+                } else if (data.type === "answer_liked" && String(data.payload.questionId) === String(questionId)) {
+                    // Update like counter on the specific answer card
+                    const btn = document.querySelector(`.btn-like-answer[data-answer-id="${data.payload.answerId}"]`);
+                    if (btn) {
+                        const countSpan = btn.querySelector(".ans-like-count");
+                        if (countSpan) countSpan.textContent = data.payload.likes;
+                    }
+                } else if (data.type === "question_liked" && String(data.payload.questionId) === String(questionId)) {
+                    if (questionLikesCount) questionLikesCount.textContent = data.payload.likes;
+                } else if (data.type === "question_solved" && String(data.payload.questionId) === String(questionId)) {
+                    if (questionSolvedBadge) {
+                        questionSolvedBadge.style.display = data.payload.isSolved ? "inline-flex" : "none";
+                    }
+                    fetchAnswers();
+                } else if (data.type === "question_deleted" && String(data.payload.questionId) === String(questionId)) {
+                    alert("This question was deleted by its author.");
+                    window.location.href = "dashboard.html";
+                }
+            } catch (e) {
+                // Ignore ping or malformed event
+            }
+        };
+
+        // Fallback sync: check every 25 seconds if tab is active
+        setInterval(() => {
+            if (document.visibilityState === "visible") {
+                fetchAnswers();
+            }
+        }, 25000);
+    }
+
     // Initial Execution
     setupAvatarLightbox();
     await checkAuthStatus();
@@ -725,4 +774,5 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (loaded) {
         await fetchAnswers();
     }
+    setupRealtimeSync();
 });

@@ -172,14 +172,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // 2. Fetch Questions
-    async function fetchQuestions() {
+    async function fetchQuestions(showSpinner = true) {
         try {
-            messagesContainer.innerHTML = `
-                <div class="loading-state">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i>
-                    <p>Loading questions...</p>
-                </div>
-            `;
+            if (showSpinner && messagesContainer) {
+                messagesContainer.innerHTML = `
+                    <div class="loading-state">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i>
+                        <p>Loading questions...</p>
+                    </div>
+                `;
+            }
 
             const params = new URLSearchParams();
             if (currentSearchTerm) params.append("search", currentSearchTerm);
@@ -757,8 +759,88 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // ----------------- Real-Time Live Sync (SSE) -----------------
+    function setupRealtimeSync() {
+        if (!window.EventSource) return;
+
+        const eventSource = new EventSource("/api/events");
+
+        eventSource.onmessage = function (event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (!data || !data.type) return;
+
+                if (data.type === "new_question") {
+                    // Another user posted a question!
+                    // If viewing latest or unanswered, refresh feed silently without interrupting user
+                    if (!currentSearchTerm && !currentTag && (currentTab === "latest" || currentTab === "unanswered")) {
+                        fetchQuestions(false);
+                    } else if (questionCountBadge) {
+                        const currentCount = parseInt(questionCountBadge.textContent) || 0;
+                        questionCountBadge.textContent = `${currentCount + 1} questions`;
+                    }
+                } else if (data.type === "question_deleted") {
+                    const card = document.querySelector(`.question-card[data-question-id="${data.payload.questionId}"]`);
+                    if (card) {
+                        card.style.transition = "all 0.3s ease";
+                        card.style.opacity = "0";
+                        setTimeout(() => {
+                            card.remove();
+                            if (questionCountBadge) {
+                                const currentCount = document.querySelectorAll(".question-card").length;
+                                questionCountBadge.textContent = `${currentCount} question${currentCount === 1 ? "" : "s"}`;
+                            }
+                        }, 300);
+                    }
+                } else if (data.type === "question_liked") {
+                    const card = document.querySelector(`.question-card[data-question-id="${data.payload.questionId}"]`);
+                    if (card) {
+                        const countSpan = card.querySelector(".like-count");
+                        if (countSpan) countSpan.textContent = data.payload.likes;
+                    }
+                } else if (data.type === "new_answer" || data.type === "answer_deleted") {
+                    const card = document.querySelector(`.question-card[data-question-id="${data.payload.questionId}"]`);
+                    if (card) {
+                        const pill = card.querySelector(".answers-pill");
+                        if (pill && data.payload.answerCount !== undefined) {
+                            pill.innerHTML = `<i class="fa-regular fa-message"></i> ${data.payload.answerCount} ${data.payload.answerCount === 1 ? "answer" : "answers"}`;
+                        }
+                    }
+                } else if (data.type === "question_solved") {
+                    const card = document.querySelector(`.question-card[data-question-id="${data.payload.questionId}"]`);
+                    if (card) {
+                        const badgesWrap = card.querySelector(".card-top-badges");
+                        if (badgesWrap) {
+                            const existing = badgesWrap.querySelector(".badge-solved");
+                            if (data.payload.isSolved) {
+                                if (!existing) {
+                                    const solvedSpan = document.createElement("span");
+                                    solvedSpan.className = "badge-solved";
+                                    solvedSpan.innerHTML = `<i class="fa-solid fa-check"></i> Solved`;
+                                    badgesWrap.prepend(solvedSpan);
+                                }
+                            } else if (existing) {
+                                existing.remove();
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                // Ignore ping or malformed event
+            }
+        };
+
+        // Fallback sync: check every 25 seconds if tab is active
+        setInterval(() => {
+            if (document.visibilityState === "visible") {
+                fetchQuestions(false);
+            }
+        }, 25000);
+    }
+
     // Initial Execution
     setupAvatarLightbox();
     checkAuthStatus();
     fetchQuestions();
+    setupRealtimeSync();
 });
