@@ -21,6 +21,9 @@ const PORT = process.env.PORT || 3000;
 
 const app = express();
 
+// Trust reverse proxies like Render
+app.set("trust proxy", 1);
+
 app.use(express.json());
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
@@ -110,7 +113,11 @@ async function verifyToken(req, res, next) {
 
 // GitHub OAuth initiation
 app.get("/auth/github", (req, res) => {
-    const redirectUri = `http://localhost:${PORT}/auth/github/callback`;
+    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+    const host = req.headers["x-forwarded-host"] || req.get("host");
+    const baseUrl = process.env.APP_URL ? process.env.APP_URL.replace(/\/$/, "") : `${proto}://${host}`;
+    const redirectUri = `${baseUrl}/auth/github/callback`;
+
     if (!clientID) {
         return res.status(500).send("GitHub Client ID is not configured in .env");
     }
@@ -163,9 +170,10 @@ app.get("/auth/github/callback", async (req, res) => {
             await user.save();
         }
 
-        res.cookie("token", accessToken, { httpOnly: true, sameSite: "Lax" });
-        res.cookie("username", user.username, { sameSite: "Lax" });
-        res.cookie("avatarUrl", user.avatarUrl, { sameSite: "Lax" });
+        const isProduction = process.env.NODE_ENV === "production";
+        res.cookie("token", accessToken, { httpOnly: true, sameSite: "lax", secure: isProduction });
+        res.cookie("username", user.username, { sameSite: "lax", secure: isProduction });
+        res.cookie("avatarUrl", user.avatarUrl, { sameSite: "lax", secure: isProduction });
 
         res.redirect("/dashboard.html");
     } catch (error) {
