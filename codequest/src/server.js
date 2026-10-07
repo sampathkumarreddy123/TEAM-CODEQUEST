@@ -32,24 +32,32 @@ app.use(cookieParser());
 // Serve static assets from src directory
 app.use(express.static(__dirname));
 
-// MongoDB connection with automatic fallback
+// MongoDB connection with automatic fallback and retry
 async function connectMongoDB() {
-    const options = { serverSelectionTimeoutMS: 4000 };
+    const options = { serverSelectionTimeoutMS: 5000 };
+    const primaryUri = process.env.MONGO_URI || (process.env.NODE_ENV === "production" ? process.env.MONGO_REMOTE_URI : "mongodb://127.0.0.1:27017/codequest");
+
     try {
-        await mongoose.connect(MONGO_URI, options);
-        console.log("✅ MongoDB connected successfully to:", MONGO_URI);
+        if (!primaryUri) {
+            throw new Error("No MONGO_URI or MONGO_REMOTE_URI configured.");
+        }
+        await mongoose.connect(primaryUri, options);
+        console.log("✅ MongoDB connected successfully to:", primaryUri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@"));
     } catch (err1) {
         console.warn(`⚠️ Primary MongoDB connection failed (${err1.message}). Trying fallback...`);
-        const fallbackUri = MONGO_URI.includes("127.0.0.1") || MONGO_URI.includes("localhost")
-            ? (MONGO_REMOTE_URI || "mongodb://localhost:27017/codequest")
-            : "mongodb://127.0.0.1:27017/codequest";
+        const fallbackUri = primaryUri && (primaryUri.includes("127.0.0.1") || primaryUri.includes("localhost"))
+            ? (process.env.MONGO_REMOTE_URI || "mongodb://localhost:27017/codequest")
+            : (process.env.MONGO_URI || "mongodb://127.0.0.1:27017/codequest");
 
         try {
             await mongoose.connect(fallbackUri, options);
-            console.log("✅ Connected to fallback MongoDB:", fallbackUri);
+            console.log("✅ Connected to fallback MongoDB:", fallbackUri.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@"));
         } catch (err2) {
             console.error("❌ Both primary and fallback MongoDB connections failed:", err2.message);
-            console.warn("⚠️ Server will continue running, but database operations may fail until MongoDB is available.");
+            console.warn("⚠️ Database is currently unavailable. Please verify MONGO_URI in your environment settings (ensure MongoDB Atlas cluster is active and Network Access allows 0.0.0.0/0).");
+            
+            // Re-attempt connection after 15 seconds in background
+            setTimeout(connectMongoDB, 15000);
         }
     }
 }
@@ -162,6 +170,12 @@ app.get("/auth/github/callback", async (req, res) => {
         });
 
         const { id, login, avatar_url } = userResponse.data;
+
+        // Check MongoDB connection readiness before querying to avoid buffering timeouts
+        if (mongoose.connection.readyState !== 1) {
+            console.error("❌ MongoDB is not connected (readyState:", mongoose.connection.readyState, ")");
+            return res.redirect(`/login.html?error=db_disconnected&msg=${encodeURIComponent("Database is not connected on server. Please check MongoDB Atlas connection and IP access in Render settings.")}`);
+        }
 
         let user = await User.findOne({ githubId: String(id) });
         if (!user) {
