@@ -13,11 +13,12 @@ const __dirname = path.dirname(__filename);
 // Load environment variables from .env in the same directory or project root
 dotenv.config({ path: path.join(__dirname, ".env") });
 
-const clientID = process.env.GITHUB_CLIENT_ID;
-const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+const clientID = process.env.GITHUB_CLIENT_ID ? process.env.GITHUB_CLIENT_ID.trim().replace(/^["']|["']$/g, "") : null;
+const clientSecret = process.env.GITHUB_CLIENT_SECRET ? process.env.GITHUB_CLIENT_SECRET.trim().replace(/^["']|["']$/g, "") : null;
 const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/codequest";
 const MONGO_REMOTE_URI = process.env.MONGO_REMOTE_URI;
 const PORT = process.env.PORT || 3000;
+
 
 const app = express();
 
@@ -119,7 +120,7 @@ app.get("/auth/github", (req, res) => {
     const redirectUri = `${baseUrl}/auth/github/callback`;
 
     if (!clientID) {
-        return res.status(500).send("GitHub Client ID is not configured in .env");
+        return res.status(500).send("GitHub Client ID is not configured in .env or Render environment variables.");
     }
     const githubLoginUrl = `https://github.com/login/oauth/authorize?client_id=${clientID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user`;
     res.redirect(githubLoginUrl);
@@ -129,8 +130,13 @@ app.get("/auth/github", (req, res) => {
 app.get("/auth/github/callback", async (req, res) => {
     const code = req.query.code;
     if (!code) {
-        return res.status(400).send("Authorization code is missing");
+        return res.redirect("/login.html?error=missing_code");
     }
+
+    const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
+    const host = req.headers["x-forwarded-host"] || req.get("host");
+    const baseUrl = process.env.APP_URL ? process.env.APP_URL.replace(/\/$/, "") : `${proto}://${host}`;
+    const redirectUri = `${baseUrl}/auth/github/callback`;
 
     try {
         const response = await axios.post(
@@ -139,13 +145,16 @@ app.get("/auth/github/callback", async (req, res) => {
                 client_id: clientID,
                 client_secret: clientSecret,
                 code,
+                redirect_uri: redirectUri
             },
             { headers: { Accept: "application/json" } }
         );
 
         const accessToken = response.data.access_token;
         if (!accessToken) {
-            return res.status(400).send("Failed to get GitHub access token: " + (response.data.error_description || "Unknown error"));
+            console.error("❌ GitHub OAuth token exchange failed:", response.data);
+            const errDesc = response.data.error_description || "Authentication code expired or already used. Please click Login with GitHub again.";
+            return res.redirect(`/login.html?error=github_token_failed&msg=${encodeURIComponent(errDesc)}`);
         }
 
         const userResponse = await axios.get("https://api.github.com/user", {

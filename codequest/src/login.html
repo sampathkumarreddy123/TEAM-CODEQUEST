@@ -322,8 +322,13 @@
             const errorAlert = document.getElementById('errorAlert');
             const errorMessage = document.getElementById('errorMessage');
             const errType = urlParams.get('error');
-            if (errType === 'github_auth_failed') {
-                errorMessage.textContent = 'GitHub authorization could not be completed. You can use the Quick Demo login below!';
+            const msg = urlParams.get('msg');
+            if (msg) {
+                errorMessage.textContent = decodeURIComponent(msg);
+            } else if (errType === 'github_auth_failed' || errType === 'github_token_failed') {
+                errorMessage.textContent = 'GitHub authorization could not be completed. You can try logging in with GitHub again or use the Quick Demo login below!';
+            } else if (errType === 'missing_code') {
+                errorMessage.textContent = 'GitHub login was cancelled or missing code. Please try again.';
             }
             errorAlert.style.display = 'block';
         }
