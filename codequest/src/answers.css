@@ -1103,4 +1103,132 @@ body.lightbox-open {
   filter: brightness(1.03);
 }
 
+/* ----------------- Admin Styling ----------------- */
+.header-admin-badge {
+  background-color: #111827;
+  color: #fbbf24;
+  border: 1px solid #374151;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  letter-spacing: 0.03em;
+}
+
+.badge-admin-tag {
+  background-color: #111827;
+  color: #fbbf24;
+  border: 1px solid #374151;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.badge-pinned {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-locked {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-hero-admin {
+  background-color: white;
+  border: 1px solid #e5e5e5;
+  color: #4b5563;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-hero-admin:hover {
+  background-color: whitesmoke;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.btn-hero-admin.is-active-pin {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #b45309;
+  font-weight: 600;
+}
+
+.btn-hero-admin.is-active-lock {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.btn-edit-answer {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-answer:hover {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.btn-del-answer.btn-admin-del:hover {
+  color: #dc2626;
+  background-color: #fee2e2;
+}
+
+.locked-composer-notice {
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  padding: 14px 18px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 

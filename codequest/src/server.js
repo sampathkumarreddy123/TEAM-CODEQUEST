@@ -70,6 +70,7 @@ const userSchema = new mongoose.Schema({
     username: { type: String, required: true },
     avatarUrl: { type: String, default: "default-avatar.png" },
     token: { type: String, required: true },
+    isAdmin: { type: Boolean, default: false },
     isDemo: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now }
 });
@@ -80,6 +81,8 @@ const questionSchema = new mongoose.Schema({
     tags: [{ type: String, trim: true, lowercase: true }],
     isSolved: { type: Boolean, default: false },
     solvedAnswerId: { type: mongoose.Schema.Types.ObjectId, ref: "Answer", default: null },
+    isPinned: { type: Boolean, default: false },
+    isLocked: { type: Boolean, default: false },
     likes: { type: Number, default: 0 },
     likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdAt: { type: Date, default: Date.now }
@@ -98,6 +101,17 @@ const User = mongoose.model("User", userSchema);
 const Question = mongoose.model("Question", questionSchema);
 const Answer = mongoose.model("Answer", answerSchema);
 
+// ----------------- Admin Helpers -----------------
+function checkIsAdmin(user) {
+    if (!user) return false;
+    if (user.isAdmin === true) return true;
+    const adminList = (process.env.ADMIN_USERNAMES || "sampathkumarreddy123,sampathkumarreddy")
+        .split(",")
+        .map(s => s.trim().toLowerCase());
+    const username = (user.username || "").toLowerCase();
+    return adminList.includes(username);
+}
+
 // ----------------- Auth Middleware -----------------
 async function verifyToken(req, res, next) {
     try {
@@ -112,12 +126,25 @@ async function verifyToken(req, res, next) {
             return res.status(401).json({ error: "Invalid or expired session. Please log in again." });
         }
 
+        if (checkIsAdmin(user) && !user.isAdmin) {
+            user.isAdmin = true;
+            await user.save().catch(() => {});
+        }
+
         req.user = user;
+        req.user.isAdmin = checkIsAdmin(user);
         next();
     } catch (error) {
         console.error("Token verification error:", error);
         res.status(500).json({ error: "Authentication failed" });
     }
+}
+
+function verifyAdmin(req, res, next) {
+    if (!req.user || !checkIsAdmin(req.user)) {
+        return res.status(403).json({ error: "Access denied. Administrator privileges required." });
+    }
+    next();
 }
 
 // ----------------- Auth Routes -----------------
@@ -179,19 +206,22 @@ app.get("/auth/github/callback", async (req, res) => {
             return res.redirect(`/login.html?error=db_disconnected&msg=${encodeURIComponent("Database is not connected on server. Please check MongoDB Atlas connection and IP access in Render settings.")}`);
         }
 
+        const isUserAdmin = checkIsAdmin({ username: login });
         let user = await User.findOne({ githubId: String(id) });
         if (!user) {
             user = new User({
                 githubId: String(id),
                 username: login,
                 avatarUrl: avatar_url || "default-avatar.png",
-                token: accessToken
+                token: accessToken,
+                isAdmin: isUserAdmin
             });
             await user.save();
         } else {
             user.token = accessToken;
             user.username = login;
             user.avatarUrl = avatar_url || user.avatarUrl;
+            if (isUserAdmin) user.isAdmin = true;
             await user.save();
         }
 
@@ -206,6 +236,7 @@ app.get("/auth/github/callback", async (req, res) => {
         res.cookie("token", accessToken, cookieOpts);
         res.cookie("username", user.username, { ...cookieOpts, httpOnly: false });
         res.cookie("avatarUrl", user.avatarUrl, { ...cookieOpts, httpOnly: false });
+        res.cookie("isAdmin", String(checkIsAdmin(user)), { ...cookieOpts, httpOnly: false });
 
         res.redirect("/dashboard.html");
     } catch (error) {
@@ -229,11 +260,18 @@ app.get("/auth/status", async (req, res) => {
             return res.json({ loggedIn: false });
         }
 
+        const isAdmin = checkIsAdmin(user);
+        if (isAdmin && !user.isAdmin) {
+            user.isAdmin = true;
+            await user.save().catch(() => {});
+        }
+
         res.json({
             loggedIn: true,
             userId: user._id,
             username: user.username,
-            avatarUrl: user.avatarUrl || "default-avatar.png"
+            avatarUrl: user.avatarUrl || "default-avatar.png",
+            isAdmin
         });
     } catch (error) {
         console.error("❌ Error checking auth status:", error);
@@ -247,6 +285,7 @@ app.post("/logout", (req, res) => {
         res.clearCookie("token", { httpOnly: true, sameSite: "Lax" });
         res.clearCookie("username", { sameSite: "Lax" });
         res.clearCookie("avatarUrl", { sameSite: "Lax" });
+        res.clearCookie("isAdmin", { sameSite: "Lax" });
 
         res.status(200).json({ success: true, redirectUrl: "/login.html" });
     } catch (error) {
@@ -272,6 +311,7 @@ app.get("/profile", verifyToken, async (req, res) => {
             _id: req.user._id,
             username: req.user.username,
             avatarUrl: req.user.avatarUrl,
+            isAdmin: checkIsAdmin(req.user),
             createdAt: req.user.createdAt,
             questionsCount,
             answersCount,
@@ -304,6 +344,7 @@ app.get("/users/:userId", async (req, res) => {
             _id: user._id,
             username: user.username,
             avatarUrl: user.avatarUrl || "default-avatar.png",
+            isAdmin: checkIsAdmin(user),
             createdAt: user.createdAt,
             questionsCount,
             answersCount,
@@ -393,22 +434,26 @@ app.get("/questions", async (req, res) => {
             filter.isSolved = true;
         }
 
-        let sortOption = { createdAt: -1 };
+        let sortOption = { isPinned: -1, createdAt: -1 };
         if (tab === "popular") {
-            sortOption = { likes: -1, createdAt: -1 };
+            sortOption = { isPinned: -1, likes: -1, createdAt: -1 };
         }
 
         let questions = await Question.find(filter)
             .sort(sortOption)
-            .populate("userId", "username avatarUrl")
+            .populate("userId", "username avatarUrl isAdmin")
             .lean();
 
-        // Get answer count & user like status
+        // Get current user and admin status
         const token = req.cookies.token;
         let currentUserId = null;
+        let currentUserIsAdmin = false;
         if (token) {
-            const user = await User.findOne({ token }).select("_id");
-            if (user) currentUserId = user._id.toString();
+            const user = await User.findOne({ token });
+            if (user) {
+                currentUserId = user._id.toString();
+                currentUserIsAdmin = checkIsAdmin(user);
+            }
         }
 
         let questionsWithDetails = await Promise.all(
@@ -416,11 +461,17 @@ app.get("/questions", async (req, res) => {
                 const answerCount = await Answer.countDocuments({ questionId: q._id });
                 const isLiked = currentUserId && q.likedBy ? q.likedBy.some(id => id.toString() === currentUserId) : false;
                 const isOwner = currentUserId && q.userId ? q.userId._id.toString() === currentUserId : false;
+                const authorIsAdmin = q.userId ? checkIsAdmin(q.userId) : false;
                 return {
                     ...q,
+                    isPinned: Boolean(q.isPinned),
+                    isLocked: Boolean(q.isLocked),
                     answerCount,
                     isLiked,
-                    isOwner
+                    isOwner,
+                    authorIsAdmin,
+                    canManage: isOwner || currentUserIsAdmin,
+                    currentUserIsAdmin
                 };
             })
         );
@@ -445,7 +496,7 @@ app.get("/questions/:questionId", async (req, res) => {
         }
 
         const question = await Question.findById(questionId)
-            .populate("userId", "username avatarUrl")
+            .populate("userId", "username avatarUrl isAdmin")
             .lean();
 
         if (!question) {
@@ -456,11 +507,13 @@ app.get("/questions/:questionId", async (req, res) => {
         const token = req.cookies.token;
         let isOwner = false;
         let isLiked = false;
+        let currentUserIsAdmin = false;
 
         if (token) {
-            const user = await User.findOne({ token }).select("_id");
+            const user = await User.findOne({ token });
             if (user) {
                 const uid = user._id.toString();
+                currentUserIsAdmin = checkIsAdmin(user);
                 if (question.userId) {
                     isOwner = question.userId._id.toString() === uid;
                 }
@@ -470,7 +523,18 @@ app.get("/questions/:questionId", async (req, res) => {
             }
         }
 
-        res.json({ ...question, answerCount, isOwner, isLiked });
+        const authorIsAdmin = question.userId ? checkIsAdmin(question.userId) : false;
+        res.json({
+            ...question,
+            isPinned: Boolean(question.isPinned),
+            isLocked: Boolean(question.isLocked),
+            answerCount,
+            isOwner,
+            isLiked,
+            authorIsAdmin,
+            canManage: isOwner || currentUserIsAdmin,
+            currentUserIsAdmin
+        });
     } catch (error) {
         console.error("❌ Error fetching question:", error);
         res.status(500).json({ error: "Failed to fetch question" });
@@ -508,14 +572,20 @@ app.post("/questions", verifyToken, async (req, res) => {
         await newQuestion.save();
 
         const populatedQuestion = await Question.findById(newQuestion._id)
-            .populate("userId", "username avatarUrl");
+            .populate("userId", "username avatarUrl isAdmin");
 
-        const qObj = { ...populatedQuestion.toObject(), answerCount: 0 };
+        const qObj = {
+            ...populatedQuestion.toObject(),
+            answerCount: 0,
+            isPinned: false,
+            isLocked: false,
+            authorIsAdmin: checkIsAdmin(req.user)
+        };
         broadcastEvent("new_question", { question: qObj });
 
         res.status(201).json({
             message: "Question posted successfully!",
-            question: { ...qObj, isOwner: true }
+            question: { ...qObj, isOwner: true, canManage: true }
         });
     } catch (error) {
         console.error("❌ Error posting question:", error);
@@ -523,15 +593,55 @@ app.post("/questions", verifyToken, async (req, res) => {
     }
 });
 
-// Toggle solved status on question (Author only)
+// Edit a question (Author or Admin)
+app.put("/questions/:questionId", verifyToken, async (req, res) => {
+    try {
+        const { questionText, tags } = req.body;
+        const question = await Question.findById(req.params.questionId);
+        if (!question) return res.status(404).json({ error: "Question not found" });
+
+        const isOwner = question.userId.toString() === req.user._id.toString();
+        const isAdmin = checkIsAdmin(req.user);
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: "Not authorized to edit this question." });
+        }
+
+        if (questionText && questionText.trim()) {
+            question.questionText = questionText.trim();
+        }
+
+        if (tags !== undefined) {
+            let parsedTags = [];
+            if (Array.isArray(tags)) {
+                parsedTags = tags.map(t => String(t).trim().toLowerCase()).filter(Boolean);
+            } else if (typeof tags === "string") {
+                parsedTags = tags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+            }
+            question.tags = parsedTags.slice(0, 5);
+        }
+
+        await question.save();
+        const updated = await Question.findById(question._id).populate("userId", "username avatarUrl isAdmin");
+        broadcastEvent("question_updated", { question: updated });
+
+        res.json({ success: true, message: "Question updated successfully!", question: updated });
+    } catch (error) {
+        console.error("❌ Error updating question:", error);
+        res.status(500).json({ error: "Failed to update question" });
+    }
+});
+
+// Toggle solved status on question (Author or Admin)
 app.post("/questions/:questionId/solve/:answerId", verifyToken, async (req, res) => {
     try {
         const { questionId, answerId } = req.params;
         const question = await Question.findById(questionId);
 
         if (!question) return res.status(404).json({ error: "Question not found" });
-        if (question.userId.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ error: "Only the question creator can accept a solution." });
+        const isOwner = question.userId.toString() === req.user._id.toString();
+        const isAdmin = checkIsAdmin(req.user);
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: "Only the question creator or an administrator can accept a solution." });
         }
 
         if (question.isSolved && String(question.solvedAnswerId) === String(answerId)) {
@@ -562,7 +672,7 @@ app.post("/questions/:questionId/solve/:answerId", verifyToken, async (req, res)
     }
 });
 
-// Delete a question (author only)
+// Delete a question (Author or Admin)
 app.delete("/questions/:questionId", verifyToken, async (req, res) => {
     try {
         const question = await Question.findById(req.params.questionId);
@@ -570,7 +680,9 @@ app.delete("/questions/:questionId", verifyToken, async (req, res) => {
             return res.status(404).json({ error: "Question not found" });
         }
 
-        if (question.userId.toString() !== req.user._id.toString()) {
+        const isOwner = question.userId.toString() === req.user._id.toString();
+        const isAdmin = checkIsAdmin(req.user);
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ error: "Not authorized to delete this question" });
         }
 
@@ -633,23 +745,32 @@ app.get("/answers/:questionId", async (req, res) => {
 
         const answers = await Answer.find({ questionId: req.params.questionId })
             .sort({ createdAt: 1 }) // Chronological order
-            .populate("userId", "username avatarUrl")
+            .populate("userId", "username avatarUrl isAdmin")
             .lean();
 
         const token = req.cookies.token;
         let currentUserId = null;
+        let currentUserIsAdmin = false;
         if (token) {
-            const user = await User.findOne({ token }).select("_id");
-            if (user) currentUserId = user._id.toString();
+            const user = await User.findOne({ token });
+            if (user) {
+                currentUserId = user._id.toString();
+                currentUserIsAdmin = checkIsAdmin(user);
+            }
         }
 
-        const enrichedAnswers = answers.map(ans => ({
-            ...ans,
-            likes: ans.likes || 0,
-            isLiked: currentUserId && ans.likedBy ? ans.likedBy.some(id => id.toString() === currentUserId) : false,
-            isOwner: currentUserId && ans.userId ? ans.userId._id.toString() === currentUserId : false,
-            isAcceptedSolution: question.isSolved && String(question.solvedAnswerId) === String(ans._id)
-        }));
+        const enrichedAnswers = answers.map(ans => {
+            const isOwner = currentUserId && ans.userId ? ans.userId._id.toString() === currentUserId : false;
+            return {
+                ...ans,
+                likes: ans.likes || 0,
+                isLiked: currentUserId && ans.likedBy ? ans.likedBy.some(id => id.toString() === currentUserId) : false,
+                isOwner,
+                canManage: isOwner || currentUserIsAdmin,
+                authorIsAdmin: ans.userId ? checkIsAdmin(ans.userId) : false,
+                isAcceptedSolution: question.isSolved && String(question.solvedAnswerId) === String(ans._id)
+            };
+        });
 
         res.json(enrichedAnswers);
     } catch (error) {
@@ -694,7 +815,7 @@ app.post("/answers/:answerId/like", verifyToken, async (req, res) => {
     }
 });
 
-// Post an answer
+// Post an answer (Blocked if question is locked, unless admin)
 app.post("/answers/:questionId", verifyToken, async (req, res) => {
     try {
         const { answerText } = req.body;
@@ -707,6 +828,10 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
             return res.status(404).json({ error: "Question not found" });
         }
 
+        if (question.isLocked && !checkIsAdmin(req.user)) {
+            return res.status(403).json({ error: "This discussion has been locked by an administrator. New answers are closed." });
+        }
+
         const newAnswer = new Answer({
             userId: req.user._id,
             questionId: req.params.questionId,
@@ -716,18 +841,18 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
         await newAnswer.save();
 
         const populatedAnswer = await Answer.findById(newAnswer._id)
-            .populate("userId", "username avatarUrl");
+            .populate("userId", "username avatarUrl isAdmin");
 
         const totalAnswers = await Answer.countDocuments({ questionId: question._id });
         broadcastEvent("new_answer", {
             questionId: question._id,
-            answer: { ...populatedAnswer.toObject(), likes: 0 },
+            answer: { ...populatedAnswer.toObject(), likes: 0, authorIsAdmin: checkIsAdmin(req.user) },
             answerCount: totalAnswers
         });
 
         res.status(201).json({
             message: "Answer posted successfully!",
-            answer: { ...populatedAnswer.toObject(), isOwner: true }
+            answer: { ...populatedAnswer.toObject(), isOwner: true, canManage: true, authorIsAdmin: checkIsAdmin(req.user) }
         });
     } catch (error) {
         console.error("❌ Error posting answer:", error);
@@ -735,7 +860,37 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
     }
 });
 
-// Delete an answer (author only)
+// Edit an answer (Author or Admin)
+app.put("/answers/:answerId", verifyToken, async (req, res) => {
+    try {
+        const { answerText } = req.body;
+        if (!answerText || !answerText.trim()) {
+            return res.status(400).json({ error: "Answer text is required" });
+        }
+
+        const answer = await Answer.findById(req.params.answerId);
+        if (!answer) return res.status(404).json({ error: "Answer not found" });
+
+        const isOwner = answer.userId.toString() === req.user._id.toString();
+        const isAdmin = checkIsAdmin(req.user);
+        if (!isOwner && !isAdmin) {
+            return res.status(403).json({ error: "Not authorized to edit this answer" });
+        }
+
+        answer.answerText = answerText.trim();
+        await answer.save();
+
+        const updated = await Answer.findById(answer._id).populate("userId", "username avatarUrl isAdmin");
+        broadcastEvent("answer_updated", { questionId: answer.questionId, answer: updated });
+
+        res.json({ success: true, message: "Answer updated successfully", answer: updated });
+    } catch (error) {
+        console.error("❌ Error updating answer:", error);
+        res.status(500).json({ error: "Failed to update answer" });
+    }
+});
+
+// Delete an answer (Author or Admin)
 app.delete("/answers/:answerId", verifyToken, async (req, res) => {
     try {
         const answer = await Answer.findById(req.params.answerId);
@@ -743,7 +898,9 @@ app.delete("/answers/:answerId", verifyToken, async (req, res) => {
             return res.status(404).json({ error: "Answer not found" });
         }
 
-        if (answer.userId.toString() !== req.user._id.toString()) {
+        const isOwner = answer.userId.toString() === req.user._id.toString();
+        const isAdmin = checkIsAdmin(req.user);
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ error: "Not authorized to delete this answer" });
         }
 
@@ -768,6 +925,128 @@ app.delete("/answers/:answerId", verifyToken, async (req, res) => {
     } catch (error) {
         console.error("❌ Error deleting answer:", error);
         res.status(500).json({ error: "Failed to delete answer" });
+    }
+});
+
+// ----------------- Admin Management Routes -----------------
+
+// Admin Stats
+app.get("/api/admin/stats", verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const totalQuestions = await Question.countDocuments();
+        const totalAnswers = await Answer.countDocuments();
+        const totalSolved = await Question.countDocuments({ isSolved: true });
+        const totalPinned = await Question.countDocuments({ isPinned: true });
+        const totalLocked = await Question.countDocuments({ isLocked: true });
+
+        res.json({ totalUsers, totalQuestions, totalAnswers, totalSolved, totalPinned, totalLocked });
+    } catch (error) {
+        console.error("❌ Error fetching admin stats:", error);
+        res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+});
+
+// Admin Pin / Unpin question
+app.post("/api/admin/questions/:questionId/pin", verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.questionId);
+        if (!question) return res.status(404).json({ error: "Question not found" });
+
+        question.isPinned = !question.isPinned;
+        await question.save();
+
+        broadcastEvent("question_pinned", { questionId: question._id, isPinned: question.isPinned });
+        res.json({
+            success: true,
+            isPinned: question.isPinned,
+            message: question.isPinned ? "Question pinned to top!" : "Question unpinned."
+        });
+    } catch (error) {
+        console.error("❌ Error toggling pin:", error);
+        res.status(500).json({ error: "Failed to toggle pin" });
+    }
+});
+
+// Admin Lock / Unlock question
+app.post("/api/admin/questions/:questionId/lock", verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.questionId);
+        if (!question) return res.status(404).json({ error: "Question not found" });
+
+        question.isLocked = !question.isLocked;
+        await question.save();
+
+        broadcastEvent("question_locked", { questionId: question._id, isLocked: question.isLocked });
+        res.json({
+            success: true,
+            isLocked: question.isLocked,
+            message: question.isLocked ? "Discussion locked (no new answers)." : "Discussion unlocked."
+        });
+    } catch (error) {
+        console.error("❌ Error toggling lock:", error);
+        res.status(500).json({ error: "Failed to toggle lock" });
+    }
+});
+
+// Admin list all questions for panel
+app.get("/api/admin/all-questions", verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const questions = await Question.find({})
+            .sort({ isPinned: -1, createdAt: -1 })
+            .populate("userId", "username avatarUrl")
+            .lean();
+
+        const enriched = await Promise.all(questions.map(async q => {
+            const answerCount = await Answer.countDocuments({ questionId: q._id });
+            return { ...q, answerCount };
+        }));
+
+        res.json(enriched);
+    } catch (error) {
+        console.error("❌ Error fetching admin questions:", error);
+        res.status(500).json({ error: "Failed to fetch admin questions" });
+    }
+});
+
+// Admin list all recent answers for panel
+app.get("/api/admin/all-answers", verifyToken, verifyAdmin, async (req, res) => {
+    try {
+        const answers = await Answer.find({})
+            .sort({ createdAt: -1 })
+            .limit(50)
+            .populate("userId", "username avatarUrl")
+            .populate("questionId", "questionText")
+            .lean();
+
+        res.json(answers);
+    } catch (error) {
+        console.error("❌ Error fetching admin answers:", error);
+        res.status(500).json({ error: "Failed to fetch admin answers" });
+    }
+});
+
+// Claim Admin / Ensure Admin endpoint
+app.post("/api/admin/claim-admin", verifyToken, async (req, res) => {
+    try {
+        const isEligible = checkIsAdmin(req.user) || (req.body.adminSecret && req.body.adminSecret === process.env.SESSION_SECRET);
+        if (isEligible) {
+            req.user.isAdmin = true;
+            await req.user.save();
+            const cookieOpts = {
+                httpOnly: false,
+                sameSite: "lax",
+                secure: process.env.NODE_ENV === "production",
+                path: "/",
+                maxAge: 30 * 24 * 60 * 60 * 1000
+            };
+            res.cookie("isAdmin", "true", cookieOpts);
+            return res.json({ success: true, isAdmin: true, message: `Admin privileges confirmed for ${req.user.username}!` });
+        }
+        res.status(403).json({ error: "Not authorized to claim admin role." });
+    } catch (error) {
+        console.error("❌ Error claiming admin:", error);
+        res.status(500).json({ error: "Failed to claim admin" });
     }
 });
 

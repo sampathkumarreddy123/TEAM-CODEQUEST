@@ -1119,4 +1119,200 @@ body.lightbox-open {
   filter: brightness(1.03);
 }
 
+/* ----------------- Admin Styling ----------------- */
+.header-admin-badge {
+  background-color: #111827;
+  color: #fbbf24;
+  border: 1px solid #374151;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  letter-spacing: 0.03em;
+}
+
+.btn-admin-nav {
+  background-color: white;
+  color: #111827;
+  border: 1px solid #e5e5e5;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 7px 14px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px #00000010;
+}
+
+.btn-admin-nav i {
+  color: #d97706;
+}
+
+.btn-admin-nav:hover {
+  background-color: whitesmoke;
+  border-color: #d1d5db;
+  color: #000000;
+  transform: translateY(-1px);
+}
+
+.badge-admin-tag {
+  background-color: #111827;
+  color: #fbbf24;
+  border: 1px solid #374151;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+.badge-pinned {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-locked {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-card-pin, .btn-card-lock, .btn-card-edit {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-card-pin:hover { color: #d97706; background-color: #fef3c7; }
+.btn-card-pin.is-active { color: #d97706; background-color: #fffbeb; font-weight: bold; }
+.btn-card-lock:hover { color: #dc2626; background-color: #fee2e2; }
+.btn-card-lock.is-active { color: #dc2626; background-color: #fef2f2; font-weight: bold; }
+.btn-card-edit:hover { color: #2563eb; background-color: #eff6ff; }
+.btn-card-del.btn-admin-del:hover { color: #dc2626; background-color: #fee2e2; }
+
+/* Admin Modal Details */
+.admin-modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #111827;
+  color: #fbbf24;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.admin-stat-card {
+  background-color: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 3px #00000008;
+  transition: transform 0.15s ease;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+}
+
+.admin-stat-card .stat-number {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.1;
+}
+
+.admin-stat-card .stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.cq-admin-pills .nav-link {
+  color: #4b5563;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+}
+
+.cq-admin-pills .nav-link.active {
+  background-color: #111827;
+  color: white;
+}
+
+.admin-table-container {
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  background-color: white;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.admin-table {
+  font-size: 0.88rem;
+}
+
+.admin-table th {
+  background-color: whitesmoke;
+  color: #374151;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.admin-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.admin-search-input {
+  max-width: 320px;
+  border-radius: 8px;
+}
+
 

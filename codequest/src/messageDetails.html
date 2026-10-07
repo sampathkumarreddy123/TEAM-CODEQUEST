@@ -38,8 +38,10 @@
                 <button class="user-chip-btn dropdown-toggle" type="button" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                     <img id="headerUserAvatar" src="default-avatar.png" alt="Avatar" class="user-avatar-sm" onerror="this.src='default-avatar.png'">
                     <span id="headerUsername" class="user-name-text">Developer</span>
+                    <span id="headerAdminBadge" class="header-admin-badge" style="display: none;" title="Administrator"><i class="fa-solid fa-shield-halved"></i> Admin</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end cq-dropdown" aria-labelledby="userMenuDropdown">
+                    <li id="dropdownAdminItem" style="display: none;"><a class="dropdown-item fw-bold text-dark" href="dashboard.html#admin" id="dropdownAdminBtn"><i class="fa-solid fa-shield-halved me-2 text-warning"></i> Admin Panel</a></li>
                     <li><a class="dropdown-item" href="profile.html"><i class="fa-solid fa-user me-2"></i> My Profile</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item text-danger" id="logoutBtn"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</button></li>
@@ -64,11 +66,20 @@
                     <a id="questionAuthorLink" href="#" class="author-chip">
                         <img id="questionAuthorAvatar" src="default-avatar.png" alt="Author" class="author-avatar" onerror="this.src='default-avatar.png'">
                         <div class="author-info">
-                            <span id="questionAuthorName" class="author-name">Loading...</span>
+                            <div class="d-flex align-items-center gap-1">
+                                <span id="questionAuthorName" class="author-name">Loading...</span>
+                                <span id="questionAuthorAdminBadge" class="badge-admin-tag" style="display: none;"><i class="fa-solid fa-shield-halved"></i> Admin</span>
+                            </div>
                             <span id="questionTime" class="post-time">Posted on ...</span>
                         </div>
                     </a>
                     <div class="hero-actions">
+                        <span id="questionPinnedBadge" class="badge-pinned" style="display: none;">
+                            <i class="fa-solid fa-thumbtack"></i> Pinned
+                        </span>
+                        <span id="questionLockedBadge" class="badge-locked" style="display: none;">
+                            <i class="fa-solid fa-lock"></i> Locked
+                        </span>
                         <span id="questionSolvedBadge" class="badge-solved" style="display: none;">
                             <i class="fa-solid fa-check"></i> Solved
                         </span>
@@ -78,6 +89,15 @@
                         </button>
                         <button id="shareQuestionBtn" class="btn-share-hero" title="Share link">
                             <i class="fa-solid fa-share-nodes"></i> Share
+                        </button>
+                        <button id="pinQuestionBtn" class="btn-hero-admin" title="Admin: Pin question" style="display: none;">
+                            <i class="fa-solid fa-thumbtack"></i>
+                        </button>
+                        <button id="lockQuestionBtn" class="btn-hero-admin" title="Admin: Lock question" style="display: none;">
+                            <i class="fa-solid fa-lock"></i>
+                        </button>
+                        <button id="editQuestionBtn" class="btn-hero-admin" title="Edit question" style="display: none;">
+                            <i class="fa-regular fa-pen-to-square"></i>
                         </button>
                         <button id="deleteQuestionBtn" class="btn-del-hero" title="Delete question" style="display: none;">
                             <i class="fa-regular fa-trash-can"></i>
@@ -108,22 +128,29 @@
 
             <!-- Reply Box Composer -->
             <div class="reply-composer-card" id="replyComposerCard">
-                <h3 class="composer-title"><i class="fa-solid fa-reply me-2 text-primary"></i>Your Answer</h3>
-                <p class="composer-hint">Explain clearly. You can paste code using `inline` or ```multiline code blocks```.</p>
-                
-                <div class="formatting-toolbar mb-2">
-                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-block" title="Insert Code Block"><i class="fa-solid fa-code me-1"></i>Code Block</button>
-                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-inline" title="Insert Inline Code"><i class="fa-solid fa-terminal me-1"></i>Inline</button>
-                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="bold" title="Insert Bold"><i class="fa-solid fa-bold me-1"></i>Bold</button>
+                <div id="lockedNotice" class="locked-composer-notice" style="display: none;">
+                    <i class="fa-solid fa-lock text-warning fa-lg me-2"></i>
+                    <span><b>Discussion Locked:</b> An administrator has closed new answers for this question.</span>
                 </div>
 
-                <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here..."></textarea>
-                
-                <div class="composer-footer">
-                    <span class="composer-kbd-hint"><i class="fa-regular fa-keyboard me-1"></i> Tip: Press <b>Ctrl + Enter</b> to post</span>
-                    <button id="submitAnswerBtn" class="btn btn-submit-reply">
-                        <i class="fa-solid fa-paper-plane me-1"></i> Post Answer
-                    </button>
+                <div id="activeComposerArea">
+                    <h3 class="composer-title"><i class="fa-solid fa-reply me-2 text-primary"></i>Your Answer</h3>
+                    <p class="composer-hint">Explain clearly. You can paste code using `inline` or ```multiline code blocks```.</p>
+                    
+                    <div class="formatting-toolbar mb-2">
+                        <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-block" title="Insert Code Block"><i class="fa-solid fa-code me-1"></i>Code Block</button>
+                        <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-inline" title="Insert Inline Code"><i class="fa-solid fa-terminal me-1"></i>Inline</button>
+                        <button type="button" class="btn-fmt" data-target="reply" data-fmt="bold" title="Insert Bold"><i class="fa-solid fa-bold me-1"></i>Bold</button>
+                    </div>
+
+                    <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here..."></textarea>
+                    
+                    <div class="composer-footer">
+                        <span class="composer-kbd-hint"><i class="fa-regular fa-keyboard me-1"></i> Tip: Press <b>Ctrl + Enter</b> to post</span>
+                        <button id="submitAnswerBtn" class="btn btn-submit-reply">
+                            <i class="fa-solid fa-paper-plane me-1"></i> Post Answer
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -140,6 +167,56 @@
             </div>
         </div>
     </main>
+
+    <!-- Edit Question Modal -->
+    <div class="modal fade" id="editQuestionModal" tabindex="-1" aria-labelledby="editQuestionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cq-modal">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="editQuestionModalLabel"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Question</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <input type="hidden" id="editQuestionId">
+                    <div class="mb-3">
+                        <label for="editQuestionText" class="form-label fw-bold">Question Description</label>
+                        <textarea class="form-control" id="editQuestionText" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editQuestionTags" class="form-label fw-bold">Tags (comma separated)</label>
+                        <input type="text" class="form-control" id="editQuestionTags" placeholder="e.g. javascript, react, bug">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary-cq" id="saveEditQuestionBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Answer Modal -->
+    <div class="modal fade" id="editAnswerModal" tabindex="-1" aria-labelledby="editAnswerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cq-modal">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="editAnswerModalLabel"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Answer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3">
+                    <input type="hidden" id="editAnswerId">
+                    <div class="mb-3">
+                        <label for="editAnswerText" class="form-label fw-bold">Answer Content</label>
+                        <textarea class="form-control" id="editAnswerText" rows="5" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary-cq" id="saveEditAnswerBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Auth Prompt Modal -->
     <div class="modal fade" id="authPromptModal" tabindex="-1" aria-hidden="true">

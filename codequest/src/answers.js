@@ -160,6 +160,13 @@ document.addEventListener("DOMContentLoaded", async function () {
                 const avatar = data.avatarUrl || "default-avatar.png";
                 if (headerUserAvatar) headerUserAvatar.src = avatar;
 
+                if (data.isAdmin) {
+                    const adminBadge = document.getElementById("headerAdminBadge");
+                    const dropdownAdmin = document.getElementById("dropdownAdminItem");
+                    if (adminBadge) adminBadge.style.display = "inline-flex";
+                    if (dropdownAdmin) dropdownAdmin.style.display = "block";
+                }
+
                 if (replyComposerCard) replyComposerCard.style.display = "block";
                 if (unauthComposerCard) unauthComposerCard.style.display = "none";
             } else {
@@ -203,6 +210,23 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (questionLikesCount) questionLikesCount.textContent = questionData.likes || 0;
 
+            // Admin badge on author
+            const authorAdminBadge = document.getElementById("questionAuthorAdminBadge");
+            if (authorAdminBadge) {
+                authorAdminBadge.style.display = questionData.authorIsAdmin ? "inline-flex" : "none";
+            }
+
+            // Pinned & Locked badges
+            const pinBadge = document.getElementById("questionPinnedBadge");
+            if (pinBadge) {
+                pinBadge.style.display = questionData.isPinned ? "inline-flex" : "none";
+            }
+
+            const lockBadge = document.getElementById("questionLockedBadge");
+            if (lockBadge) {
+                lockBadge.style.display = questionData.isLocked ? "inline-flex" : "none";
+            }
+
             // Solved badge
             if (questionSolvedBadge) {
                 questionSolvedBadge.style.display = questionData.isSolved ? "inline-flex" : "none";
@@ -230,9 +254,41 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
             }
 
-            // Delete button for author
-            if (questionData.isOwner && deleteQuestionBtn) {
-                deleteQuestionBtn.style.display = "inline-flex";
+            const isAdmin = currentUser && currentUser.isAdmin;
+            const canManage = questionData.isOwner || isAdmin || questionData.canManage;
+
+            // Locked composer state
+            const lockedNotice = document.getElementById("lockedNotice");
+            const activeComposerArea = document.getElementById("activeComposerArea");
+            if (questionData.isLocked && !isAdmin) {
+                if (lockedNotice) lockedNotice.style.display = "flex";
+                if (activeComposerArea) activeComposerArea.style.display = "none";
+            } else {
+                if (lockedNotice) lockedNotice.style.display = questionData.isLocked ? "flex" : "none";
+                if (activeComposerArea) activeComposerArea.style.display = "block";
+            }
+
+            // Admin / Author action buttons in Hero
+            const pinBtn = document.getElementById("pinQuestionBtn");
+            const lockBtn = document.getElementById("lockQuestionBtn");
+            const editBtn = document.getElementById("editQuestionBtn");
+
+            if (isAdmin) {
+                if (pinBtn) {
+                    pinBtn.style.display = "inline-flex";
+                    pinBtn.className = `btn-hero-admin ${questionData.isPinned ? "is-active-pin" : ""}`;
+                    pinBtn.title = questionData.isPinned ? "Admin: Unpin question" : "Admin: Pin question to top";
+                }
+                if (lockBtn) {
+                    lockBtn.style.display = "inline-flex";
+                    lockBtn.className = `btn-hero-admin ${questionData.isLocked ? "is-active-lock" : ""}`;
+                    lockBtn.title = questionData.isLocked ? "Admin: Unlock discussion" : "Admin: Lock discussion";
+                }
+            }
+
+            if (canManage) {
+                if (editBtn) editBtn.style.display = "inline-flex";
+                if (deleteQuestionBtn) deleteQuestionBtn.style.display = "inline-flex";
             }
 
             document.title = `${questionData.questionText.slice(0, 40)}... - CodeQuest`;
@@ -304,15 +360,18 @@ document.addEventListener("DOMContentLoaded", async function () {
         answers.forEach((answer) => {
             const card = document.createElement("div");
             card.classList.add("answer-card");
+            card.dataset.answerId = answer._id;
 
             const authorName = answer.userId?.username || "Anonymous";
             const authorAvatar = answer.userId?.avatarUrl || "default-avatar.png";
             const authorId = answer.userId?._id || "";
             const isQuestionAuthor = questionData && questionData.userId && (questionData.userId._id === authorId || questionData.userId === authorId);
             const isOwner = !!answer.isOwner;
+            const authorIsAdmin = !!answer.authorIsAdmin;
             const isAcceptedSolution = !!answer.isAcceptedSolution;
             const ansLikes = answer.likes || 0;
             const isAnsLiked = !!answer.isLiked;
+            const isAdmin = currentUser && currentUser.isAdmin;
 
             if (isAcceptedSolution) {
                 card.classList.add("is-solution");
@@ -320,8 +379,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                 card.classList.add("is-author");
             }
 
-            // Can current user accept solutions? (Only question owner)
-            const canAcceptSolution = questionData && questionData.isOwner;
+            // Can current user accept solutions? (Question owner or Admin)
+            const canAcceptSolution = (questionData && questionData.isOwner) || isAdmin;
+            const canManageAnswer = isOwner || isAdmin || answer.canManage;
 
             card.innerHTML = `
                 <div class="answer-top-row">
@@ -330,7 +390,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                             <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="answer-avatar" onerror="this.src='default-avatar.png'">
                         </a>
                         <div class="answer-meta">
-                            <a href="profile.html?userId=${authorId}" class="answer-author-name">${escapeHtml(authorName)}</a>
+                            <div class="d-flex align-items-center gap-1">
+                                <a href="profile.html?userId=${authorId}" class="answer-author-name">${escapeHtml(authorName)}</a>
+                                ${authorIsAdmin ? `<span class="badge-admin-tag" title="Verified Administrator"><i class="fa-solid fa-shield-halved"></i> Admin</span>` : ""}
+                            </div>
                             ${isQuestionAuthor ? `<span class="author-badge">Author</span>` : ""}
                             ${isAcceptedSolution ? `<span class="badge-accepted-solution"><i class="fa-solid fa-check"></i> Accepted Solution</span>` : ""}
                             <span class="answer-time">• ${formatTimeAgo(answer.createdAt)}</span>
@@ -346,7 +409,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 <i class="fa-solid fa-check me-1"></i> ${isAcceptedSolution ? "Accepted" : "Accept Solution"}
                             </button>
                         ` : ""}
-                        ${isOwner ? `<button class="btn-del-answer" title="Delete your answer"><i class="fa-regular fa-trash-can"></i></button>` : ""}
+                        ${canManageAnswer ? `<button class="btn-edit-answer" title="Edit answer"><i class="fa-regular fa-pen-to-square"></i></button>` : ""}
+                        ${canManageAnswer ? `<button class="btn-del-answer ${!isOwner ? 'btn-admin-del' : ''}" title="${!isOwner ? 'Admin: Delete answer' : 'Delete your answer'}"><i class="fa-regular fa-trash-can"></i></button>` : ""}
                     </div>
                 </div>
                 <div class="answer-content">${formatContent(answer.answerText)}</div>
@@ -364,7 +428,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
             }
 
-            // Accept solution button
+            // Accept solution button (Author or Admin)
             const acceptBtn = card.querySelector(".btn-accept-solution");
             if (acceptBtn) {
                 acceptBtn.addEventListener("click", async () => {
@@ -372,11 +436,20 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
             }
 
-            // Delete answer button
+            // Edit answer button (Author or Admin)
+            const editAnsBtn = card.querySelector(".btn-edit-answer");
+            if (editAnsBtn) {
+                editAnsBtn.addEventListener("click", () => {
+                    openEditAnswerModal(answer._id, answer.answerText);
+                });
+            }
+
+            // Delete answer button (Author or Admin)
             const delBtn = card.querySelector(".btn-del-answer");
             if (delBtn) {
                 delBtn.addEventListener("click", async () => {
-                    if (confirm("Are you sure you want to delete this answer?")) {
+                    const confirmMsg = !isOwner ? "Admin: Delete this answer?" : "Are you sure you want to delete your answer?";
+                    if (confirm(confirmMsg)) {
                         await deleteAnswer(answer._id, card);
                     }
                 });
@@ -582,7 +655,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // 11. Delete Question Hero Button
     if (deleteQuestionBtn) {
         deleteQuestionBtn.addEventListener("click", async () => {
-            if (confirm("Are you sure you want to delete this question? This cannot be undone.")) {
+            const isOwner = questionData && questionData.isOwner;
+            const confirmMsg = !isOwner ? "Admin Action: Permanently delete this question and all replies?" : "Are you sure you want to delete this question? This cannot be undone.";
+            if (confirm(confirmMsg)) {
                 try {
                     const res = await fetch(`/questions/${questionId}`, {
                         method: "DELETE",
@@ -595,6 +670,140 @@ document.addEventListener("DOMContentLoaded", async function () {
                     console.error("Error deleting question:", err);
                     alert("Failed to delete question.");
                 }
+            }
+        });
+    }
+
+    // Admin Pin Hero Button
+    const pinQuestionBtn = document.getElementById("pinQuestionBtn");
+    if (pinQuestionBtn) {
+        pinQuestionBtn.addEventListener("click", async () => {
+            try {
+                const res = await fetch(`/api/admin/questions/${questionId}/pin`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                if (!res.ok) throw new Error("Failed to toggle pin");
+                const data = await res.json();
+                showToast(data.message || "Pin updated");
+                await fetchQuestionDetails();
+            } catch (err) {
+                alert(err.message || "Error toggling pin");
+            }
+        });
+    }
+
+    // Admin Lock Hero Button
+    const lockQuestionBtn = document.getElementById("lockQuestionBtn");
+    if (lockQuestionBtn) {
+        lockQuestionBtn.addEventListener("click", async () => {
+            try {
+                const res = await fetch(`/api/admin/questions/${questionId}/lock`, {
+                    method: "POST",
+                    credentials: "include"
+                });
+                if (!res.ok) throw new Error("Failed to toggle lock");
+                const data = await res.json();
+                showToast(data.message || "Lock updated");
+                await fetchQuestionDetails();
+            } catch (err) {
+                alert(err.message || "Error toggling lock");
+            }
+        });
+    }
+
+    // Edit Question Modal
+    const editQuestionModalEl = document.getElementById("editQuestionModal");
+    let editQuestionModalInstance = null;
+    if (editQuestionModalEl && window.bootstrap) {
+        editQuestionModalInstance = new bootstrap.Modal(editQuestionModalEl);
+    }
+
+    const editQuestionBtn = document.getElementById("editQuestionBtn");
+    if (editQuestionBtn) {
+        editQuestionBtn.addEventListener("click", () => {
+            const idInput = document.getElementById("editQuestionId");
+            const textInput = document.getElementById("editQuestionText");
+            const tagsInput = document.getElementById("editQuestionTags");
+            if (idInput) idInput.value = questionId;
+            if (textInput && questionData) textInput.value = questionData.questionText || "";
+            if (tagsInput && questionData) tagsInput.value = (questionData.tags || []).join(", ");
+            if (editQuestionModalInstance) editQuestionModalInstance.show();
+        });
+    }
+
+    const saveEditQuestionBtn = document.getElementById("saveEditQuestionBtn");
+    if (saveEditQuestionBtn) {
+        saveEditQuestionBtn.addEventListener("click", async () => {
+            const textInput = document.getElementById("editQuestionText");
+            const tagsInput = document.getElementById("editQuestionTags");
+            if (!textInput || !textInput.value.trim()) {
+                alert("Question text is required.");
+                return;
+            }
+            try {
+                saveEditQuestionBtn.disabled = true;
+                const res = await fetch(`/questions/${questionId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                        questionText: textInput.value.trim(),
+                        tags: tagsInput ? tagsInput.value.trim() : ""
+                    })
+                });
+                if (!res.ok) throw new Error("Failed to update question");
+                if (editQuestionModalInstance) editQuestionModalInstance.hide();
+                showToast("Question updated successfully!");
+                await fetchQuestionDetails();
+            } catch (e) {
+                alert(e.message || "Error updating question");
+            } finally {
+                saveEditQuestionBtn.disabled = false;
+            }
+        });
+    }
+
+    // Edit Answer Modal
+    const editAnswerModalEl = document.getElementById("editAnswerModal");
+    let editAnswerModalInstance = null;
+    if (editAnswerModalEl && window.bootstrap) {
+        editAnswerModalInstance = new bootstrap.Modal(editAnswerModalEl);
+    }
+
+    function openEditAnswerModal(ansId, ansText) {
+        const idInput = document.getElementById("editAnswerId");
+        const textInput = document.getElementById("editAnswerText");
+        if (idInput) idInput.value = ansId;
+        if (textInput) textInput.value = ansText || "";
+        if (editAnswerModalInstance) editAnswerModalInstance.show();
+    }
+
+    const saveEditAnswerBtn = document.getElementById("saveEditAnswerBtn");
+    if (saveEditAnswerBtn) {
+        saveEditAnswerBtn.addEventListener("click", async () => {
+            const idInput = document.getElementById("editAnswerId");
+            const textInput = document.getElementById("editAnswerText");
+            if (!textInput || !textInput.value.trim()) {
+                alert("Answer text is required.");
+                return;
+            }
+            try {
+                saveEditAnswerBtn.disabled = true;
+                const res = await fetch(`/answers/${idInput.value}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ answerText: textInput.value.trim() })
+                });
+                if (!res.ok) throw new Error("Failed to update answer");
+                if (editAnswerModalInstance) editAnswerModalInstance.hide();
+                showToast("Answer updated successfully!");
+                await fetchAnswers();
+            } catch (e) {
+                alert(e.message || "Error updating answer");
+            } finally {
+                saveEditAnswerBtn.disabled = false;
             }
         });
     }
@@ -771,10 +980,13 @@ document.addEventListener("DOMContentLoaded", async function () {
                     if (questionSolvedBadge) {
                         questionSolvedBadge.style.display = data.payload.isSolved ? "inline-flex" : "none";
                     }
-                    fetchAnswers();
                 } else if (data.type === "question_deleted" && String(data.payload.questionId) === String(questionId)) {
-                    alert("This question was deleted by its author.");
+                    alert("This question was deleted.");
                     window.location.href = "dashboard.html";
+                } else if ((data.type === "question_pinned" || data.type === "question_locked" || data.type === "question_updated") && String(data.payload.questionId || data.payload.question?._id) === String(questionId)) {
+                    fetchQuestionDetails();
+                } else if (data.type === "answer_updated" && String(data.payload.questionId) === String(questionId)) {
+                    fetchAnswers();
                 }
             } catch (e) {
                 // Ignore ping or malformed event

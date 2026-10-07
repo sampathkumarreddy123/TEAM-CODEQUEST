@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const profileUsername = document.getElementById("profileUsername");
     const profileJoinDate = document.getElementById("profileJoinDate");
     const profileRoleBadge = document.getElementById("profileRoleBadge");
+    const profileAdminBadge = document.getElementById("profileAdminBadge");
     const statQuestionsCount = document.getElementById("statQuestionsCount");
     const statAnswersCount = document.getElementById("statAnswersCount");
     const tabQuestionsBtn = document.getElementById("tabQuestionsBtn");
@@ -120,6 +121,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         if (profileRoleBadge) {
             profileRoleBadge.textContent = isOwn ? "You (Owner)" : "Community Member";
+        }
+        if (profileAdminBadge) {
+            profileAdminBadge.style.display = profile.isAdmin ? "inline-flex" : "none";
         }
         if (profileJoinDate) {
             const joined = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "Recently";
