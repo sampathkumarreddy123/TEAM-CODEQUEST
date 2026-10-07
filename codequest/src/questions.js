@@ -34,6 +34,12 @@ document.addEventListener("DOMContentLoaded", function () {
         askModalInstance = new bootstrap.Modal(askModalElement);
     }
 
+    const authPromptModalEl = document.getElementById("authPromptModal");
+    let authPromptModalInstance = null;
+    if (authPromptModalEl && window.bootstrap) {
+        authPromptModalInstance = new bootstrap.Modal(authPromptModalEl);
+    }
+
     // Helper: format real-time accurate timestamp
     function formatTimeAgo(dateString) {
         if (!dateString) return "Recently";
@@ -59,15 +65,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Helper: format markdown code blocks & inline code
     function formatContent(text) {
+        if (!text) return "";
         let escaped = escapeHtml(text);
         
-        // Multi-line code blocks ```code```
-        escaped = escaped.replace(/```([\s\S]*?)```/g, function (match, code) {
-            return `<div class="code-snippet-block">${code.trim()}</div>`;
+        // Multi-line code blocks ```lang\ncode\n``` or ```code```
+        escaped = escaped.replace(/```(?:([a-zA-Z0-9_-]+)\n)?([\s\S]*?)```/g, function (match, lang, code) {
+            const displayLang = (lang && lang.trim()) ? lang.trim() : "code";
+            const cleanCode = (code !== undefined ? code : "").trim();
+            return `
+                <div class="code-snippet-wrapper">
+                    <div class="code-snippet-header">
+                        <span class="code-lang-tag"><i class="fa-solid fa-code me-1"></i>${escapeHtml(displayLang)}</span>
+                        <button class="btn-copy-code" type="button" title="Copy code snippet">
+                            <i class="fa-regular fa-copy me-1"></i><span>Copy</span>
+                        </button>
+                    </div>
+                    <pre class="code-snippet-block"><code>${cleanCode}</code></pre>
+                </div>
+            `;
         });
 
         // Inline code `code`
-        escaped = escaped.replace(/`([^`]+)`/g, '<span class="code-inline">$1</span>');
+        escaped = escaped.replace(/`([^`\n]+)`/g, '<code class="code-inline">$1</code>');
+
+        // Bold **text**
+        escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
         return escaped;
     }
 
@@ -81,6 +104,19 @@ document.addEventListener("DOMContentLoaded", function () {
             toast.show();
         } else {
             alert(msg);
+        }
+    }
+
+    // Auth Prompt Modal
+    function showAuthPrompt(message = "Please sign in with GitHub to perform this action.") {
+        const msgEl = document.getElementById("authPromptMsg");
+        if (msgEl) msgEl.textContent = message;
+        if (authPromptModalInstance) {
+            authPromptModalInstance.show();
+        } else {
+            if (confirm(`${message}\n\nGo to login page now?`)) {
+                window.location.href = "login.html";
+            }
         }
     }
 
@@ -198,6 +234,10 @@ document.addEventListener("DOMContentLoaded", function () {
             const emptyAsk = document.getElementById("emptyAskBtn");
             if (emptyAsk) {
                 emptyAsk.addEventListener("click", () => {
+                    if (!currentUser) {
+                        showAuthPrompt("Please sign in with GitHub to ask a question.");
+                        return;
+                    }
                     if (askModalInstance) askModalInstance.show();
                     else if (quickAskInput) quickAskInput.focus();
                 });
@@ -287,6 +327,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (likeBtn) {
                 likeBtn.addEventListener("click", async (e) => {
                     e.stopPropagation();
+                    if (!currentUser) {
+                        showAuthPrompt("Please sign in with GitHub to upvote questions.");
+                        return;
+                    }
                     await toggleLike(question._id, likeBtn);
                 });
             }
@@ -404,6 +448,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Quick Ask Handler
     if (quickAskBtn && quickAskInput) {
         quickAskBtn.addEventListener("click", async () => {
+            if (!currentUser) {
+                showAuthPrompt("Please sign in with GitHub to post a question.");
+                return;
+            }
             const text = quickAskInput.value;
             if (!text.trim()) {
                 quickAskInput.focus();
@@ -427,6 +475,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Modal Ask Handler
     if (openAskModalBtn) {
         openAskModalBtn.addEventListener("click", () => {
+            if (!currentUser) {
+                showAuthPrompt("Please sign in with GitHub to post a question.");
+                return;
+            }
             if (modalQuestionText) modalQuestionText.value = "";
             if (modalQuestionTags) modalQuestionTags.value = "";
             if (modalErrorMsg) modalErrorMsg.style.display = "none";
@@ -461,6 +513,37 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    // Formatting Toolbar Handlers
+    function insertMarkdown(textarea, prefix, suffix, defaultText) {
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const current = textarea.value;
+        const selected = current.substring(start, end) || defaultText;
+        const replacement = prefix + selected + suffix;
+        textarea.value = current.substring(0, start) + replacement + current.substring(end);
+        textarea.focus();
+        textarea.selectionStart = start + prefix.length;
+        textarea.selectionEnd = start + prefix.length + selected.length;
+    }
+
+    document.querySelectorAll(".btn-fmt").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.dataset.target;
+            const textarea = document.getElementById(targetId);
+            const fmt = btn.dataset.fmt;
+            if (!textarea) return;
+
+            if (fmt === "code-block") {
+                insertMarkdown(textarea, "\n```javascript\n", "\n```\n", "// Write your code here");
+            } else if (fmt === "code-inline") {
+                insertMarkdown(textarea, "`", "`", "code");
+            } else if (fmt === "bold") {
+                insertMarkdown(textarea, "**", "**", "bold text");
+            }
+        });
+    });
+
     // 7. Search Input Handler
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
@@ -492,6 +575,16 @@ document.addEventListener("DOMContentLoaded", function () {
     if (removeFilterBtn) {
         removeFilterBtn.addEventListener("click", resetAllFilters);
     }
+
+    // Keyboard shortcut: Press "/" to focus search
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA") {
+            if (searchInput) {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        }
+    });
 
     // 8. Tags Filter Handling
     function applyTagFilter(tag) {
@@ -559,6 +652,34 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // Code Snippet Copy Handler
+    document.addEventListener("click", (e) => {
+        const copyBtn = e.target.closest(".btn-copy-code");
+        if (copyBtn) {
+            e.stopPropagation();
+            const wrapper = copyBtn.closest(".code-snippet-wrapper");
+            const codeEl = wrapper ? wrapper.querySelector("code, .code-snippet-block") : null;
+            if (codeEl) {
+                const textToCopy = codeEl.innerText || codeEl.textContent || "";
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const span = copyBtn.querySelector("span");
+                    const icon = copyBtn.querySelector("i");
+                    if (span) span.textContent = "Copied!";
+                    if (icon) icon.className = "fa-solid fa-check text-success me-1";
+                    copyBtn.classList.add("copied");
+
+                    setTimeout(() => {
+                        if (span) span.textContent = "Copy";
+                        if (icon) icon.className = "fa-regular fa-copy me-1";
+                        copyBtn.classList.remove("copied");
+                    }, 2000);
+                }).catch(() => {
+                    showToast("Code copied to clipboard!");
+                });
+            }
+        }
+    });
 
     function escapeHtml(str) {
         if (!str) return "";
@@ -641,4 +762,3 @@ document.addEventListener("DOMContentLoaded", function () {
     checkAuthStatus();
     fetchQuestions();
 });
-

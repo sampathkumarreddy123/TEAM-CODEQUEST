@@ -89,6 +89,8 @@ const answerSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     questionId: { type: mongoose.Schema.Types.ObjectId, ref: "Question", required: true },
     answerText: { type: String, required: true },
+    likes: { type: Number, default: 0 },
+    likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -261,6 +263,10 @@ app.get("/profile", verifyToken, async (req, res) => {
         const questionsCount = await Question.countDocuments({ userId: req.user._id });
         const answersCount = await Answer.countDocuments({ userId: req.user._id });
         const userQuestions = await Question.find({ userId: req.user._id }).sort({ createdAt: -1 });
+        const userAnswers = await Answer.find({ userId: req.user._id })
+            .sort({ createdAt: -1 })
+            .populate("questionId", "questionText isSolved")
+            .lean();
 
         res.json({
             _id: req.user._id,
@@ -269,7 +275,8 @@ app.get("/profile", verifyToken, async (req, res) => {
             createdAt: req.user.createdAt,
             questionsCount,
             answersCount,
-            questions: userQuestions
+            questions: userQuestions,
+            answers: userAnswers
         });
     } catch (error) {
         console.error("❌ Error fetching own profile:", error);
@@ -288,6 +295,10 @@ app.get("/users/:userId", async (req, res) => {
         const questionsCount = await Question.countDocuments({ userId: user._id });
         const answersCount = await Answer.countDocuments({ userId: user._id });
         const userQuestions = await Question.find({ userId: user._id }).sort({ createdAt: -1 });
+        const userAnswers = await Answer.find({ userId: user._id })
+            .sort({ createdAt: -1 })
+            .populate("questionId", "questionText isSolved")
+            .lean();
 
         res.json({
             _id: user._id,
@@ -296,7 +307,8 @@ app.get("/users/:userId", async (req, res) => {
             createdAt: user.createdAt,
             questionsCount,
             answersCount,
-            questions: userQuestions
+            questions: userQuestions,
+            answers: userAnswers
         });
     } catch (error) {
         console.error("❌ Error fetching user profile:", error);
@@ -579,6 +591,8 @@ app.get("/answers/:questionId", async (req, res) => {
 
         const enrichedAnswers = answers.map(ans => ({
             ...ans,
+            likes: ans.likes || 0,
+            isLiked: currentUserId && ans.likedBy ? ans.likedBy.some(id => id.toString() === currentUserId) : false,
             isOwner: currentUserId && ans.userId ? ans.userId._id.toString() === currentUserId : false,
             isAcceptedSolution: question.isSolved && String(question.solvedAnswerId) === String(ans._id)
         }));
@@ -587,6 +601,36 @@ app.get("/answers/:questionId", async (req, res) => {
     } catch (error) {
         console.error("❌ Error fetching answers:", error);
         res.status(500).json({ error: "Failed to fetch answers" });
+    }
+});
+
+// Like / Upvote an answer
+app.post("/answers/:answerId/like", verifyToken, async (req, res) => {
+    try {
+        const answer = await Answer.findById(req.params.answerId);
+        if (!answer) {
+            return res.status(404).json({ error: "Answer not found" });
+        }
+
+        const userIdStr = req.user._id.toString();
+        if (!answer.likedBy) answer.likedBy = [];
+        const alreadyLikedIndex = answer.likedBy.findIndex(id => id.toString() === userIdStr);
+
+        let isLiked = false;
+        if (alreadyLikedIndex > -1) {
+            answer.likedBy.splice(alreadyLikedIndex, 1);
+            answer.likes = Math.max(0, (answer.likes || 1) - 1);
+        } else {
+            answer.likedBy.push(req.user._id);
+            answer.likes = (answer.likes || 0) + 1;
+            isLiked = true;
+        }
+
+        await answer.save();
+        res.json({ success: true, likes: answer.likes, isLiked });
+    } catch (error) {
+        console.error("❌ Error liking answer:", error);
+        res.status(500).json({ error: "Failed to toggle like on answer" });
     }
 });
 

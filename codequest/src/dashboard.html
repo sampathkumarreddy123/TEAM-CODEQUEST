@@ -112,7 +112,12 @@
                 </div>
                 <div class="modal-body">
                     <label class="form-label fw-bold">Question Details</label>
-                    <textarea id="modalQuestionText" class="form-control cq-textarea" rows="4" placeholder="Explain your problem or question... You can use `code` or ```blocks```"></textarea>
+                    <div class="formatting-toolbar mb-2">
+                        <button type="button" class="btn-fmt" data-target="modalQuestionText" data-fmt="code-block" title="Insert Code Block"><i class="fa-solid fa-code me-1"></i>Code Block</button>
+                        <button type="button" class="btn-fmt" data-target="modalQuestionText" data-fmt="code-inline" title="Insert Inline Code"><i class="fa-solid fa-terminal me-1"></i>Inline</button>
+                        <button type="button" class="btn-fmt" data-target="modalQuestionText" data-fmt="bold" title="Insert Bold"><i class="fa-solid fa-bold me-1"></i>Bold</button>
+                    </div>
+                    <textarea id="modalQuestionText" class="form-control cq-textarea" rows="4" placeholder="Explain your problem or question... You can use `code` or ```code blocks```"></textarea>
                     
                     <label class="form-label fw-bold mt-3">Tags / Categories (Optional)</label>
                     <input type="text" id="modalQuestionTags" class="form-control cq-input" placeholder="e.g. javascript, react, mongodb (comma separated)" />
@@ -125,6 +130,25 @@
                     <button type="button" id="modalSubmitBtn" class="btn btn-primary-cq">
                         <i class="fa-solid fa-plus"></i> Post Question
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Prompt Modal (Clean prompt for guest users) -->
+    <div class="modal fade" id="authPromptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content cq-modal text-center p-3">
+                <div class="modal-body">
+                    <div class="auth-prompt-icon mb-3">
+                        <i class="fa-brands fa-github fa-3x" style="color: #24292f;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">GitHub Login Required</h5>
+                    <p class="text-muted small mb-4" id="authPromptMsg">Please sign in with your GitHub account to continue.</p>
+                    <a href="login.html" class="btn btn-primary-cq w-100 mb-2">
+                        <i class="fa-brands fa-github me-2"></i> Continue with GitHub
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" data-bs-dismiss="modal">Cancel</button>
                 </div>
             </div>
         </div>

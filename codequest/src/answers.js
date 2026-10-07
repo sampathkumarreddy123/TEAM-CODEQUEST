@@ -29,6 +29,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     const answersCountBadge = document.getElementById("answersCountBadge");
     const replyInput = document.getElementById("reply");
     const submitAnswerBtn = document.getElementById("submitAnswerBtn");
+    const replyComposerCard = document.getElementById("replyComposerCard");
+    const unauthComposerCard = document.getElementById("unauthComposerCard");
+
+    // Auth Prompt Modal Element
+    const authPromptModalEl = document.getElementById("authPromptModal");
+    let authPromptModalInstance = null;
+    if (authPromptModalEl && window.bootstrap) {
+        authPromptModalInstance = new bootstrap.Modal(authPromptModalEl);
+    }
 
     if (!questionId) {
         if (questionTitle) questionTitle.textContent = "❌ Question Not Found";
@@ -36,7 +45,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             answersContainer.innerHTML = `
                 <div class="empty-answers">
                     <h4>Invalid or Missing Question</h4>
-                    <p>No question ID was provided. Please go back to the dashboard.</p>
+                    <p>No question ID was provided. Please return to the community feed.</p>
                     <a href="dashboard.html" class="btn btn-primary-cq mt-3">Back to Dashboard</a>
                 </div>
             `;
@@ -69,15 +78,32 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // Helper: format markdown code blocks & inline code
     function formatContent(text) {
+        if (!text) return "";
         let escaped = escapeHtml(text);
         
-        // Multi-line code blocks ```code```
-        escaped = escaped.replace(/```([\s\S]*?)```/g, function (match, code) {
-            return `<div class="code-snippet-block">${code.trim()}</div>`;
+        // Multi-line code blocks ```lang\ncode\n``` or ```code```
+        escaped = escaped.replace(/```(?:([a-zA-Z0-9_-]+)\n)?([\s\S]*?)```/g, function (match, lang, code) {
+            const displayLang = (lang && lang.trim()) ? lang.trim() : "code";
+            const cleanCode = (code !== undefined ? code : "").trim();
+            return `
+                <div class="code-snippet-wrapper">
+                    <div class="code-snippet-header">
+                        <span class="code-lang-tag"><i class="fa-solid fa-code me-1"></i>${escapeHtml(displayLang)}</span>
+                        <button class="btn-copy-code" type="button" title="Copy code snippet">
+                            <i class="fa-regular fa-copy me-1"></i><span>Copy</span>
+                        </button>
+                    </div>
+                    <pre class="code-snippet-block"><code>${cleanCode}</code></pre>
+                </div>
+            `;
         });
 
         // Inline code `code`
-        escaped = escaped.replace(/`([^`]+)`/g, '<span class="code-inline">$1</span>');
+        escaped = escaped.replace(/`([^`\n]+)`/g, '<code class="code-inline">$1</code>');
+
+        // Bold **text**
+        escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
         return escaped;
     }
 
@@ -91,6 +117,19 @@ document.addEventListener("DOMContentLoaded", async function () {
             toast.show();
         } else {
             alert(msg);
+        }
+    }
+
+    // Auth Prompt Modal
+    function showAuthPrompt(message = "Please sign in with GitHub to perform this action.") {
+        const msgEl = document.getElementById("authPromptMsg");
+        if (msgEl) msgEl.textContent = message;
+        if (authPromptModalInstance) {
+            authPromptModalInstance.show();
+        } else {
+            if (confirm(`${message}\n\nGo to login page now?`)) {
+                window.location.href = "login.html";
+            }
         }
     }
 
@@ -120,6 +159,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                 if (headerUsername) headerUsername.textContent = data.username;
                 const avatar = data.avatarUrl || "default-avatar.png";
                 if (headerUserAvatar) headerUserAvatar.src = avatar;
+
+                if (replyComposerCard) replyComposerCard.style.display = "block";
+                if (unauthComposerCard) unauthComposerCard.style.display = "none";
             } else {
                 currentUser = null;
                 localStorage.removeItem("cq_user");
@@ -130,6 +172,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                         <li><a class="dropdown-item" href="login.html"><i class="fa-brands fa-github me-2 text-primary"></i> Sign In with GitHub</a></li>
                     `;
                 }
+
+                if (replyComposerCard) replyComposerCard.style.display = "none";
+                if (unauthComposerCard) unauthComposerCard.style.display = "block";
             }
         } catch (error) {
             console.warn("⚠️ Auth status check note:", error.message);
@@ -175,9 +220,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             // Like state
-            if (likeQuestionBtn && questionData.isLiked) {
-                likeQuestionBtn.classList.add("liked");
-                likeQuestionBtn.querySelector("i").className = "fa-solid fa-heart";
+            if (likeQuestionBtn) {
+                if (questionData.isLiked) {
+                    likeQuestionBtn.classList.add("liked");
+                    likeQuestionBtn.querySelector("i").className = "fa-solid fa-heart";
+                } else {
+                    likeQuestionBtn.classList.remove("liked");
+                    likeQuestionBtn.querySelector("i").className = "fa-regular fa-heart";
+                }
             }
 
             // Delete button for author
@@ -261,6 +311,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             const isQuestionAuthor = questionData && questionData.userId && (questionData.userId._id === authorId || questionData.userId === authorId);
             const isOwner = !!answer.isOwner;
             const isAcceptedSolution = !!answer.isAcceptedSolution;
+            const ansLikes = answer.likes || 0;
+            const isAnsLiked = !!answer.isLiked;
 
             if (isAcceptedSolution) {
                 card.classList.add("is-solution");
@@ -285,6 +337,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                         </div>
                     </div>
                     <div class="answer-card-actions">
+                        <button class="btn-like-answer ${isAnsLiked ? "liked" : ""}" title="${isAnsLiked ? "Unlike answer" : "Upvote answer"}">
+                            <i class="fa-${isAnsLiked ? "solid" : "regular"} fa-heart"></i>
+                            <span class="ans-like-count">${ansLikes}</span>
+                        </button>
                         ${canAcceptSolution ? `
                             <button class="btn-accept-solution ${isAcceptedSolution ? "is-active" : ""}" title="${isAcceptedSolution ? "Unmark solution" : "Mark as accepted solution"}">
                                 <i class="fa-solid fa-check me-1"></i> ${isAcceptedSolution ? "Accepted" : "Accept Solution"}
@@ -295,6 +351,18 @@ document.addEventListener("DOMContentLoaded", async function () {
                 </div>
                 <div class="answer-content">${formatContent(answer.answerText)}</div>
             `;
+
+            // Like Answer Button
+            const likeAnsBtn = card.querySelector(".btn-like-answer");
+            if (likeAnsBtn) {
+                likeAnsBtn.addEventListener("click", async () => {
+                    if (!currentUser) {
+                        showAuthPrompt("Please sign in with GitHub to upvote answers.");
+                        return;
+                    }
+                    await toggleAnswerLike(answer._id, likeAnsBtn);
+                });
+            }
 
             // Accept solution button
             const acceptBtn = card.querySelector(".btn-accept-solution");
@@ -318,7 +386,33 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // 5. Toggle Accept Solution
+    // 5. Toggle Answer Like
+    async function toggleAnswerLike(ansId, buttonEl) {
+        try {
+            const res = await fetch(`/answers/${ansId}/like`, {
+                method: "POST",
+                credentials: "include"
+            });
+            if (!res.ok) throw new Error("Like failed");
+            const data = await res.json();
+
+            const icon = buttonEl.querySelector("i");
+            const countSpan = buttonEl.querySelector(".ans-like-count");
+
+            if (data.isLiked) {
+                buttonEl.classList.add("liked");
+                icon.className = "fa-solid fa-heart";
+            } else {
+                buttonEl.classList.remove("liked");
+                icon.className = "fa-regular fa-heart";
+            }
+            if (countSpan) countSpan.textContent = data.likes;
+        } catch (err) {
+            console.error("Error liking answer:", err);
+        }
+    }
+
+    // 6. Toggle Accept Solution
     async function toggleAcceptSolution(answerId) {
         try {
             const res = await fetch(`/questions/${questionId}/solve/${answerId}`, {
@@ -337,8 +431,13 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // 6. Submit Answer
+    // 7. Submit Answer
     async function submitAnswer() {
+        if (!currentUser) {
+            showAuthPrompt("Please sign in with GitHub to post an answer.");
+            return;
+        }
+
         const text = replyInput.value.trim();
         if (!text) {
             replyInput.focus();
@@ -386,7 +485,38 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // 7. Delete Answer
+    // Formatting Toolbar Handlers
+    function insertMarkdown(textarea, prefix, suffix, defaultText) {
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const current = textarea.value;
+        const selected = current.substring(start, end) || defaultText;
+        const replacement = prefix + selected + suffix;
+        textarea.value = current.substring(0, start) + replacement + current.substring(end);
+        textarea.focus();
+        textarea.selectionStart = start + prefix.length;
+        textarea.selectionEnd = start + prefix.length + selected.length;
+    }
+
+    document.querySelectorAll(".btn-fmt").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.dataset.target;
+            const textarea = document.getElementById(targetId);
+            const fmt = btn.dataset.fmt;
+            if (!textarea) return;
+
+            if (fmt === "code-block") {
+                insertMarkdown(textarea, "\n```javascript\n", "\n```\n", "// Write your code here");
+            } else if (fmt === "code-inline") {
+                insertMarkdown(textarea, "`", "`", "code");
+            } else if (fmt === "bold") {
+                insertMarkdown(textarea, "**", "**", "bold text");
+            }
+        });
+    });
+
+    // 8. Delete Answer
     async function deleteAnswer(answerId, cardEl) {
         try {
             const res = await fetch(`/answers/${answerId}`, {
@@ -407,9 +537,13 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // 8. Like Question Hero Button
+    // 9. Like Question Hero Button
     if (likeQuestionBtn) {
         likeQuestionBtn.addEventListener("click", async () => {
+            if (!currentUser) {
+                showAuthPrompt("Please sign in with GitHub to upvote questions.");
+                return;
+            }
             try {
                 const res = await fetch(`/questions/${questionId}/like`, {
                     method: "POST",
@@ -433,7 +567,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // 9. Share Question Link Button
+    // 10. Share Question Link Button
     if (shareQuestionBtn) {
         shareQuestionBtn.addEventListener("click", () => {
             const shareUrl = window.location.href;
@@ -445,7 +579,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // 10. Delete Question Hero Button
+    // 11. Delete Question Hero Button
     if (deleteQuestionBtn) {
         deleteQuestionBtn.addEventListener("click", async () => {
             if (confirm("Are you sure you want to delete this question? This cannot be undone.")) {
@@ -465,7 +599,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // 11. Logout Button in Dropdown
+    // 12. Logout Button in Dropdown
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {
             if (!confirm("Are you sure you want to sign out?")) return;
@@ -479,6 +613,34 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         });
     }
+
+    // Code Snippet Copy Handler
+    document.addEventListener("click", (e) => {
+        const copyBtn = e.target.closest(".btn-copy-code");
+        if (copyBtn) {
+            e.stopPropagation();
+            const wrapper = copyBtn.closest(".code-snippet-wrapper");
+            const codeEl = wrapper ? wrapper.querySelector("code, .code-snippet-block") : null;
+            if (codeEl) {
+                const textToCopy = codeEl.innerText || codeEl.textContent || "";
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    const span = copyBtn.querySelector("span");
+                    const icon = copyBtn.querySelector("i");
+                    if (span) span.textContent = "Copied!";
+                    if (icon) icon.className = "fa-solid fa-check text-success me-1";
+                    copyBtn.classList.add("copied");
+
+                    setTimeout(() => {
+                        if (span) span.textContent = "Copy";
+                        if (icon) icon.className = "fa-regular fa-copy me-1";
+                        copyBtn.classList.remove("copied");
+                    }, 2000);
+                }).catch(() => {
+                    showToast("Code copied to clipboard!");
+                });
+            }
+        }
+    });
 
     function escapeHtml(str) {
         if (!str) return "";
@@ -546,7 +708,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         // Delegate clicks on any avatar image in question details & answers
         document.addEventListener("click", (e) => {
-            const avatar = e.target.closest("img.author-avatar, img#headerUserAvatar, img.answer-author-avatar, img.user-avatar-sm");
+            const avatar = e.target.closest("img.author-avatar, img#headerUserAvatar, img.answer-avatar, img.user-avatar-sm");
             if (avatar && avatar.id !== "avatarLightboxImg") {
                 e.preventDefault();
                 e.stopPropagation();
@@ -564,4 +726,3 @@ document.addEventListener("DOMContentLoaded", async function () {
         await fetchAnswers();
     }
 });
-

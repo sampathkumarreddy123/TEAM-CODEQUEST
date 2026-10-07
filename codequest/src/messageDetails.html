@@ -107,10 +107,16 @@
             </div>
 
             <!-- Reply Box Composer -->
-            <div class="reply-composer-card">
+            <div class="reply-composer-card" id="replyComposerCard">
                 <h3 class="composer-title"><i class="fa-solid fa-reply me-2 text-primary"></i>Your Answer</h3>
                 <p class="composer-hint">Explain clearly. You can paste code using `inline` or ```multiline code blocks```.</p>
                 
+                <div class="formatting-toolbar mb-2">
+                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-block" title="Insert Code Block"><i class="fa-solid fa-code me-1"></i>Code Block</button>
+                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="code-inline" title="Insert Inline Code"><i class="fa-solid fa-terminal me-1"></i>Inline</button>
+                    <button type="button" class="btn-fmt" data-target="reply" data-fmt="bold" title="Insert Bold"><i class="fa-solid fa-bold me-1"></i>Bold</button>
+                </div>
+
                 <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here..."></textarea>
                 
                 <div class="composer-footer">
@@ -120,8 +126,39 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Unauthenticated Banner (shown when not logged in) -->
+            <div class="unauth-composer-card" id="unauthComposerCard" style="display: none;">
+                <div class="unauth-composer-content">
+                    <i class="fa-brands fa-github fa-2x mb-2 text-dark"></i>
+                    <h4>Want to answer or contribute?</h4>
+                    <p class="text-muted">Sign in with your GitHub account to answer this question and help the community.</p>
+                    <a href="login.html" class="btn btn-primary-cq mt-2">
+                        <i class="fa-brands fa-github me-2"></i> Sign In with GitHub
+                    </a>
+                </div>
+            </div>
         </div>
     </main>
+
+    <!-- Auth Prompt Modal -->
+    <div class="modal fade" id="authPromptModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content cq-modal text-center p-3">
+                <div class="modal-body">
+                    <div class="auth-prompt-icon mb-3">
+                        <i class="fa-brands fa-github fa-3x" style="color: #24292f;"></i>
+                    </div>
+                    <h5 class="fw-bold mb-2">GitHub Login Required</h5>
+                    <p class="text-muted small mb-4" id="authPromptMsg">Please sign in with your GitHub account to continue.</p>
+                    <a href="login.html" class="btn btn-primary-cq w-100 mb-2">
+                        <i class="fa-brands fa-github me-2"></i> Continue with GitHub
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification for Share / Copy -->
     <div class="toast-container position-fixed bottom-0 end-0 p-3">

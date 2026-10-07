@@ -9,11 +9,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     const profileRoleBadge = document.getElementById("profileRoleBadge");
     const statQuestionsCount = document.getElementById("statQuestionsCount");
     const statAnswersCount = document.getElementById("statAnswersCount");
-    const activityTitle = document.getElementById("activityTitle");
-    const activityCountBadge = document.getElementById("activityCountBadge");
-    const userQuestionsContainer = document.getElementById("userQuestionsContainer");
+    const tabQuestionsBtn = document.getElementById("tabQuestionsBtn");
+    const tabAnswersBtn = document.getElementById("tabAnswersBtn");
+    const tabQuestionsCount = document.getElementById("tabQuestionsCount");
+    const tabAnswersCount = document.getElementById("tabAnswersCount");
+    const userActivityContainer = document.getElementById("userActivityContainer") || document.getElementById("userQuestionsContainer");
     const backBtn = document.getElementById("backBtn");
     const logoutBtn = document.getElementById("logoutBtn");
+
+    let currentProfile = null;
+    let activeTab = "questions";
 
     // Back button
     if (backBtn) {
@@ -40,6 +45,25 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    // Tab buttons
+    if (tabQuestionsBtn) {
+        tabQuestionsBtn.addEventListener("click", () => {
+            activeTab = "questions";
+            tabQuestionsBtn.classList.add("active");
+            if (tabAnswersBtn) tabAnswersBtn.classList.remove("active");
+            renderCurrentActivity();
+        });
+    }
+
+    if (tabAnswersBtn) {
+        tabAnswersBtn.addEventListener("click", () => {
+            activeTab = "answers";
+            tabAnswersBtn.classList.add("active");
+            if (tabQuestionsBtn) tabQuestionsBtn.classList.remove("active");
+            renderCurrentActivity();
+        });
+    }
+
     if (userId) {
         // Fetch another user's profile
         await fetchUserProfile(userId);
@@ -62,6 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!response.ok) throw new Error("Failed to load profile");
 
             const profile = await response.json();
+            currentProfile = profile;
             displayProfile(profile, true);
         } catch (error) {
             console.error("Error fetching own profile:", error);
@@ -77,6 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!response.ok) throw new Error("Failed to load user profile");
 
             const profile = await response.json();
+            currentProfile = profile;
             displayProfile(profile, false);
         } catch (error) {
             console.error("Error fetching user profile:", error);
@@ -99,78 +125,126 @@ document.addEventListener("DOMContentLoaded", async () => {
             const joined = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : "Recently";
             profileJoinDate.textContent = `Member since ${joined}`;
         }
-        if (statQuestionsCount) {
-            statQuestionsCount.textContent = profile.questionsCount ?? (profile.questions ? profile.questions.length : 0);
-        }
-        if (statAnswersCount) {
-            statAnswersCount.textContent = profile.answersCount ?? 0;
-        }
+        
+        const qCount = profile.questionsCount ?? (profile.questions ? profile.questions.length : 0);
+        const aCount = profile.answersCount ?? (profile.answers ? profile.answers.length : 0);
+
+        if (statQuestionsCount) statQuestionsCount.textContent = qCount;
+        if (statAnswersCount) statAnswersCount.textContent = aCount;
+        if (tabQuestionsCount) tabQuestionsCount.textContent = qCount;
+        if (tabAnswersCount) tabAnswersCount.textContent = aCount;
 
         const usernameText = profile.username || "User";
-        if (activityTitle) {
-            activityTitle.textContent = isOwn ? "Your Questions" : `Questions by ${usernameText}`;
-        }
-
         document.title = `${usernameText}'s Profile - CodeQuest`;
 
-        // Render questions
-        renderUserQuestions(profile.questions || []);
+        // Render initial activity
+        renderCurrentActivity();
     }
 
-    // 4. Render User's Questions List
-    function renderUserQuestions(questions) {
-        if (!userQuestionsContainer) return;
+    // 4. Render Current Activity (Questions or Answers)
+    function renderCurrentActivity() {
+        if (!currentProfile || !userActivityContainer) return;
 
-        if (activityCountBadge) {
-            activityCountBadge.textContent = `${questions.length} question${questions.length === 1 ? "" : "s"}`;
-        }
+        if (activeTab === "questions") {
+            const questions = currentProfile.questions || [];
+            if (!questions.length) {
+                userActivityContainer.innerHTML = `
+                    <div class="empty-activity">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <h4>No questions posted yet</h4>
+                        <p>This user hasn't asked any questions in the community yet.</p>
+                    </div>
+                `;
+                return;
+            }
 
-        if (!questions.length) {
-            userQuestionsContainer.innerHTML = `
-                <div class="empty-activity">
-                    <i class="fa-regular fa-folder-open"></i>
-                    <h4>No questions posted yet</h4>
-                    <p>This user hasn't asked any questions in the community yet.</p>
-                </div>
-            `;
-            return;
-        }
+            userActivityContainer.innerHTML = "";
+            questions.forEach((q) => {
+                const dateObj = new Date(q.createdAt);
+                const dateStr = dateObj.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                }) + " at " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        userQuestionsContainer.innerHTML = "";
+                const item = document.createElement("a");
+                item.className = "activity-item";
+                item.href = `messageDetails.html?questionId=${q._id}`;
+                item.innerHTML = `
+                    <div class="activity-item-content">
+                        <div class="activity-item-text">${escapeHtml(q.questionText)}</div>
+                        <div class="activity-item-date"><i class="fa-regular fa-calendar-days me-1"></i> Asked on ${dateStr}</div>
+                    </div>
+                    <div class="activity-item-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                `;
 
-        questions.forEach((q) => {
-            const dateObj = new Date(q.createdAt);
-            const dateStr = dateObj.toLocaleDateString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            }) + " at " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                item.addEventListener("click", () => {
+                    sessionStorage.setItem("selectedQuestionId", q._id);
+                    sessionStorage.setItem("selectedQuestionText", q.questionText);
+                });
 
-            const item = document.createElement("a");
-            item.className = "activity-item";
-            item.href = `messageDetails.html?questionId=${q._id}`;
-            item.innerHTML = `
-                <div class="activity-item-content">
-                    <div class="activity-item-text">${escapeHtml(q.questionText)}</div>
-                    <div class="activity-item-date"><i class="fa-regular fa-calendar-days me-1"></i> Asked on ${dateStr}</div>
-                </div>
-                <div class="activity-item-arrow">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </div>
-            `;
-
-            item.addEventListener("click", () => {
-                sessionStorage.setItem("selectedQuestionId", q._id);
-                sessionStorage.setItem("selectedQuestionText", q.questionText);
+                userActivityContainer.appendChild(item);
             });
+        } else {
+            // Answers tab
+            const answers = currentProfile.answers || [];
+            if (!answers.length) {
+                userActivityContainer.innerHTML = `
+                    <div class="empty-activity">
+                        <i class="fa-regular fa-comments"></i>
+                        <h4>No answers provided yet</h4>
+                        <p>This user hasn't answered any questions in the community yet.</p>
+                    </div>
+                `;
+                return;
+            }
 
-            userQuestionsContainer.appendChild(item);
-        });
+            userActivityContainer.innerHTML = "";
+            answers.forEach((ans) => {
+                const dateObj = new Date(ans.createdAt);
+                const dateStr = dateObj.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                }) + " at " + dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const qId = ans.questionId?._id || ans.questionId;
+                const qText = ans.questionId?.questionText || "Question thread";
+                const ansLikes = ans.likes || 0;
+
+                const item = document.createElement("a");
+                item.className = "activity-item";
+                item.href = `messageDetails.html?questionId=${qId}`;
+                item.innerHTML = `
+                    <div class="activity-item-content">
+                        <div class="activity-item-badge">
+                            <i class="fa-solid fa-reply me-1 text-primary"></i> Answered: "${escapeHtml(qText.slice(0, 75))}${qText.length > 75 ? "..." : ""}"
+                        </div>
+                        <div class="activity-item-text">${escapeHtml(ans.answerText.slice(0, 160))}${ans.answerText.length > 160 ? "..." : ""}</div>
+                        <div class="activity-item-date">
+                            <i class="fa-regular fa-clock me-1"></i> ${dateStr}
+                            ${ansLikes > 0 ? `<span class="ms-2 text-danger"><i class="fa-solid fa-heart me-1"></i>${ansLikes} upvotes</span>` : ""}
+                        </div>
+                    </div>
+                    <div class="activity-item-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                `;
+
+                item.addEventListener("click", () => {
+                    sessionStorage.setItem("selectedQuestionId", qId);
+                });
+
+                userActivityContainer.appendChild(item);
+            });
+        }
     }
 
     function showErrorState(msg) {
-        if (userQuestionsContainer) {
-            userQuestionsContainer.innerHTML = `
+        if (userActivityContainer) {
+            userActivityContainer.innerHTML = `
                 <div class="empty-activity text-danger">
                     <i class="fa-solid fa-circle-exclamation"></i>
                     <h4>Error</h4>
@@ -260,4 +334,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Initialize lightbox
     setupAvatarLightbox();
 });
-
