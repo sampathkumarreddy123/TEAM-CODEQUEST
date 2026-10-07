@@ -96,6 +96,19 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // 1. Check Auth Status
     async function checkAuthStatus() {
+        const cachedUser = localStorage.getItem("cq_user");
+        if (cachedUser) {
+            try {
+                const parsed = JSON.parse(cachedUser);
+                currentUser = parsed;
+                if (headerUsername) headerUsername.textContent = parsed.username || "Developer";
+                const avatar = parsed.avatarUrl || "default-avatar.png";
+                if (headerUserAvatar) headerUserAvatar.src = avatar;
+            } catch (e) {
+                // Ignore parse error
+            }
+        }
+
         try {
             const response = await fetch("/auth/status", { credentials: "include" });
             if (!response.ok) throw new Error("Auth failed");
@@ -103,15 +116,24 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (data.loggedIn) {
                 currentUser = data;
+                localStorage.setItem("cq_user", JSON.stringify(data));
                 if (headerUsername) headerUsername.textContent = data.username;
                 const avatar = data.avatarUrl || "default-avatar.png";
                 if (headerUserAvatar) headerUserAvatar.src = avatar;
             } else {
-                window.location.href = "/login.html";
+                currentUser = null;
+                localStorage.removeItem("cq_user");
+                if (headerUsername) headerUsername.textContent = "Sign In";
+                const userMenu = document.querySelector(".cq-dropdown");
+                if (userMenu) {
+                    userMenu.innerHTML = `
+                        <li><a class="dropdown-item" href="login.html"><i class="fa-brands fa-github me-2 text-primary"></i> Sign In with GitHub</a></li>
+                    `;
+                }
             }
         } catch (error) {
-            console.error("Auth check error:", error);
-            window.location.href = "/login.html";
+            console.warn("⚠️ Auth status check note:", error.message);
+            // Stand in same page!
         }
     }
 

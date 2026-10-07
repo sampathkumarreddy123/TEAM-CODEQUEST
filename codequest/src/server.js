@@ -194,9 +194,16 @@ app.get("/auth/github/callback", async (req, res) => {
         }
 
         const isProduction = process.env.NODE_ENV === "production";
-        res.cookie("token", accessToken, { httpOnly: true, sameSite: "lax", secure: isProduction });
-        res.cookie("username", user.username, { sameSite: "lax", secure: isProduction });
-        res.cookie("avatarUrl", user.avatarUrl, { sameSite: "lax", secure: isProduction });
+        const cookieOpts = {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: isProduction,
+            path: "/",
+            maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days persistence
+        };
+        res.cookie("token", accessToken, cookieOpts);
+        res.cookie("username", user.username, { ...cookieOpts, httpOnly: false });
+        res.cookie("avatarUrl", user.avatarUrl, { ...cookieOpts, httpOnly: false });
 
         res.redirect("/dashboard.html");
     } catch (error) {
