@@ -683,19 +683,167 @@ body {
   color: #111827;
 }
 
-/* ---------------- Responsive ---------------- */
+/* ---------------- Tablet & Mobile Responsive ---------------- */
+@media (max-width: 992px) {
+  .app-header {
+    padding: 12px 20px;
+  }
+  .main-layout {
+    padding: 20px 16px;
+  }
+  .feed-container {
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 768px) {
   .app-header {
     flex-wrap: wrap;
-    padding: 12px 16px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .header-left {
+    gap: 8px;
+  }
+  .header-logo {
+    width: 32px;
+    height: 32px;
+  }
+  .brand-name {
+    font-size: 1.15rem;
   }
   .header-center {
     order: 3;
     max-width: 100%;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 6px;
   }
   .user-name-text {
     display: none;
   }
+  .btn-ask-header {
+    padding: 7px 12px;
+    font-size: 0.85rem;
+  }
+  .main-layout {
+    padding: 14px 10px;
+  }
+  .feed-tabs-header {
+    margin-bottom: 12px;
+  }
+  .feed-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    max-width: 100%;
+    padding-bottom: 4px;
+  }
+  .feed-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    padding: 7px 14px;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .quick-ask-card {
+    padding: 12px 14px;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .question-card {
+    padding: 16px 14px;
+    margin-bottom: 14px;
+  }
+  .question-text-title {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  .card-actions-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .card-action-left {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
 }
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 8px 10px;
+  }
+  .brand-name {
+    font-size: 1.05rem;
+  }
+  .header-right {
+    gap: 6px;
+  }
+  .btn-ask-header span {
+    display: none;
+  }
+  .btn-ask-header {
+    padding: 8px 11px;
+    border-radius: 50%;
+  }
+  .btn-ask-header i {
+    margin: 0 !important;
+    font-size: 0.95rem;
+  }
+  .user-profile-btn {
+    padding: 2px;
+  }
+  .search-container {
+    padding: 7px 12px;
+  }
+  .search-input {
+    font-size: 0.88rem;
+  }
+  .card-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .post-time-badge {
+    align-self: flex-start;
+    font-size: 0.72rem;
+  }
+  .author-avatar {
+    width: 36px;
+    height: 36px;
+  }
+  .author-name {
+    font-size: 0.88rem;
+  }
+  .card-actions-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .card-action-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .solved-pill {
+    align-self: flex-start;
+  }
+  .modal-dialog {
+    margin: 8px auto;
+    width: calc(100% - 16px);
+  }
+  .cq-modal {
+    padding: 4px;
+  }
+  .modal-header, .modal-footer {
+    padding: 12px 14px;
+  }
+  .modal-body {
+    padding: 14px;
+  }
+}
+
