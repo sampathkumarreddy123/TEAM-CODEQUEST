@@ -658,9 +658,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         const lightbox = document.getElementById("avatarLightbox");
         const img = document.getElementById("avatarLightboxImg");
         const caption = document.getElementById("avatarLightboxCaption");
+        const hint = document.getElementById("avatarLightboxHint");
         if (!lightbox || !img) return;
 
         img.src = imgSrc;
+        img.classList.remove("is-zoomed");
+        if (hint) {
+            hint.innerHTML = '<i class="fa-solid fa-magnifying-glass-plus me-1"></i>Click picture to zoom in';
+        }
         if (caption) {
             if (username && username.trim() !== "" && username !== "Avatar") {
                 caption.textContent = username.startsWith("@") ? username : `@${username}`;
@@ -670,14 +675,16 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         }
         lightbox.style.display = "flex";
-        document.body.style.overflow = "hidden";
+        document.body.classList.add("lightbox-open");
     }
 
     function closeAvatarLightbox() {
         const lightbox = document.getElementById("avatarLightbox");
+        const img = document.getElementById("avatarLightboxImg");
+        if (img) img.classList.remove("is-zoomed");
         if (lightbox) {
             lightbox.style.display = "none";
-            document.body.style.overflow = "";
+            document.body.classList.remove("lightbox-open");
         }
     }
 
@@ -688,8 +695,23 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (lightbox) {
             lightbox.addEventListener("click", (e) => {
                 const img = document.getElementById("avatarLightboxImg");
+                const hint = document.getElementById("avatarLightboxHint");
                 const caption = document.getElementById("avatarLightboxCaption");
-                if (e.target !== img && e.target !== caption) {
+
+                // Toggle zoom only on the picture itself
+                if (e.target === img) {
+                    img.classList.toggle("is-zoomed");
+                    if (hint) {
+                        const isZoomed = img.classList.contains("is-zoomed");
+                        hint.innerHTML = isZoomed
+                            ? '<i class="fa-solid fa-magnifying-glass-minus me-1"></i>Click picture to zoom out'
+                            : '<i class="fa-solid fa-magnifying-glass-plus me-1"></i>Click picture to zoom in';
+                    }
+                    return;
+                }
+
+                // If clicked outside caption or hint, close lightbox
+                if (e.target !== caption && e.target !== hint) {
                     closeAvatarLightbox();
                 }
             });

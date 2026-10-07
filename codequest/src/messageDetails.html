@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Question Details - CodeQuest</title>
     <link rel="icon" type="image/png" href="assets/logo.png">
     <link rel="shortcut icon" type="image/png" href="assets/logo.png">
@@ -171,12 +171,17 @@
     </div>
 
     <!-- Profile Picture Lightbox Modal -->
-    <div id="avatarLightbox" class="avatar-lightbox" style="display: none;">
+    <div id="avatarLightbox" class="avatar-lightbox" style="display: none;" role="dialog" aria-modal="true">
         <div class="avatar-lightbox-backdrop"></div>
+        <button id="avatarLightboxClose" class="avatar-lightbox-close" title="Close (or press Esc)" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
         <div class="avatar-lightbox-content">
-            <button id="avatarLightboxClose" class="avatar-lightbox-close" title="Close (or click anywhere)">&times;</button>
-            <img id="avatarLightboxImg" src="" alt="Profile Picture" class="avatar-lightbox-img">
+            <div class="avatar-lightbox-img-wrap">
+                <img id="avatarLightboxImg" src="" alt="Profile Picture" class="avatar-lightbox-img" title="Click picture to zoom in/out">
+            </div>
             <div id="avatarLightboxCaption" class="avatar-lightbox-caption"></div>
+            <div id="avatarLightboxHint" class="avatar-lightbox-hint"><i class="fa-solid fa-magnifying-glass-plus me-1"></i>Click picture to zoom in</div>
         </div>
     </div>
 
