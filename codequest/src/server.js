@@ -205,45 +205,7 @@ app.get("/auth/github/callback", async (req, res) => {
     }
 });
 
-// Quick Demo / Guest Login
-app.post("/auth/demo", async (req, res) => {
-    try {
-        const rawName = (req.body.username || "").trim();
-        const username = rawName ? rawName.slice(0, 25) : "DevGuest_" + Math.floor(1000 + Math.random() * 9000);
-        const demoToken = "demo_token_" + Buffer.from(username + Date.now()).toString("hex");
 
-        const avatarColors = ["4F46E5", "06B6D4", "10B981", "F59E0B", "EF4444", "8B5CF6", "EC4899"];
-        const color = avatarColors[Math.floor(Math.random() * avatarColors.length)];
-        const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}&backgroundColor=${color}`;
-
-        let user = await User.findOne({ username });
-        if (!user) {
-            user = new User({
-                username,
-                avatarUrl,
-                token: demoToken,
-                isDemo: true
-            });
-            await user.save();
-        } else {
-            user.token = demoToken;
-            await user.save();
-        }
-
-        res.cookie("token", demoToken, { httpOnly: true, sameSite: "Lax" });
-        res.cookie("username", user.username, { sameSite: "Lax" });
-        res.cookie("avatarUrl", user.avatarUrl, { sameSite: "Lax" });
-
-        res.json({
-            success: true,
-            redirectUrl: "/dashboard.html",
-            user: { _id: user._id, username: user.username, avatarUrl: user.avatarUrl }
-        });
-    } catch (error) {
-        console.error("❌ Demo login error:", error);
-        res.status(500).json({ error: "Failed to create demo session" });
-    }
-});
 
 // Check authentication status
 app.get("/auth/status", async (req, res) => {

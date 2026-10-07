@@ -133,97 +133,7 @@
             font-size: 1.25rem;
         }
 
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin: 12px 0;
-        }
 
-        .divider::before, .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid var(--border-light);
-        }
-
-        .divider:not(:empty)::before {
-            margin-right: 12px;
-        }
-
-        .divider:not(:empty)::after {
-            margin-left: 12px;
-        }
-
-        .demo-card {
-            background-color: whitesmoke;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            text-align: left;
-        }
-
-        .demo-card label {
-            display: block;
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        .input-group input {
-            flex: 1;
-            background-color: white;
-            border: 1px solid var(--border-medium);
-            border-radius: var(--radius-md);
-            padding: 10px 14px;
-            color: #171717;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .input-group input:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px #dbeafe;
-        }
-
-        .btn-demo {
-            background-color: #2563eb;
-            color: white;
-            white-space: nowrap;
-            padding: 10px 18px;
-            width: auto;
-        }
-
-        .btn-demo:hover {
-            background-color: #1d4ed8;
-        }
-
-        .quick-guest-btn {
-            background-color: white;
-            border: 1px dashed var(--border-medium);
-            color: var(--text-secondary);
-            margin-top: 10px;
-            font-size: 0.88rem;
-            padding: 11px;
-        }
-
-        .quick-guest-btn:hover {
-            background-color: whitesmoke;
-            border-color: #737373;
-            color: #171717;
-        }
 
         .features-pill-row {
             display: flex;
@@ -279,21 +189,6 @@
                 <i class="fa-brands fa-github"></i>
                 <span>Continue with GitHub</span>
             </button>
-
-            <div class="divider">or quick demo login</div>
-
-            <div class="demo-card">
-                <label for="demoUsernameInput">Enter Your Developer Name</label>
-                <div class="input-group">
-                    <input type="text" id="demoUsernameInput" placeholder="e.g. Alex Morgan" maxlength="25" />
-                    <button class="btn btn-demo" id="demoSubmitBtn" onclick="demoLogin()">
-                        <span>Sign In</span>
-                    </button>
-                </div>
-                <button class="btn quick-guest-btn" onclick="instantGuestLogin()">
-                    <i class="fa-solid fa-bolt"></i> Instant 1-Click Login (AlexMorgan)
-                </button>
-            </div>
         </div>
 
         <div class="features-pill-row">
@@ -326,9 +221,9 @@
             if (msg) {
                 errorMessage.textContent = decodeURIComponent(msg);
             } else if (errType === 'github_auth_failed' || errType === 'github_token_failed') {
-                errorMessage.textContent = 'GitHub authorization could not be completed. You can try logging in with GitHub again or use the Quick Demo login below!';
+                errorMessage.textContent = 'GitHub authorization could not be completed. Please try again.';
             } else if (errType === 'missing_code') {
-                errorMessage.textContent = 'GitHub login was cancelled or missing code. Please try again.';
+                errorMessage.textContent = 'GitHub login was cancelled. Please try again.';
             }
             errorAlert.style.display = 'block';
         }
@@ -339,50 +234,6 @@
             btn.style.pointerEvents = 'none';
             window.location.href = '/auth/github';
         }
-
-        async function demoLogin() {
-            const input = document.getElementById('demoUsernameInput');
-            const username = input.value.trim();
-            await performDemoLogin(username || 'DevExplorer');
-        }
-
-        async function instantGuestLogin() {
-            await performDemoLogin('AlexMorgan');
-        }
-
-        async function performDemoLogin(username) {
-            const submitBtn = document.getElementById('demoSubmitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-            try {
-                const res = await fetch('/auth/demo', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username })
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                    window.location.href = data.redirectUrl || '/dashboard.html';
-                } else {
-                    alert(data.error || 'Failed to sign in');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Sign In';
-                }
-            } catch (err) {
-                console.error('Login error:', err);
-                alert('Connection error. Please ensure the server is running.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Sign In';
-            }
-        }
-
-        document.getElementById('demoUsernameInput').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                demoLogin();
-            }
-        });
     </script>
 </body>
 </html>
