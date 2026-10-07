@@ -190,4 +190,74 @@ document.addEventListener("DOMContentLoaded", async () => {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
+
+    // ----------------- Profile Picture Lightbox -----------------
+    function openAvatarLightbox(imgSrc, username) {
+        if (!imgSrc) return;
+        const lightbox = document.getElementById("avatarLightbox");
+        const img = document.getElementById("avatarLightboxImg");
+        const caption = document.getElementById("avatarLightboxCaption");
+        if (!lightbox || !img) return;
+
+        img.src = imgSrc;
+        if (caption) {
+            if (username && username.trim() !== "" && username !== "Avatar") {
+                caption.textContent = username.startsWith("@") ? username : `@${username}`;
+                caption.style.display = "block";
+            } else {
+                caption.style.display = "none";
+            }
+        }
+        lightbox.style.display = "flex";
+        document.body.style.overflow = "hidden";
+    }
+
+    function closeAvatarLightbox() {
+        const lightbox = document.getElementById("avatarLightbox");
+        if (lightbox) {
+            lightbox.style.display = "none";
+            document.body.style.overflow = "";
+        }
+    }
+
+    function setupAvatarLightbox() {
+        const lightbox = document.getElementById("avatarLightbox");
+        const closeBtn = document.getElementById("avatarLightboxClose");
+
+        if (lightbox) {
+            lightbox.addEventListener("click", (e) => {
+                const img = document.getElementById("avatarLightboxImg");
+                const caption = document.getElementById("avatarLightboxCaption");
+                if (e.target !== img && e.target !== caption) {
+                    closeAvatarLightbox();
+                }
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                closeAvatarLightbox();
+            });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") closeAvatarLightbox();
+        });
+
+        // Delegate clicks on any avatar image in profile page
+        document.addEventListener("click", (e) => {
+            const avatar = e.target.closest("img.profile-avatar, img#profileAvatar, img#headerUserAvatar, img.user-avatar-sm");
+            if (avatar && avatar.id !== "avatarLightboxImg") {
+                e.preventDefault();
+                e.stopPropagation();
+                const username = avatar.dataset.username || avatar.alt || "";
+                openAvatarLightbox(avatar.src, username);
+            }
+        });
+    }
+
+    // Initialize lightbox
+    setupAvatarLightbox();
 });
+

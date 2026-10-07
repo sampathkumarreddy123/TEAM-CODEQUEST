@@ -787,3 +787,106 @@ body {
   }
 }
 
+/* ---------------- Profile Picture Lightbox ---------------- */
+.avatar-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.avatar-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: #000000;
+  opacity: 0.8;
+  backdrop-filter: blur(5px);
+  cursor: pointer;
+  animation: avatarFadeIn 0.2s ease;
+}
+
+.avatar-lightbox-content {
+  position: relative;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 90vw;
+  max-height: 90vh;
+  animation: avatarZoomIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.avatar-lightbox-close {
+  position: absolute;
+  top: -48px;
+  right: -12px;
+  background-color: white;
+  color: #111827;
+  border: 1px solid #e5e5e5;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px #00000044;
+  transition: all 0.15s ease;
+}
+
+.avatar-lightbox-close:hover {
+  background-color: whitesmoke;
+  transform: scale(1.1);
+  color: #000000;
+}
+
+.avatar-lightbox-img {
+  width: 280px;
+  height: 280px;
+  max-width: 80vw;
+  max-height: 80vw;
+  object-fit: cover;
+  border-radius: 50%;
+  background-color: white;
+  border: 4px solid white;
+  box-shadow: 0 20px 40px #00000066, 0 4px 12px #00000033;
+}
+
+.avatar-lightbox-caption {
+  margin-top: 14px;
+  background-color: white;
+  color: #111827;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 4px 12px #00000033;
+}
+
+@keyframes avatarFadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.8; }
+}
+
+@keyframes avatarZoomIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.author-avatar, .profile-avatar, .user-avatar-sm, .answer-author-avatar {
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.author-avatar:hover, .profile-avatar:hover, .user-avatar-sm:hover, .answer-author-avatar:hover {
+  transform: scale(1.08);
+  filter: brightness(1.03);
+}
+
+
