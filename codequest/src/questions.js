@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const removeFilterBtn = document.getElementById("removeFilterBtn");
     const messagesContainer = document.getElementById("messagesContainer");
     const questionCountBadge = document.getElementById("questionCountBadge");
-    const tagsPillsContainer = document.getElementById("tagsPillsContainer");
     const tabButtons = document.querySelectorAll(".tab-btn");
 
     const quickAskInput = document.getElementById("quickAskInput");
@@ -478,14 +477,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         updateFilterPill();
         fetchQuestions();
-    }
-
-    if (tagsPillsContainer) {
-        tagsPillsContainer.querySelectorAll(".tag-pill").forEach(pill => {
-            pill.addEventListener("click", () => {
-                applyTagFilter(pill.dataset.tag);
-            });
-        });
     }
 
     // 9. Sort Tabs Handling

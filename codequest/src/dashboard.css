@@ -236,60 +236,6 @@ body {
   max-width: 840px;
 }
 
-/* ---------------- Tags / Topics Filter Bar ---------------- */
-.tags-filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  background-color: white;
-  padding: 10px 16px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-}
-
-.tags-label {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.tags-scroll {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tags-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.tag-pill {
-  background-color: whitesmoke;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-
-.tag-pill:hover {
-  background-color: #eeeeee;
-  color: #111827;
-}
-
-.tag-pill.active {
-  background-color: #1e293b;
-  border-color: #1e293b;
-  color: white;
-}
 
 /* ---------------- Feed Tabs Header ---------------- */
 .feed-tabs-header {
