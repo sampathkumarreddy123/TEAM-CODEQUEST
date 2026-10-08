@@ -31,9 +31,11 @@
     let myPeerId = null;
     let remotePeerId = null;
 
-    // WebRTC
+    // WebRTC State
     let peerConnection = null;
     let localStream = null;
+    let remoteMediaStream = null;
+    let iceCandidatesQueue = [];
     let screenStream = null;
     let isMicMuted = false;
     let isVideoOff = false;
@@ -42,8 +44,14 @@
     const rtcConfig = {
         iceServers: [
             { urls: "stun:stun.l.google.com:19302" },
-            { urls: "stun:stun1.l.google.com:19302" }
-        ]
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "stun:stun2.l.google.com:19302" },
+            { urls: "stun:stun3.l.google.com:19302" },
+            { urls: "stun:stun4.l.google.com:19302" },
+            { urls: "stun:stun.cloudflare.com:3478" },
+            { urls: "stun:openrelay.metered.ca:80" }
+        ],
+        iceCandidatePoolSize: 10
     };
 
     // DOM Elements
@@ -230,8 +238,8 @@
                 break;
 
             case "webrtc-signal":
-                if (peerConnection && data.signal) {
-                    handleWebRtcSignal(data.signal);
+                if (data.signal) {
+                    handleWebRtcSignal(data.signal, data.fromPeerId);
                 }
                 break;
 
@@ -328,30 +336,86 @@
         }
     }
 
+    function attachTracksToPeerConnection() {
+        if (!peerConnection) return;
+        if (localStream && localStream.getTracks().length > 0) {
+            const senders = peerConnection.getSenders();
+            localStream.getTracks().forEach((track) => {
+                const existing = senders.find(s => s.track && s.track.kind === track.kind);
+                if (existing) {
+                    existing.replaceTrack(track);
+                } else {
+                    peerConnection.addTrack(track, localStream);
+                }
+            });
+        } else {
+            // Add transceivers to receive both audio and video
+            const transceivers = peerConnection.getTransceivers ? peerConnection.getTransceivers() : [];
+            const hasAudio = transceivers.some(t => t.receiver && t.receiver.track && t.receiver.track.kind === "audio");
+            const hasVideo = transceivers.some(t => t.receiver && t.receiver.track && t.receiver.track.kind === "video");
+            if (!hasAudio && peerConnection.addTransceiver) peerConnection.addTransceiver("audio", { direction: "sendrecv" });
+            if (!hasVideo && peerConnection.addTransceiver) peerConnection.addTransceiver("video", { direction: "sendrecv" });
+        }
+    }
+
+    async function processQueuedIceCandidates() {
+        if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) return;
+        while (iceCandidatesQueue.length > 0) {
+            const candidate = iceCandidatesQueue.shift();
+            try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (err) {
+                console.warn("Queued ICE candidate note:", err);
+            }
+        }
+    }
+
     function initiatePeerConnection(targetId, isCaller) {
+        if (targetId) remotePeerId = targetId;
+
         if (peerConnection) {
-            peerConnection.close();
+            try { peerConnection.close(); } catch(e) {}
             peerConnection = null;
         }
 
+        remoteMediaStream = new MediaStream();
+        remoteVideo.srcObject = remoteMediaStream;
+
         peerConnection = new RTCPeerConnection(rtcConfig);
 
-        // Add local tracks to peer connection
-        if (localStream) {
-            localStream.getTracks().forEach((track) => {
-                peerConnection.addTrack(track, localStream);
-            });
-        }
+        // Attach local tracks or transceivers
+        attachTracksToPeerConnection();
 
-        // On remote track received
+        // On remote track received (handles both event.streams and unified plan track additions)
         peerConnection.ontrack = (event) => {
+            console.log("📹 [WebRTC] Remote track received:", event.track.kind);
+
             if (event.streams && event.streams[0]) {
                 remoteVideo.srcObject = event.streams[0];
-                remoteVideoPlaceholder.style.display = "none";
-                webrtcStatusBadge.textContent = "🟢 Live Call";
-                webrtcStatusBadge.style.background = "rgba(34, 197, 94, 0.2)";
-                webrtcStatusBadge.style.color = "#4ade80";
+            } else {
+                if (!remoteMediaStream) remoteMediaStream = new MediaStream();
+                remoteMediaStream.addTrack(event.track);
+                remoteVideo.srcObject = remoteMediaStream;
             }
+
+            remoteVideoPlaceholder.style.display = "none";
+            remoteVideo.style.display = "block";
+
+            // Autoplay play promise handling with muted-fallback if policy prevents unmuted
+            const playPromise = remoteVideo.play();
+            if (playPromise !== undefined) {
+                playPromise.catch((err) => {
+                    console.warn("Remote video autoplay blocked, falling back to muted play:", err);
+                    remoteVideo.muted = true;
+                    remoteVideo.play().then(() => {
+                        setTimeout(() => { remoteVideo.muted = false; }, 800);
+                    }).catch(e => console.warn(e));
+                });
+            }
+
+            webrtcStatusBadge.textContent = "🟢 Live Call";
+            webrtcStatusBadge.style.background = "rgba(34, 197, 94, 0.2)";
+            webrtcStatusBadge.style.color = "#4ade80";
         };
 
         // ICE Candidate generation
@@ -359,7 +423,7 @@
             if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
                     type: "webrtc-signal",
-                    targetPeerId: targetId,
+                    targetPeerId: targetId || remotePeerId,
                     signal: { candidate: event.candidate }
                 }));
             }
@@ -367,8 +431,11 @@
 
         peerConnection.onconnectionstatechange = () => {
             const state = peerConnection.connectionState;
+            console.log("🔗 WebRTC connection state:", state);
             if (state === "connected") {
                 webrtcStatusBadge.textContent = "🟢 P2P Connected";
+                webrtcStatusBadge.style.background = "rgba(34, 197, 94, 0.2)";
+                webrtcStatusBadge.style.color = "#4ade80";
             } else if (state === "disconnected" || state === "failed") {
                 webrtcStatusBadge.textContent = "🟡 Reconnecting";
             }
@@ -381,7 +448,7 @@
                 .then(() => {
                     ws.send(JSON.stringify({
                         type: "webrtc-signal",
-                        targetPeerId: targetId,
+                        targetPeerId: targetId || remotePeerId,
                         signal: { sdp: peerConnection.localDescription }
                     }));
                 })
@@ -389,14 +456,28 @@
         }
     }
 
-    async function handleWebRtcSignal(signal) {
-        if (!peerConnection) return;
+    async function handleWebRtcSignal(signal, fromPeerId) {
+        if (fromPeerId) {
+            remotePeerId = fromPeerId;
+        }
 
         if (signal.sdp) {
+            if (!peerConnection) {
+                initiatePeerConnection(remotePeerId, false);
+            }
+
             await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+            await processQueuedIceCandidates();
+
             if (signal.sdp.type === "offer") {
-                const answer = await peerConnection.createAnswer();
+                attachTracksToPeerConnection();
+
+                const answer = await peerConnection.createAnswer({
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: true
+                });
                 await peerConnection.setLocalDescription(answer);
+
                 ws.send(JSON.stringify({
                     type: "webrtc-signal",
                     targetPeerId: remotePeerId,
@@ -404,10 +485,14 @@
                 }));
             }
         } else if (signal.candidate) {
-            try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
-            } catch (e) {
-                console.warn("ICE candidate error:", e);
+            if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) {
+                iceCandidatesQueue.push(signal.candidate);
+            } else {
+                try {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                } catch (e) {
+                    console.warn("ICE candidate add error:", e);
+                }
             }
         }
     }

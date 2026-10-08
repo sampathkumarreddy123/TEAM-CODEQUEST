@@ -160,7 +160,7 @@
                 <div class="video-grid-container">
                     <!-- Remote Peer Video (Large Primary) -->
                     <div class="video-box remote-video-box" id="remoteVideoContainer">
-                        <video id="remoteVideo" autoplay playsinline></video>
+                        <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
                         <div class="video-placeholder" id="remoteVideoPlaceholder">
                             <div class="placeholder-avatar">
                                 <i class="fa-solid fa-user-astronaut"></i>
@@ -178,7 +178,7 @@
 
                     <!-- Local User Video (Picture-in-Picture Tile) -->
                     <div class="video-box local-video-box" id="localVideoContainer">
-                        <video id="localVideo" autoplay muted playsinline></video>
+                        <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
                         <div class="video-placeholder" id="localVideoPlaceholder" style="display: none;">
                             <div class="placeholder-avatar-sm">
                                 <i class="fa-solid fa-user"></i>
@@ -272,6 +272,6 @@
     <!-- CodeQuest Features (for Sandbox Runner & Toast API) -->
     <script src="codequest-features.js?v=2.3.0"></script>
     <!-- Collab Engine Script -->
-    <script src="collab.js?v=1.0.0"></script>
+    <script src="collab.js?v=1.1.0"></script>
 </body>
 </html>
