@@ -49,7 +49,22 @@
             { urls: "stun:stun3.l.google.com:19302" },
             { urls: "stun:stun4.l.google.com:19302" },
             { urls: "stun:stun.cloudflare.com:3478" },
-            { urls: "stun:openrelay.metered.ca:80" }
+            { urls: "stun:openrelay.metered.ca:80" },
+            {
+                urls: "turn:openrelay.metered.ca:80",
+                username: "openrelay",
+                credential: "openrelay"
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443",
+                username: "openrelay",
+                credential: "openrelay"
+            },
+            {
+                urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                username: "openrelay",
+                credential: "openrelay"
+            }
         ],
         iceCandidatePoolSize: 10
     };
@@ -98,6 +113,7 @@
     // Video Elements
     const localVideo = document.getElementById("localVideo");
     const remoteVideo = document.getElementById("remoteVideo");
+    const unmuteAudioBanner = document.getElementById("unmuteAudioBanner");
     const localVideoPlaceholder = document.getElementById("localVideoPlaceholder");
     const remoteVideoPlaceholder = document.getElementById("remoteVideoPlaceholder");
     const remotePlaceholderText = document.getElementById("remotePlaceholderText");
@@ -432,6 +448,8 @@
 
     function attachTracksToPeerConnection() {
         if (!peerConnection) return;
+
+        // 1. Attach available local tracks
         if (localStream && localStream.getTracks().length > 0) {
             const senders = peerConnection.getSenders();
             localStream.getTracks().forEach((track) => {
@@ -442,13 +460,19 @@
                     peerConnection.addTrack(track, localStream);
                 }
             });
-        } else {
-            // Add transceivers to receive both audio and video
-            const transceivers = peerConnection.getTransceivers ? peerConnection.getTransceivers() : [];
+        }
+
+        // 2. ALWAYS ensure sendrecv transceivers exist for both audio and video
+        if (peerConnection.getTransceivers && peerConnection.addTransceiver) {
+            const transceivers = peerConnection.getTransceivers();
             const hasAudio = transceivers.some(t => t.receiver && t.receiver.track && t.receiver.track.kind === "audio");
             const hasVideo = transceivers.some(t => t.receiver && t.receiver.track && t.receiver.track.kind === "video");
-            if (!hasAudio && peerConnection.addTransceiver) peerConnection.addTransceiver("audio", { direction: "sendrecv" });
-            if (!hasVideo && peerConnection.addTransceiver) peerConnection.addTransceiver("video", { direction: "sendrecv" });
+            if (!hasAudio) {
+                try { peerConnection.addTransceiver("audio", { direction: "sendrecv" }); } catch(e){}
+            }
+            if (!hasVideo) {
+                try { peerConnection.addTransceiver("video", { direction: "sendrecv" }); } catch(e){}
+            }
         }
     }
 
@@ -463,6 +487,43 @@
             }
         }
     }
+
+    function safePlayRemoteVideo() {
+        if (!remoteVideo) return;
+        const playPromise = remoteVideo.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
+            }).catch((err) => {
+                console.warn("Unmuted autoplay restricted by browser policy. Playing muted fallback:", err);
+                remoteVideo.muted = true;
+                remoteVideo.play().then(() => {
+                    if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
+                    if (unmuteAudioBanner) unmuteAudioBanner.style.display = "flex";
+                }).catch(e => console.error("Muted play also failed:", e));
+            });
+        }
+    }
+
+    function unmuteRemoteAudio() {
+        if (remoteVideo && remoteVideo.muted) {
+            remoteVideo.muted = false;
+        }
+        if (unmuteAudioBanner) {
+            unmuteAudioBanner.style.display = "none";
+        }
+    }
+
+    if (unmuteAudioBanner) {
+        unmuteAudioBanner.addEventListener("click", (e) => {
+            e.stopPropagation();
+            unmuteRemoteAudio();
+        });
+    }
+
+    document.addEventListener("click", () => {
+        unmuteRemoteAudio();
+    });
 
     function initiatePeerConnection(targetId, isCaller) {
         if (targetId) remotePeerId = targetId;
@@ -482,30 +543,45 @@
 
         // On remote track received (handles both event.streams and unified plan track additions)
         peerConnection.ontrack = (event) => {
-            console.log("📹 [WebRTC] Remote track received:", event.track.kind);
+            console.log("📹 [WebRTC] Remote track received:", event.track.kind, event.track.id);
 
-            if (event.streams && event.streams[0]) {
-                remoteVideo.srcObject = event.streams[0];
-            } else {
-                if (!remoteMediaStream) remoteMediaStream = new MediaStream();
+            if (!remoteMediaStream) {
+                remoteMediaStream = new MediaStream();
+            }
+
+            // Always add the incoming track to remoteMediaStream if not already added
+            if (!remoteMediaStream.getTracks().some(t => t.id === event.track.id)) {
                 remoteMediaStream.addTrack(event.track);
+            }
+
+            // Also import any tracks in event.streams[0]
+            if (event.streams && event.streams[0]) {
+                event.streams[0].getTracks().forEach(t => {
+                    if (!remoteMediaStream.getTracks().some(existing => existing.id === t.id)) {
+                        remoteMediaStream.addTrack(t);
+                    }
+                });
+            }
+
+            // Bind to remoteVideo
+            if (remoteVideo.srcObject !== remoteMediaStream) {
                 remoteVideo.srcObject = remoteMediaStream;
             }
 
-            remoteVideoPlaceholder.style.display = "none";
+            if (remoteVideoPlaceholder) {
+                remoteVideoPlaceholder.style.display = "none";
+            }
             remoteVideo.style.display = "block";
 
-            // Autoplay play promise handling with muted-fallback if policy prevents unmuted
-            const playPromise = remoteVideo.play();
-            if (playPromise !== undefined) {
-                playPromise.catch((err) => {
-                    console.warn("Remote video autoplay blocked, falling back to muted play:", err);
-                    remoteVideo.muted = true;
-                    remoteVideo.play().then(() => {
-                        setTimeout(() => { remoteVideo.muted = false; }, 800);
-                    }).catch(e => console.warn(e));
-                });
-            }
+            // If track was muted, wait for unmute to ensure smooth playback
+            event.track.onunmute = () => {
+                console.log("🟢 Remote track unmuted and active:", event.track.kind);
+                if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
+                remoteVideo.style.display = "block";
+                safePlayRemoteVideo();
+            };
+
+            safePlayRemoteVideo();
 
             webrtcStatusBadge.textContent = "🟢 Live Call";
             webrtcStatusBadge.style.background = "rgba(34, 197, 94, 0.2)";
