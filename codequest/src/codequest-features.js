@@ -128,39 +128,52 @@
     function transformModuleCode(sourceCode) {
         let code = sourceCode;
 
-        // 1. Transform bare import: import "something" or import 'something';
+        // 0. Transform import.meta (Node.js & Vite ESM)
+        code = code.replace(/\bimport\.meta\.url\b/g, '"file:///app/server.js"');
+        code = code.replace(/\bimport\.meta\.env\b/g, '({ DEV: true, PROD: false, MODE: "development" })');
+        code = code.replace(/\bimport\.meta\b/g, '({ url: "file:///app/server.js", env: { DEV: true } })');
+
+        // 1. Strip TypeScript type imports: import type { ... } from '...';
+        code = code.replace(/^\s*import\s+type\s+[\s\S]*?from\s+['"][^'"]+['"]\s*;?/gm, '/* type import */');
+
+        // 2. Transform bare import: import "something" or import 'something';
         code = code.replace(/^\s*import\s+['"]([^'"]+)['"]\s*;?/gm, (match, spec) => {
             return `await __importModule(${JSON.stringify(spec)});`;
         });
 
-        // 2. Transform namespace import: import * as name from "spec";
+        // 3. Transform namespace import: import * as name from "spec";
         code = code.replace(/^\s*import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"]\s*;?/gm, (match, name, spec) => {
             return `const ${name} = await __importModule(${JSON.stringify(spec)});`;
         });
 
-        // 3. Transform combined import: import defaultName, { a, b } from "spec";
+        // 4. Transform combined import: import defaultName, { a, b } from "spec";
         code = code.replace(/^\s*import\s+([a-zA-Z0-9_$]+)\s*,\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]\s*;?/gm, (match, defName, named, spec) => {
             return `const __mod_${defName} = await __importModule(${JSON.stringify(spec)});\nconst ${defName} = __mod_${defName}?.default ?? __mod_${defName};\nconst { ${named} } = __mod_${defName};`;
         });
 
-        // 4. Transform named destructuring: import { a, b as c } from "spec";
+        // 5. Transform named destructuring: import { a, b as c } from "spec";
         code = code.replace(/^\s*import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]\s*;?/gm, (match, named, spec) => {
             return `const { ${named} } = await __importModule(${JSON.stringify(spec)});`;
         });
 
-        // 5. Transform default import: import defaultName from "spec";
+        // 6. Transform default import: import defaultName from "spec";
         code = code.replace(/^\s*import\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"]\s*;?/gm, (match, defName, spec) => {
             return `const __mod_${defName} = await __importModule(${JSON.stringify(spec)});\nconst ${defName} = __mod_${defName}?.default ?? __mod_${defName};`;
         });
 
-        // 6. Transform export default
+        // 7. Transform export default
         code = code.replace(/^\s*export\s+default\s+function\s+([a-zA-Z0-9_$]+)/gm, 'function $1');
         code = code.replace(/^\s*export\s+default\s+class\s+([a-zA-Z0-9_$]+)/gm, 'class $1');
         code = code.replace(/^\s*export\s+default\s+/gm, 'const __defaultExport = ');
 
-        // 7. Transform named exports: export const/let/var/function/class
+        // 8. Transform named exports: export const/let/var/function/class
         code = code.replace(/^\s*export\s+(const|let|var|function|class)\s+/gm, '$1 ');
         code = code.replace(/^\s*export\s*\{[^}]*\}\s*;?/gm, '/* export statement */');
+
+        // 9. Safety fallback: If ANY static import remains (e.g. multi-line or non-standard syntax), convert to dynamic comment
+        code = code.replace(/^\s*import\s+[\s\S]*?['"][^'"]+['"]\s*;?/gm, (match) => {
+            return `/* ${match.trim()} */`;
+        });
 
         return code;
     }
