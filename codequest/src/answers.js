@@ -408,6 +408,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                         </div>
                     </div>
                     <div class="answer-card-actions">
+                        <button class="btn-tts-listen" title="Listen to this solution with audio walkthrough">
+                            <i class="fa-solid fa-volume-high me-1"></i> Listen
+                        </button>
                         ${canCompareDiff ? `
                             <button class="btn-compare-diff" title="Compare this answer's fix with original question code">
                                 <i class="fa-solid fa-code-compare me-1"></i> Compare Fix
@@ -428,6 +431,25 @@ document.addEventListener("DOMContentLoaded", async function () {
                 </div>
                 <div class="answer-content">${formatContent(answer.answerText)}</div>
             `;
+
+            // If author provided an audio walkthrough note, embed player above answer content
+            if (answer.audioNote && answer.audioNote.audioData && window.CodeQuestPro && window.CodeQuestPro.AudioWalkthrough) {
+                const playerEl = window.CodeQuestPro.AudioWalkthrough.createAudioPlayerElement(answer.audioNote, authorName);
+                const contentEl = card.querySelector(".answer-content");
+                if (contentEl && playerEl) {
+                    contentEl.insertAdjacentElement("beforebegin", playerEl);
+                }
+            }
+
+            // Audio Walkthrough TTS Listen Button
+            const ttsBtn = card.querySelector(".btn-tts-listen");
+            if (ttsBtn) {
+                ttsBtn.addEventListener("click", () => {
+                    if (window.CodeQuestPro && window.CodeQuestPro.AudioWalkthrough) {
+                        window.CodeQuestPro.AudioWalkthrough.toggleTts(answer.answerText, ttsBtn);
+                    }
+                });
+            }
 
             // Solution Diff Comparator Button
             const diffBtn = card.querySelector(".btn-compare-diff");
@@ -537,7 +559,11 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         const text = replyInput.value.trim();
-        if (!text) {
+        const voiceData = window.CodeQuestPro && window.CodeQuestPro.AudioWalkthrough
+            ? window.CodeQuestPro.AudioWalkthrough.getRecordedVoiceData()
+            : null;
+
+        if (!text && !voiceData) {
             replyInput.focus();
             return;
         }
@@ -550,7 +576,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                 method: "POST",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ answerText: text })
+                body: JSON.stringify({
+                    answerText: text || "🎙️ [Audio Code Walkthrough Attached]",
+                    audioNote: voiceData
+                })
             });
 
             if (!response.ok) {
@@ -559,6 +588,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             replyInput.value = "";
+            if (window.CodeQuestPro && window.CodeQuestPro.AudioWalkthrough) {
+                window.CodeQuestPro.AudioWalkthrough.resetVoiceStudio();
+            }
+
             const resData = await response.json();
             const newAnswerId = resData.answer?._id;
             await fetchAnswers(newAnswerId);

@@ -25,7 +25,8 @@ const app = express();
 // Trust reverse proxies like Render
 app.set("trust proxy", 1);
 
-app.use(express.json());
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
 
@@ -92,6 +93,11 @@ const answerSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     questionId: { type: mongoose.Schema.Types.ObjectId, ref: "Question", required: true },
     answerText: { type: String, required: true },
+    audioNote: {
+        audioData: { type: String, default: null },
+        duration: { type: Number, default: 0 },
+        mimeType: { type: String, default: "audio/webm" }
+    },
     likes: { type: Number, default: 0 },
     likedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     createdAt: { type: Date, default: Date.now }
@@ -937,9 +943,12 @@ app.post("/answers/:answerId/like", verifyToken, async (req, res) => {
 // Post an answer (Blocked if question is locked, unless admin)
 app.post("/answers/:questionId", verifyToken, async (req, res) => {
     try {
-        const { answerText } = req.body;
-        if (!answerText || !answerText.trim()) {
-            return res.status(400).json({ error: "Answer text is required" });
+        const { answerText, audioNote } = req.body;
+        const textContent = (answerText || "").trim();
+        const hasAudio = audioNote && typeof audioNote.audioData === "string" && audioNote.audioData.startsWith("data:audio/");
+
+        if (!textContent && !hasAudio) {
+            return res.status(400).json({ error: "Answer text or audio walkthrough is required" });
         }
 
         const question = await Question.findById(req.params.questionId);
@@ -951,10 +960,20 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
             return res.status(403).json({ error: "This discussion has been locked by an administrator. New answers are closed." });
         }
 
+        let sanitizedAudioNote = null;
+        if (hasAudio) {
+            sanitizedAudioNote = {
+                audioData: audioNote.audioData,
+                duration: Math.min(180, Math.max(1, Math.round(Number(audioNote.duration) || 0))),
+                mimeType: typeof audioNote.mimeType === "string" ? audioNote.mimeType : "audio/webm"
+            };
+        }
+
         const newAnswer = new Answer({
             userId: req.user._id,
             questionId: req.params.questionId,
-            answerText: answerText.trim()
+            answerText: textContent || "🎙️ [Voice Walkthrough Attached]",
+            audioNote: sanitizedAudioNote
         });
 
         await newAnswer.save();
@@ -982,10 +1001,8 @@ app.post("/answers/:questionId", verifyToken, async (req, res) => {
 // Edit an answer (Author or Admin)
 app.put("/answers/:answerId", verifyToken, async (req, res) => {
     try {
-        const { answerText } = req.body;
-        if (!answerText || !answerText.trim()) {
-            return res.status(400).json({ error: "Answer text is required" });
-        }
+        const { answerText, audioNote } = req.body;
+        const textContent = answerText !== undefined ? answerText.trim() : null;
 
         const answer = await Answer.findById(req.params.answerId);
         if (!answer) return res.status(404).json({ error: "Answer not found" });
@@ -996,7 +1013,22 @@ app.put("/answers/:answerId", verifyToken, async (req, res) => {
             return res.status(403).json({ error: "Not authorized to edit this answer" });
         }
 
-        answer.answerText = answerText.trim();
+        if (textContent !== null) {
+            answer.answerText = textContent;
+        }
+
+        if (audioNote !== undefined) {
+            if (audioNote && typeof audioNote.audioData === "string" && audioNote.audioData.startsWith("data:audio/")) {
+                answer.audioNote = {
+                    audioData: audioNote.audioData,
+                    duration: Math.min(180, Math.max(1, Math.round(Number(audioNote.duration) || 0))),
+                    mimeType: typeof audioNote.mimeType === "string" ? audioNote.mimeType : "audio/webm"
+                };
+            } else if (audioNote === null) {
+                answer.audioNote = null;
+            }
+        }
+
         await answer.save();
 
         const updated = await Answer.findById(answer._id).populate("userId", "username avatarUrl isAdmin");

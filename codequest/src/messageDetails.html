@@ -136,12 +136,105 @@
                         <button type="button" class="btn-fmt" data-target="reply" data-fmt="bold" title="Insert Bold"><i class="fa-solid fa-bold me-1"></i>Bold</button>
                         <button type="button" class="btn-fmt" data-target="reply" data-fmt="list" title="Bullet List"><i class="fa-solid fa-list-ul me-1"></i>List</button>
                         <button type="button" class="btn-fmt" data-target="reply" data-fmt="quote" title="Quote Text"><i class="fa-solid fa-quote-left me-1"></i>Quote</button>
+                        <button type="button" class="btn-fmt btn-fmt-voice ms-auto" id="toggleVoiceRecorderBtn" title="Record an audio walkthrough of your solution">
+                            <i class="fa-solid fa-microphone-lines me-1 text-danger"></i>Voice Note
+                        </button>
                     </div>
 
-                    <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here..."></textarea>
+                    <textarea id="reply" class="composer-textarea" rows="4" placeholder="Write your solution or answer here... (Tip: You can also attach an audio code walkthrough!)"></textarea>
+
+                    <!-- Voice Walkthrough Recording Studio -->
+                    <div id="voiceRecorderStudio" class="voice-recorder-studio" style="display: none;">
+                        <div class="vrec-header">
+                            <div class="vrec-title">
+                                <i class="fa-solid fa-microphone text-danger me-1"></i>
+                                <span>Audio Code Walkthrough Studio</span>
+                                <span class="vrec-badge-tag">Voice Note</span>
+                            </div>
+                            <button type="button" class="vrec-close-btn" id="closeVoiceRecorderBtn" title="Close recorder">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="vrec-body">
+                            <!-- State 1: Idle -->
+                            <div id="vrecIdleState" class="vrec-state-box">
+                                <p class="vrec-prompt-text mb-2">
+                                    Walk other developers through your code or logic in 30–90 seconds. Audio walkthroughs make complex algorithms and solutions significantly easier to understand!
+                                </p>
+                                <div class="vrec-actions-row">
+                                    <button type="button" class="btn btn-record-start" id="startRecordingBtn">
+                                        <i class="fa-solid fa-circle text-danger me-1"></i> Start Recording
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- State 2: Recording in progress -->
+                            <div id="vrecRecordingState" class="vrec-state-box" style="display: none;">
+                                <div class="vrec-live-indicator">
+                                    <span class="vrec-pulsing-dot"></span>
+                                    <span class="vrec-recording-label">Recording Voice Walkthrough...</span>
+                                </div>
+                                <div class="vrec-soundwave" aria-hidden="true">
+                                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                                    <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+                                </div>
+                                <div class="vrec-timer-display" id="vrecTimer">00:00 / 01:30</div>
+                                <div class="vrec-actions-row">
+                                    <button type="button" class="btn btn-record-stop" id="stopRecordingBtn">
+                                        <i class="fa-solid fa-stop me-1"></i> Done & Attach
+                                    </button>
+                                    <button type="button" class="btn btn-record-cancel" id="cancelRecordingBtn">
+                                        <i class="fa-solid fa-xmark me-1"></i> Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- State 3: Ready / Attached Preview -->
+                            <div id="vrecPreviewState" class="vrec-state-box" style="display: none;">
+                                <div class="vrec-attached-banner">
+                                    <i class="fa-solid fa-circle-check text-success fa-lg me-2"></i>
+                                    <div>
+                                        <div class="fw-semibold">Voice Walkthrough Attached</div>
+                                        <div class="text-muted small">Will be posted with your answer</div>
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-auto" id="vrecDurationBadge">0:00</span>
+                                </div>
+                                <div class="vrec-inline-player">
+                                    <audio id="vrecPreviewAudio" preload="metadata"></audio>
+                                    <button type="button" class="vrec-play-btn" id="vrecPlayPreviewBtn" title="Play / Pause preview">
+                                        <i class="fa-solid fa-play"></i>
+                                    </button>
+                                    <div class="vrec-scrubber-wrap">
+                                        <input type="range" class="vrec-scrubber" id="vrecScrubber" min="0" max="100" value="0">
+                                        <div class="vrec-time-row">
+                                            <span id="vrecCurrentTime">0:00</span>
+                                            <span id="vrecTotalTime">0:00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="vrec-preview-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="discardRecordingBtn">
+                                        <i class="fa-regular fa-trash-can me-1"></i> Discard Voice Note
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="reRecordBtn">
+                                        <i class="fa-solid fa-rotate-left me-1"></i> Re-record
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
                     <div class="composer-footer">
-                        <span class="composer-kbd-hint"><i class="fa-regular fa-keyboard me-1"></i> Tip: Press <b>Ctrl + Enter</b> to post</span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="composer-kbd-hint"><i class="fa-regular fa-keyboard me-1"></i> Tip: Press <b>Ctrl + Enter</b> to post</span>
+                            <div id="composerVoiceBadge" class="composer-voice-attached-badge" style="display: none;">
+                                <i class="fa-solid fa-microphone-lines text-primary me-1"></i>
+                                <span>Voice note attached (<span id="composerVoiceTime">0:00</span>)</span>
+                                <button type="button" class="btn-clear-audio" id="removeAttachedAudioBtn" title="Remove audio">&times;</button>
+                            </div>
+                        </div>
                         <button id="submitAnswerBtn" class="btn btn-submit-reply">
                             <i class="fa-solid fa-paper-plane me-1"></i> Post Answer
                         </button>
