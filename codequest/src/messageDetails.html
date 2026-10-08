@@ -110,23 +110,7 @@
                 <div id="selected-message" class="question-title">Loading question...</div>
             </div>
 
-            <!-- Answers Section Header -->
-            <div class="answers-header-bar">
-                <div class="d-flex align-items-center gap-2">
-                    <h2 class="answers-title">Discussion & Answers</h2>
-                    <span id="answersCountBadge" class="answers-count-badge">0</span>
-                </div>
-            </div>
-
-            <!-- Answers List -->
-            <div id="answersContainer" class="answers-container">
-                <div class="loading-state">
-                    <i class="fa-solid fa-circle-notch fa-spin"></i>
-                    <p>Loading answers...</p>
-                </div>
-            </div>
-
-            <!-- Reply Box Composer -->
+            <!-- Reply Box Composer (Positioned above answers for immediate access) -->
             <div class="reply-composer-card" id="replyComposerCard">
                 <div id="lockedNotice" class="locked-composer-notice" style="display: none;">
                     <i class="fa-solid fa-lock text-warning fa-lg me-2"></i>
@@ -163,6 +147,28 @@
                     <a href="login.html" class="btn btn-primary-cq mt-2">
                         <i class="fa-brands fa-github me-2"></i> Sign In with GitHub
                     </a>
+                </div>
+            </div>
+
+            <!-- Answers Section Header -->
+            <div class="answers-header-bar">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h2 class="answers-title">Discussion & Answers</h2>
+                    <span id="answersCountBadge" class="answers-count-badge">0</span>
+                    <span class="badge-sort-order text-muted ms-2">
+                        <i class="fa-solid fa-arrow-down-short-wide me-1 text-primary"></i> Newest First
+                    </span>
+                </div>
+                <button id="jumpToComposerBtn" class="btn btn-sm btn-outline-primary rounded-pill px-3" title="Jump to answer box">
+                    <i class="fa-solid fa-pen me-1"></i> Write Answer
+                </button>
+            </div>
+
+            <!-- Answers List -->
+            <div id="answersContainer" class="answers-container">
+                <div class="loading-state">
+                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                    <p>Loading answers...</p>
                 </div>
             </div>
         </div>

@@ -744,7 +744,7 @@ app.get("/answers/:questionId", async (req, res) => {
         }
 
         const answers = await Answer.find({ questionId: req.params.questionId })
-            .sort({ createdAt: 1 }) // Chronological order
+            .sort({ createdAt: -1 }) // Newest first so newly posted answers are added in first
             .populate("userId", "username avatarUrl isAdmin")
             .lean();
 
@@ -770,6 +770,13 @@ app.get("/answers/:questionId", async (req, res) => {
                 authorIsAdmin: ans.userId ? checkIsAdmin(ans.userId) : false,
                 isAcceptedSolution: question.isSolved && String(question.solvedAnswerId) === String(ans._id)
             };
+        });
+
+        // Pin accepted solution at top (if present), while keeping newest answers first
+        enrichedAnswers.sort((a, b) => {
+            if (a.isAcceptedSolution && !b.isAcceptedSolution) return -1;
+            if (!a.isAcceptedSolution && b.isAcceptedSolution) return 1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
         });
 
         res.json(enrichedAnswers);

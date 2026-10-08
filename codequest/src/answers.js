@@ -319,13 +319,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // 3. Fetch Answers
-    async function fetchAnswers() {
+    async function fetchAnswers(highlightedAnswerId = null) {
         try {
             const response = await fetch(`/answers/${questionId}`, { credentials: "include" });
             if (!response.ok) throw new Error("Failed to load answers");
 
             const answers = await response.json();
-            renderAnswers(answers);
+            renderAnswers(answers, highlightedAnswerId);
         } catch (error) {
             console.error("Error fetching answers:", error);
             answersContainer.innerHTML = `
@@ -339,7 +339,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // 4. Render Answers List
-    function renderAnswers(answers) {
+    function renderAnswers(answers, highlightedAnswerId = null) {
         answersContainer.innerHTML = "";
 
         if (answersCountBadge) {
@@ -361,6 +361,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             const card = document.createElement("div");
             card.classList.add("answer-card");
             card.dataset.answerId = answer._id;
+            if (highlightedAnswerId && String(answer._id) === String(highlightedAnswerId)) {
+                card.classList.add("just-posted");
+            }
 
             const authorName = answer.userId?.username || "Anonymous";
             const authorAvatar = answer.userId?.avatarUrl || "default-avatar.png";
@@ -534,8 +537,17 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             replyInput.value = "";
-            await fetchAnswers();
-            answersContainer.scrollIntoView({ behavior: "smooth", block: "end" });
+            const resData = await response.json();
+            const newAnswerId = resData.answer?._id;
+            await fetchAnswers(newAnswerId);
+
+            // Smoothly scroll to the top of answers (where the new answer was added in first!)
+            const newCard = newAnswerId ? document.querySelector(`.answer-card[data-answer-id="${newAnswerId}"]`) : null;
+            if (newCard) {
+                newCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            } else {
+                answersContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
             showToast("Your answer was posted!");
         } catch (error) {
             console.error("Error submitting answer:", error);
@@ -548,6 +560,23 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (submitAnswerBtn) {
         submitAnswerBtn.addEventListener("click", submitAnswer);
+    }
+
+    // Jump to composer button in header
+    const jumpToComposerBtn = document.getElementById("jumpToComposerBtn");
+    if (jumpToComposerBtn) {
+        jumpToComposerBtn.addEventListener("click", () => {
+            if (!currentUser) {
+                showAuthPrompt("Please sign in with GitHub to post an answer.");
+                return;
+            }
+            if (replyComposerCard) {
+                replyComposerCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+            if (replyInput) {
+                setTimeout(() => replyInput.focus(), 300);
+            }
+        });
     }
 
     if (replyInput) {

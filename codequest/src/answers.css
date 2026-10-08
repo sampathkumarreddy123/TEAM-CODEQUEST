@@ -408,12 +408,59 @@ body {
   border-radius: 999px;
 }
 
+.badge-sort-order {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background-color: whitesmoke;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  display: inline-flex;
+  align-items: center;
+}
+
+#jumpToComposerBtn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 5px 14px;
+  transition: all 0.2s ease;
+}
+
+#jumpToComposerBtn:hover {
+  transform: translateY(-1px);
+}
+
 /* ---------------- Answers List ---------------- */
 .answers-container {
   display: flex;
   flex-direction: column;
   gap: 16px;
   margin-bottom: 32px;
+}
+
+@keyframes newAnswerHighlight {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(0);
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+  }
+  100% {
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+.answer-card.just-posted {
+  animation: newAnswerHighlight 2s ease forwards;
 }
 
 .answer-card {
@@ -699,6 +746,7 @@ body {
   padding: 36px 24px;
   text-align: center;
   box-shadow: var(--shadow-sm);
+  margin-bottom: 26px;
 }
 
 .unauth-composer-content h4 {
@@ -715,6 +763,7 @@ body {
   border-radius: var(--radius-lg);
   padding: 24px 28px;
   box-shadow: var(--shadow-sm);
+  margin-bottom: 26px;
 }
 
 .composer-title {
