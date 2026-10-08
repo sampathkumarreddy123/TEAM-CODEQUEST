@@ -19,7 +19,7 @@
         urlParams.set("room", roomId);
         window.history.replaceState({}, "", `${window.location.pathname}?${urlParams.toString()}`);
     }
-    const questionId = urlParams.get("questionId") || null;
+    const questionId = urlParams.get("questionId") || urlParams.get("id") || null;
 
     let currentUser = {
         username: "Developer_" + Math.floor(Math.random() * 899 + 100),
@@ -1095,21 +1095,42 @@
     }
 
     // Open Publish Modal
+    function openPublishModal() {
+        const currentCode = (collabCodeInput ? collabCodeInput.value : "").trim();
+        if (exportCodePreview) {
+            exportCodePreview.value = currentCode || "// Collaborative code snippet\nconsole.log('Ready to publish');";
+        }
+
+        // If no question is linked and dropdown has not been chosen, switch to 'Ask as Question' tab
+        if (!questionId && chooseQuestionSelect && !chooseQuestionSelect.value) {
+            if (tabModeQuestion && window.bootstrap) {
+                try {
+                    const tab = bootstrap.Tab.getInstance(tabModeQuestion) || new bootstrap.Tab(tabModeQuestion);
+                    tab.show();
+                } catch(e){}
+            }
+        }
+
+        if (window.bootstrap && exportModalEl) {
+            exportModalInstance = bootstrap.Modal.getInstance(exportModalEl) || new bootstrap.Modal(exportModalEl);
+            exportModalInstance.show();
+        }
+    }
+
     if (publishSolutionBtn) {
         publishSolutionBtn.addEventListener("click", () => {
-            const code = collabCodeInput.value;
-            if (!code.trim()) {
-                showToast("Editor is empty. Write code first before publishing.");
-                return;
-            }
+            openPublishModal();
+        });
+    }
 
-            if (exportCodePreview) {
-                exportCodePreview.textContent = code;
-            }
-
-            if (window.bootstrap && exportModalEl) {
-                exportModalInstance = bootstrap.Modal.getInstance(exportModalEl) || new bootstrap.Modal(exportModalEl);
-                exportModalInstance.show();
+    // Auto-update target question display when user picks from dropdown
+    if (chooseQuestionSelect) {
+        chooseQuestionSelect.addEventListener("change", () => {
+            if (chooseQuestionSelect.value) {
+                const selectedText = chooseQuestionSelect.options[chooseQuestionSelect.selectedIndex].text;
+                if (selectedQuestionDisplay) {
+                    selectedQuestionDisplay.innerHTML = `<span class="badge bg-success me-2"><i class="fa-solid fa-check me-1"></i>Selected:</span> <strong>${escapeHtml(selectedText)}</strong>`;
+                }
             }
         });
     }
@@ -1117,9 +1138,10 @@
     // Confirm Publish / Export
     if (confirmPublishBtn) {
         confirmPublishBtn.addEventListener("click", async () => {
-            const code = collabCodeInput.value;
-            if (!code.trim()) {
-                alert("Please write some code before publishing.");
+            const code = (exportCodePreview ? exportCodePreview.value : (collabCodeInput ? collabCodeInput.value : "")).trim();
+            if (!code) {
+                alert("Please enter or review your code snippet before publishing.");
+                if (exportCodePreview) exportCodePreview.focus();
                 return;
             }
             const lang = editorLangSelect ? editorLangSelect.value : "javascript";
@@ -1128,7 +1150,8 @@
             if (currentPublishMode === "answer") {
                 const targetQId = questionId || (chooseQuestionSelect ? chooseQuestionSelect.value : null);
                 if (!targetQId) {
-                    alert("Please select a question to answer, or switch to the 'Ask as New Question' tab!");
+                    alert("Please select a question from the dropdown to answer, or switch to the 'Ask as New Question' tab!");
+                    if (chooseQuestionSelect) chooseQuestionSelect.focus();
                     return;
                 }
 
@@ -1148,11 +1171,12 @@
                     if (res.ok && data.success) {
                         showToast("🎉 Solution successfully exported and posted as an answer!");
                         if (exportModalInstance) exportModalInstance.hide();
+                        sessionStorage.setItem("selectedQuestionId", targetQId);
                         setTimeout(() => {
-                            window.location.href = `messageDetails.html?id=${encodeURIComponent(targetQId)}`;
-                        }, 1200);
+                            window.location.href = `messageDetails.html?questionId=${encodeURIComponent(targetQId)}&id=${encodeURIComponent(targetQId)}`;
+                        }, 1000);
                     } else {
-                        alert(data.error || "Failed to post answer. Please ensure you are logged in.");
+                        alert(data.error || "Failed to post answer.");
                     }
                 } catch (err) {
                     console.error("Export error:", err);
@@ -1189,11 +1213,12 @@
                     if (res.ok && data.success && data.questionId) {
                         showToast("🚀 Question successfully created and published!");
                         if (exportModalInstance) exportModalInstance.hide();
+                        sessionStorage.setItem("selectedQuestionId", data.questionId);
                         setTimeout(() => {
-                            window.location.href = `messageDetails.html?id=${encodeURIComponent(data.questionId)}`;
-                        }, 1200);
+                            window.location.href = `messageDetails.html?questionId=${encodeURIComponent(data.questionId)}&id=${encodeURIComponent(data.questionId)}`;
+                        }, 1000);
                     } else {
-                        alert(data.error || "Failed to create question. Please ensure you are logged in.");
+                        alert(data.error || "Failed to create question.");
                     }
                 } catch (err) {
                     console.error("Question creation error:", err);

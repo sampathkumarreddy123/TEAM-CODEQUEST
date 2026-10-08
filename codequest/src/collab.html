@@ -49,7 +49,7 @@
             </button>
 
             <!-- Publish / Export Button (Post Answer, Ask Question, Save) -->
-            <button id="publishSolutionBtn" class="btn btn-collab-action btn-collab-export" title="Publish as Answer or Ask as Question">
+            <button id="publishSolutionBtn" class="btn btn-collab-action btn-collab-export" data-bs-toggle="modal" data-bs-target="#exportAnswerModal" title="Publish as Answer or Ask as Question">
                 <i class="fa-solid fa-cloud-arrow-up me-1"></i><span class="d-none d-sm-inline">Publish</span>
             </button>
 
@@ -331,10 +331,15 @@
                         </div>
                     </div>
 
-                    <!-- Code Preview Accordion/Box -->
-                    <div class="mb-2">
-                        <label class="form-label text-light small fw-bold">Code Snippet to Publish:</label>
-                        <pre class="export-preview-box"><code id="exportCodePreview"></code></pre>
+                    <!-- Code Snippet Input Box -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="exportCodePreview" class="form-label text-light small fw-bold mb-0">
+                                <i class="fa-solid fa-code me-1 text-info"></i>Code Snippet to Publish:
+                            </label>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 0.72rem;">Editable</span>
+                        </div>
+                        <textarea id="exportCodePreview" class="form-control collab-modal-input font-monospace" rows="5" placeholder="// Type or review code snippet here..."></textarea>
                     </div>
 
                 </div>

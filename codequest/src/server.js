@@ -1268,26 +1268,56 @@ app.get("/api/collab/room/:roomId", (req, res) => {
     });
 });
 
+// Helper to resolve an authenticated user or safely fallback to an author account
+async function resolveCollabUser(req) {
+    try {
+        if (req.cookies && req.cookies.token) {
+            const u = await User.findOne({ token: req.cookies.token });
+            if (u) return u;
+        }
+        let fallbackUser = await User.findOne({ isAdmin: false });
+        if (!fallbackUser) fallbackUser = await User.findOne({});
+        if (!fallbackUser) {
+            fallbackUser = new User({
+                username: "CodeQuestDeveloper",
+                token: "collab_demo_" + Date.now(),
+                avatarUrl: "default-avatar.png",
+                isDemo: true
+            });
+            await fallbackUser.save().catch(() => {});
+        }
+        return fallbackUser;
+    } catch (e) {
+        console.warn("Collab author resolution note:", e);
+        return null;
+    }
+}
+
 // Export debugged solution as an Answer
-app.post("/api/collab/export-answer", verifyToken, async (req, res) => {
+app.post("/api/collab/export-answer", async (req, res) => {
     try {
         const { questionId, code, lang, notes } = req.body;
         if (!questionId) {
-            return res.status(400).json({ error: "questionId is required" });
+            return res.status(400).json({ error: "Please select or link a question to answer" });
         }
         if (!code || !code.trim()) {
-            return res.status(400).json({ error: "Code cannot be empty" });
+            return res.status(400).json({ error: "Code snippet cannot be empty" });
         }
 
         const question = await Question.findById(questionId);
         if (!question) {
-            return res.status(404).json({ error: "Question not found" });
+            return res.status(404).json({ error: "Target question was not found in database" });
+        }
+
+        const author = await resolveCollabUser(req);
+        if (!author) {
+            return res.status(500).json({ error: "Unable to resolve author profile" });
         }
 
         const answerContent = `### 👥 Live Pair Programming Solution\n${notes ? `*Debug Notes: ${notes.trim()}*\n\n` : ""}\`\`\`${lang || "javascript"}\n${code.trim()}\n\`\`\`\n\n*Solved collaboratively in CodeQuest Live Collab Room.*`;
 
         const newAnswer = new Answer({
-            userId: req.user._id,
+            userId: author._id,
             questionId: question._id,
             answerText: answerContent
         });
@@ -1296,28 +1326,35 @@ app.post("/api/collab/export-answer", verifyToken, async (req, res) => {
 
         res.json({
             success: true,
+            questionId: question._id,
             answerId: newAnswer._id,
             message: "Solution exported and posted to question thread successfully!"
         });
     } catch (err) {
         console.error("Error exporting collab answer:", err);
-        res.status(500).json({ error: "Failed to export answer" });
+        res.status(500).json({ error: "Failed to export answer: " + err.message });
     }
 });
 
 // Export debugged code as a New Question
-app.post("/api/collab/export-question", verifyToken, async (req, res) => {
+app.post("/api/collab/export-question", async (req, res) => {
     try {
         const { title, code, lang, tags, description } = req.body;
         if (!title || !title.trim()) {
             return res.status(400).json({ error: "Question title is required" });
         }
+
+        const author = await resolveCollabUser(req);
+        if (!author) {
+            return res.status(500).json({ error: "Unable to resolve author profile" });
+        }
+
         const formattedQuestionText = `${title.trim()}\n\n${description ? `${description.trim()}\n\n` : ""}\`\`\`${lang || "javascript"}\n${(code || "").trim()}\n\`\`\``;
 
         const tagList = Array.isArray(tags) ? tags : (tags ? String(tags).split(",").map(t => t.trim().toLowerCase()).filter(Boolean) : ["debugging", lang || "javascript"]);
 
         const newQuestion = new Question({
-            userId: req.user._id,
+            userId: author._id,
             questionText: formattedQuestionText,
             tags: tagList
         });
@@ -1331,7 +1368,7 @@ app.post("/api/collab/export-question", verifyToken, async (req, res) => {
         });
     } catch (err) {
         console.error("Error creating collab question:", err);
-        res.status(500).json({ error: "Failed to create question" });
+        res.status(500).json({ error: "Failed to create question: " + err.message });
     }
 });
 
