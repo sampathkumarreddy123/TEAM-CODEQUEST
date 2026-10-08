@@ -1,4 +1,6 @@
 import express from "express";
+import http from "http";
+import { WebSocketServer, WebSocket } from "ws";
 import mongoose from "mongoose";
 import cors from "cors";
 import path from "path";
@@ -1210,7 +1212,285 @@ app.get("/", (req, res) => {
     }
 });
 
-// Start the Express server
-app.listen(PORT, () => {
-    console.log(`🚀 CodeQuest Server is running on http://localhost:${PORT}`);
+// ----------------- Live Collab Debug Room REST Endpoints -----------------
+const collabRooms = new Map();
+
+function getOrCreateRoom(roomId, initialData = {}) {
+    const cleanId = String(roomId || "").trim().toUpperCase();
+    if (!collabRooms.has(cleanId)) {
+        collabRooms.set(cleanId, {
+            id: cleanId,
+            questionId: initialData.questionId || null,
+            title: initialData.title || "Collaborative Debug Session",
+            code: initialData.code || '// Welcome to CodeQuest Live Debug Room!\n// Both developers can code and debug face-to-face in real-time.\n\nfunction solution() {\n    console.log("Ready to pair-program!");\n}\n\nsolution();\n',
+            lang: initialData.lang || "javascript",
+            peers: new Map(), // peerId -> { ws, user, isMuted, isVideoOff }
+            createdAt: Date.now()
+        });
+    }
+    return collabRooms.get(cleanId);
+}
+
+// Create or join room endpoint
+app.post("/api/collab/create-room", async (req, res) => {
+    try {
+        const { questionId, title, code, lang } = req.body || {};
+        const randomCode = `CQ-${Math.floor(1000 + Math.random() * 9000)}`;
+        const room = getOrCreateRoom(randomCode, { questionId, title, code, lang });
+        res.json({
+            success: true,
+            roomId: room.id,
+            roomUrl: `/collab.html?room=${room.id}` + (questionId ? `&questionId=${questionId}` : "")
+        });
+    } catch (err) {
+        console.error("Error creating collab room:", err);
+        res.status(500).json({ error: "Failed to create room" });
+    }
 });
+
+// Get room details
+app.get("/api/collab/room/:roomId", (req, res) => {
+    const cleanId = String(req.params.roomId || "").trim().toUpperCase();
+    const room = collabRooms.get(cleanId);
+    if (!room) {
+        return res.status(404).json({ error: "Room not found or expired" });
+    }
+    res.json({
+        success: true,
+        room: {
+            id: room.id,
+            questionId: room.questionId,
+            title: room.title,
+            code: room.code,
+            lang: room.lang,
+            peerCount: room.peers.size
+        }
+    });
+});
+
+// Export debugged solution as an Answer
+app.post("/api/collab/export-answer", verifyToken, async (req, res) => {
+    try {
+        const { questionId, code, lang, notes } = req.body;
+        if (!questionId) {
+            return res.status(400).json({ error: "questionId is required" });
+        }
+        if (!code || !code.trim()) {
+            return res.status(400).json({ error: "Code cannot be empty" });
+        }
+
+        const question = await Question.findById(questionId);
+        if (!question) {
+            return res.status(404).json({ error: "Question not found" });
+        }
+
+        const answerContent = `### 👥 Live Pair Programming Solution\n${notes ? `*Debug Notes: ${notes.trim()}*\n\n` : ""}\`\`\`${lang || "javascript"}\n${code.trim()}\n\`\`\`\n\n*Solved collaboratively in CodeQuest Live Collab Room.*`;
+
+        const newAnswer = new Answer({
+            userId: req.user._id,
+            questionId: question._id,
+            answerText: answerContent
+        });
+
+        await newAnswer.save();
+
+        res.json({
+            success: true,
+            answerId: newAnswer._id,
+            message: "Solution exported and posted to question thread successfully!"
+        });
+    } catch (err) {
+        console.error("Error exporting collab answer:", err);
+        res.status(500).json({ error: "Failed to export answer" });
+    }
+});
+
+// Create HTTP server wrapping Express
+const server = http.createServer(app);
+
+// Setup WebSocket Server for Real-Time Collab & WebRTC Signaling
+const wss = new WebSocketServer({ server, path: "/ws/collab" });
+
+wss.on("connection", (ws, req) => {
+    let currentRoomId = null;
+    let currentPeerId = null;
+    let currentUser = null;
+
+    ws.on("message", (raw) => {
+        try {
+            const data = JSON.parse(raw);
+            const { type, roomId } = data;
+
+            if (type === "join-room") {
+                currentRoomId = String(roomId || "").trim().toUpperCase();
+                currentPeerId = data.peerId || `peer_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                currentUser = data.user || { username: "Guest Developer", avatarUrl: "default-avatar.png" };
+
+                const room = getOrCreateRoom(currentRoomId, {
+                    questionId: data.questionId,
+                    title: data.title,
+                    code: data.code,
+                    lang: data.lang
+                });
+
+                // Gather list of existing peers in the room
+                const existingPeers = [];
+                room.peers.forEach((peer, pId) => {
+                    existingPeers.push({ peerId: pId, user: peer.user, isMuted: peer.isMuted, isVideoOff: peer.isVideoOff });
+                });
+
+                // Add new peer
+                room.peers.set(currentPeerId, {
+                    ws,
+                    user: currentUser,
+                    isMuted: false,
+                    isVideoOff: false,
+                    joinedAt: Date.now()
+                });
+
+                // Confirm join to the new peer with room state
+                ws.send(JSON.stringify({
+                    type: "room-joined",
+                    peerId: currentPeerId,
+                    roomId: currentRoomId,
+                    code: room.code,
+                    lang: room.lang,
+                    title: room.title,
+                    questionId: room.questionId,
+                    peers: existingPeers
+                }));
+
+                // Broadcast to all existing peers that a new peer joined
+                room.peers.forEach((peer, pId) => {
+                    if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            type: "peer-joined",
+                            peerId: currentPeerId,
+                            user: currentUser
+                        }));
+                    }
+                });
+                return;
+            }
+
+            if (!currentRoomId || !collabRooms.has(currentRoomId)) return;
+            const room = collabRooms.get(currentRoomId);
+
+            // WebRTC Signaling: route offer, answer, ice-candidate
+            if (type === "webrtc-signal") {
+                const targetPeer = room.peers.get(data.targetPeerId);
+                if (targetPeer && targetPeer.ws.readyState === WebSocket.OPEN) {
+                    targetPeer.ws.send(JSON.stringify({
+                        type: "webrtc-signal",
+                        fromPeerId: currentPeerId,
+                        signal: data.signal
+                    }));
+                }
+                return;
+            }
+
+            // Real-Time Code Change: broadcast to all other peers
+            if (type === "code-change") {
+                room.code = data.code;
+                if (data.lang) room.lang = data.lang;
+
+                room.peers.forEach((peer, pId) => {
+                    if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            type: "code-change",
+                            fromPeerId: currentPeerId,
+                            fromUser: currentUser ? currentUser.username : "Partner",
+                            code: data.code,
+                            lang: data.lang,
+                            cursor: data.cursor
+                        }));
+                    }
+                });
+                return;
+            }
+
+            // Synchronized Run Event: broadcast run trigger & results
+            if (type === "run-code" || type === "run-result") {
+                room.peers.forEach((peer, pId) => {
+                    if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            ...data,
+                            fromPeerId: currentPeerId,
+                            fromUser: currentUser ? currentUser.username : "Partner"
+                        }));
+                    }
+                });
+                return;
+            }
+
+            // In-room Chat message: broadcast to all peers
+            if (type === "chat-message") {
+                room.peers.forEach((peer, pId) => {
+                    if (peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            type: "chat-message",
+                            fromPeerId: currentPeerId,
+                            message: data.message
+                        }));
+                    }
+                });
+                return;
+            }
+
+            // Peer Media Status (Muted/VideoOff/ScreenSharing)
+            if (type === "peer-status") {
+                const myPeer = room.peers.get(currentPeerId);
+                if (myPeer) {
+                    if (data.isMuted !== undefined) myPeer.isMuted = data.isMuted;
+                    if (data.isVideoOff !== undefined) myPeer.isVideoOff = data.isVideoOff;
+                }
+                room.peers.forEach((peer, pId) => {
+                    if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            type: "peer-status",
+                            peerId: currentPeerId,
+                            ...data
+                        }));
+                    }
+                });
+                return;
+            }
+
+        } catch (e) {
+            console.error("Collab WS message error:", e);
+        }
+    });
+
+    ws.on("close", () => {
+        if (currentRoomId && currentPeerId && collabRooms.has(currentRoomId)) {
+            const room = collabRooms.get(currentRoomId);
+            room.peers.delete(currentPeerId);
+
+            // Notify remaining peers
+            room.peers.forEach((peer) => {
+                if (peer.ws.readyState === WebSocket.OPEN) {
+                    peer.ws.send(JSON.stringify({
+                        type: "peer-left",
+                        peerId: currentPeerId,
+                        user: currentUser
+                    }));
+                }
+            });
+
+            // If empty, schedule cleanup after 30 mins
+            if (room.peers.size === 0) {
+                setTimeout(() => {
+                    if (collabRooms.has(currentRoomId) && collabRooms.get(currentRoomId).peers.size === 0) {
+                        collabRooms.delete(currentRoomId);
+                    }
+                }, 30 * 60 * 1000);
+            }
+        }
+    });
+});
+
+// Start the HTTP & WebSocket server
+server.listen(PORT, () => {
+    console.log(`🚀 CodeQuest Server with Live Collab WebSockets is running on http://localhost:${PORT}`);
+});
+

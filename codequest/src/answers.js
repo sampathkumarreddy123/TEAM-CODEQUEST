@@ -906,6 +906,33 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // Start Live 1-on-1 Pair Programming Debug Room
+    const startPairDebugBtn = document.getElementById("startPairDebugBtn");
+    if (startPairDebugBtn) {
+        startPairDebugBtn.addEventListener("click", async () => {
+            startPairDebugBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Starting Room...`;
+            try {
+                const res = await fetch("/api/collab/create-room", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        questionId: currentQuestionId,
+                        title: currentQuestionText || "Debug Session"
+                    })
+                });
+                const data = await res.json();
+                if (data.success && data.roomUrl) {
+                    window.location.href = data.roomUrl;
+                } else {
+                    window.location.href = `collab.html?questionId=${currentQuestionId}`;
+                }
+            } catch (err) {
+                console.error("Collab create room error:", err);
+                window.location.href = `collab.html?questionId=${currentQuestionId}`;
+            }
+        });
+    }
+
     // 12. Logout Button in Dropdown
     if (logoutBtn) {
         logoutBtn.addEventListener("click", async () => {

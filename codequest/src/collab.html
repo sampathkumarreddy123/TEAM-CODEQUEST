@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Collab Debug Room | CodeQuest</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/logo.png">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Base styles and feature styles -->
+    <link rel="stylesheet" href="codequest-features.css">
+    <link rel="stylesheet" href="collab.css">
+</head>
+<body class="collab-body">
+
+    <!-- Top Collab Navigation Bar -->
+    <header class="collab-navbar">
+        <div class="collab-nav-left">
+            <a href="dashboard.html" class="collab-brand" title="Back to CodeQuest">
+                <img src="assets/codequest_logo.png" alt="Logo" class="brand-logo" onerror="this.src='assets/logo.png'">
+                <span class="brand-text">CODEQUEST</span>
+            </a>
+            <div class="collab-room-badge">
+                <span class="pulse-dot"></span>
+                <span class="badge-title">ROOM:</span>
+                <span class="badge-room-id" id="displayRoomId">CQ-....</span>
+                <button id="copyInviteLinkBtn" class="btn-copy-invite" title="Copy Shareable Invite Link">
+                    <i class="fa-regular fa-copy me-1"></i><span>Copy Link</span>
+                </button>
+            </div>
+            <div class="collab-question-tag" id="questionContextTag" style="display: none;">
+                <i class="fa-solid fa-code-commit me-1 text-info"></i>
+                <a id="questionContextLink" href="#" target="_blank" title="Open question in new tab">Question Context</a>
+            </div>
+        </div>
+
+        <div class="collab-nav-center">
+            <div class="connection-status-pill" id="connectionStatusPill">
+                <i class="fa-solid fa-circle-notch fa-spin text-warning me-1" id="connStatusIcon"></i>
+                <span id="connStatusText">Connecting to Room...</span>
+            </div>
+        </div>
+
+        <div class="collab-nav-right">
+            <!-- Language Selector -->
+            <div class="lang-selector-wrap">
+                <i class="fa-solid fa-code text-muted me-1"></i>
+                <select id="editorLangSelect" class="collab-select-lang" aria-label="Programming Language">
+                    <option value="javascript">JavaScript (ESM/Node)</option>
+                    <option value="html">HTML / Web Preview</option>
+                    <option value="python">Python</option>
+                    <option value="css">CSS</option>
+                    <option value="json">JSON</option>
+                </select>
+            </div>
+
+            <!-- Run Code Button -->
+            <button id="runCollabCodeBtn" class="btn btn-collab-action btn-collab-run" title="Run code in shared interactive sandbox">
+                <i class="fa-solid fa-play me-1"></i><span>Run Code</span>
+            </button>
+
+            <!-- Export as Answer Button -->
+            <button id="exportAnswerBtn" class="btn btn-collab-action btn-collab-export" title="Post this solution directly as an answer">
+                <i class="fa-solid fa-paper-plane me-1"></i><span>Post as Answer</span>
+            </button>
+
+            <!-- Leave Session Button -->
+            <a href="dashboard.html" class="btn btn-collab-action btn-collab-leave" title="Exit room">
+                <i class="fa-solid fa-arrow-right-from-bracket me-1"></i><span>Leave</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Collab Workspace Grid -->
+    <main class="collab-workspace">
+        
+        <!-- Left Section: Real-time Code Editor & Live Console -->
+        <section class="collab-editor-pane">
+            
+            <!-- Editor Sub-Header -->
+            <div class="editor-header-bar">
+                <div class="editor-tab-active">
+                    <i class="fa-brands fa-js text-warning me-1" id="fileTabIcon"></i>
+                    <span id="fileTabName">solution.js</span>
+                    <span class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-cloud-check me-1"></i>Synced</span>
+                </div>
+                <div class="editor-meta">
+                    <span class="collaborator-peer-count" id="activePeersCounter">
+                        <i class="fa-solid fa-users me-1 text-primary"></i>1 in room
+                    </span>
+                    <button id="formatCodeBtn" class="btn-editor-tool" title="Format indentation">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Format
+                    </button>
+                    <button id="clearCodeBtn" class="btn-editor-tool" title="Clear editor">
+                        <i class="fa-solid fa-trash-can me-1"></i>Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor Container with Line Numbers -->
+            <div class="code-editor-wrapper">
+                <div class="editor-line-numbers" id="editorLineNumbers">1</div>
+                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to debug together..."></textarea>
+                <div class="remote-cursor-tag" id="remoteCursorTag" style="display: none;">
+                    <span class="cursor-flag" id="cursorFlagText">@Partner</span>
+                </div>
+            </div>
+
+            <!-- Bottom Console / Live Output Drawer -->
+            <div class="collab-console-drawer">
+                <div class="console-drawer-header">
+                    <div class="console-tabs">
+                        <button class="console-tab-btn active" data-tab="console" id="tabBtnConsole">
+                            <i class="fa-solid fa-terminal me-1"></i>Live Console (<span id="consoleLogsCount">0</span>)
+                        </button>
+                        <button class="console-tab-btn" data-tab="preview" id="tabBtnPreview">
+                            <i class="fa-solid fa-window-maximize me-1"></i>Live Preview
+                        </button>
+                    </div>
+                    <div class="console-drawer-actions">
+                        <span id="collabExecTime" class="exec-time-pill" style="display: none;"></span>
+                        <button id="clearConsoleBtn" class="btn-console-clear" title="Clear console output">
+                            <i class="fa-solid fa-eraser me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="console-drawer-body">
+                    <!-- Console Logs Tab -->
+                    <div class="console-pane active" id="paneConsole">
+                        <div class="console-logs-list" id="consoleLogsList">
+                            <div class="console-empty-state">
+                                <i class="fa-solid fa-play text-success me-1"></i> Click <b>Run Code</b> to execute and view stdout/errors shared across both screens.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live HTML Preview Tab -->
+                    <div class="console-pane" id="panePreview" style="display: none;">
+                        <iframe id="collabPreviewFrame" sandbox="allow-scripts" title="Live Preview Screen"></iframe>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Right Section: Face-to-Face Video Grid & Pair Chat -->
+        <aside class="collab-side-dock">
+            
+            <!-- Video Call Grid -->
+            <div class="video-conference-card">
+                <div class="video-card-header">
+                    <span class="card-title-text"><i class="fa-solid fa-video me-1 text-danger"></i>Face-to-Face Live</span>
+                    <span class="webrtc-badge" id="webrtcStatusBadge">P2P Ready</span>
+                </div>
+
+                <div class="video-grid-container">
+                    <!-- Remote Peer Video (Large Primary) -->
+                    <div class="video-box remote-video-box" id="remoteVideoContainer">
+                        <video id="remoteVideo" autoplay playsinline></video>
+                        <div class="video-placeholder" id="remoteVideoPlaceholder">
+                            <div class="placeholder-avatar">
+                                <i class="fa-solid fa-user-astronaut"></i>
+                            </div>
+                            <div class="placeholder-text" id="remotePlaceholderText">Waiting for partner to join...</div>
+                            <button id="invitePartnerBtn" class="btn-invite-partner">
+                                <i class="fa-solid fa-link me-1"></i>Copy Invite Link
+                            </button>
+                        </div>
+                        <div class="video-user-tag">
+                            <span id="remoteUserName"><i class="fa-solid fa-user me-1"></i>Partner</span>
+                            <span id="remoteAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Local User Video (Picture-in-Picture Tile) -->
+                    <div class="video-box local-video-box" id="localVideoContainer">
+                        <video id="localVideo" autoplay muted playsinline></video>
+                        <div class="video-placeholder" id="localVideoPlaceholder" style="display: none;">
+                            <div class="placeholder-avatar-sm">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                        </div>
+                        <div class="video-user-tag">
+                            <span>You (Host)</span>
+                            <span id="localAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call Control Floating Toolbar -->
+                <div class="video-controls-toolbar">
+                    <button id="toggleMicBtn" class="btn-call-ctrl is-active" title="Mute/Unmute Microphone">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button id="toggleCamBtn" class="btn-call-ctrl is-active" title="Turn Camera On/Off">
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+                    <button id="toggleScreenBtn" class="btn-call-ctrl" title="Share Screen">
+                        <i class="fa-solid fa-display"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- In-Room Pair Programming Chat & Notes -->
+            <div class="collab-chat-card">
+                <div class="chat-card-header">
+                    <span><i class="fa-solid fa-comments me-1 text-primary"></i>Pair Chat & Debug Notes</span>
+                </div>
+
+                <!-- Quick Action Chips -->
+                <div class="quick-snippets-bar">
+                    <button class="btn-quick-chip" data-msg="💡 Check line 12 — might be an undefined variable!">"Check line 12"</button>
+                    <button class="btn-quick-chip" data-msg="🚀 Let's run the code and see console logs!">"Run and test"</button>
+                    <button class="btn-quick-chip" data-msg="🎉 Bug solved! Ready to export answer.">"Solved!"</button>
+                </div>
+
+                <div class="chat-messages-container" id="chatMessagesContainer">
+                    <div class="chat-system-message">
+                        <i class="fa-solid fa-handshake-angle me-1 text-info"></i> Welcome! You can talk face-to-face and type notes here.
+                    </div>
+                </div>
+
+                <form id="chatInputForm" class="chat-input-form">
+                    <input type="text" id="chatMessageInput" class="chat-input-field" placeholder="Type a message or note..." autocomplete="off">
+                    <button type="submit" class="btn-chat-send" title="Send message">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+
+        </aside>
+
+    </main>
+
+    <!-- Export Solution Modal -->
+    <div class="modal fade" id="exportAnswerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content collab-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa-solid fa-circle-check text-success me-2"></i>Post Pair Debug Solution</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">This will post your collaborative code as a verified answer to the question thread.</p>
+                    
+                    <div class="mb-3">
+                        <label for="exportNotesInput" class="form-label text-light small fw-bold">Debug Notes / Explanation (Optional):</label>
+                        <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Explain the root cause and why this code fixes the issue..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Code Solution Preview:</label>
+                        <pre class="export-preview-box"><code id="exportCodePreview"></code></pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmExportBtn" class="btn btn-success fw-bold">
+                        <i class="fa-solid fa-check me-1"></i>Post as Solution Answer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- CodeQuest Features (for Sandbox Runner & Toast API) -->
+    <script src="codequest-features.js?v=2.3.0"></script>
+    <!-- Collab Engine Script -->
+    <script src="collab.js?v=1.0.0"></script>
+</body>
+</html>
