@@ -123,7 +123,173 @@
     // -------------------------------------------------------------
     // 2. LIVE INTERACTIVE CODE SANDBOX RUNNER
     // -------------------------------------------------------------
-    function executeJavaScript(code, logCallback) {
+    // 2. LIVE INTERACTIVE CODE SANDBOX RUNNER (ESM & NODE.JS SHIMS)
+    // -------------------------------------------------------------
+    function transformModuleCode(sourceCode) {
+        let code = sourceCode;
+
+        // 1. Transform bare import: import "something" or import 'something';
+        code = code.replace(/^\s*import\s+['"]([^'"]+)['"]\s*;?/gm, (match, spec) => {
+            return `await __importModule(${JSON.stringify(spec)});`;
+        });
+
+        // 2. Transform namespace import: import * as name from "spec";
+        code = code.replace(/^\s*import\s+\*\s+as\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"]\s*;?/gm, (match, name, spec) => {
+            return `const ${name} = await __importModule(${JSON.stringify(spec)});`;
+        });
+
+        // 3. Transform combined import: import defaultName, { a, b } from "spec";
+        code = code.replace(/^\s*import\s+([a-zA-Z0-9_$]+)\s*,\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]\s*;?/gm, (match, defName, named, spec) => {
+            return `const __mod_${defName} = await __importModule(${JSON.stringify(spec)});\nconst ${defName} = __mod_${defName}?.default ?? __mod_${defName};\nconst { ${named} } = __mod_${defName};`;
+        });
+
+        // 4. Transform named destructuring: import { a, b as c } from "spec";
+        code = code.replace(/^\s*import\s*\{([^}]+)\}\s*from\s+['"]([^'"]+)['"]\s*;?/gm, (match, named, spec) => {
+            return `const { ${named} } = await __importModule(${JSON.stringify(spec)});`;
+        });
+
+        // 5. Transform default import: import defaultName from "spec";
+        code = code.replace(/^\s*import\s+([a-zA-Z0-9_$]+)\s+from\s+['"]([^'"]+)['"]\s*;?/gm, (match, defName, spec) => {
+            return `const __mod_${defName} = await __importModule(${JSON.stringify(spec)});\nconst ${defName} = __mod_${defName}?.default ?? __mod_${defName};`;
+        });
+
+        // 6. Transform export default
+        code = code.replace(/^\s*export\s+default\s+function\s+([a-zA-Z0-9_$]+)/gm, 'function $1');
+        code = code.replace(/^\s*export\s+default\s+class\s+([a-zA-Z0-9_$]+)/gm, 'class $1');
+        code = code.replace(/^\s*export\s+default\s+/gm, 'const __defaultExport = ');
+
+        // 7. Transform named exports: export const/let/var/function/class
+        code = code.replace(/^\s*export\s+(const|let|var|function|class)\s+/gm, '$1 ');
+        code = code.replace(/^\s*export\s*\{[^}]*\}\s*;?/gm, '/* export statement */');
+
+        return code;
+    }
+
+    function __getNodeMock(specifier) {
+        const clean = String(specifier || "").trim().toLowerCase();
+
+        if (clean === "express") {
+            const exp = function () {
+                const app = {
+                    use: (...args) => app,
+                    set: (k, v) => app,
+                    get: (r, h) => app,
+                    post: (r, h) => app,
+                    put: (r, h) => app,
+                    delete: (r, h) => app,
+                    listen: (port, cb) => {
+                        console.log(`🚀 [Server] Express running on http://localhost:${port || 3000}`);
+                        if (typeof cb === "function") cb();
+                        return app;
+                    }
+                };
+                return app;
+            };
+            exp.json = () => (req, res, next) => next && next();
+            exp.urlencoded = () => (req, res, next) => next && next();
+            exp.static = () => (req, res, next) => next && next();
+            exp.Router = () => exp();
+            return { default: exp, ...exp };
+        }
+
+        if (clean === "path") {
+            const p = {
+                join: (...parts) => parts.join("/").replace(/\/+/g, "/"),
+                resolve: (...parts) => parts.join("/").replace(/\/+/g, "/"),
+                dirname: (p) => p.split("/").slice(0, -1).join("/") || "/",
+                basename: (p) => p.split("/").pop() || ""
+            };
+            return { default: p, ...p };
+        }
+
+        if (clean === "fs") {
+            const fs = {
+                readFileSync: (p) => `// [Mock content for ${p}]`,
+                writeFileSync: (p, d) => console.log(`📝 [fs Mock] Saved file ${p}`),
+                existsSync: () => true,
+                promises: {
+                    readFile: async () => "",
+                    writeFile: async () => {}
+                }
+            };
+            return { default: fs, ...fs };
+        }
+
+        if (clean === "dotenv") {
+            const d = { config: () => ({ parsed: { PORT: 3000, NODE_ENV: "development" } }) };
+            return { default: d, ...d };
+        }
+
+        if (clean === "cors") {
+            const c = () => (req, res, next) => next && next();
+            return { default: c };
+        }
+
+        if (clean === "url") {
+            const u = {
+                fileURLToPath: (url) => typeof url === "string" ? url.replace(/^file:\/\//, "") : "/index.js"
+            };
+            return { default: u, ...u };
+        }
+
+        if (clean === "mongoose") {
+            const m = {
+                connect: async (uri) => {
+                    console.log(`✅ [MongoDB Mock] Connected successfully to ${uri || "mongodb://127.0.0.1:27017"}`);
+                    return m;
+                },
+                Schema: class { constructor(def) { this.def = def; } },
+                model: (name) => class {
+                    constructor(d) { Object.assign(this, d); }
+                    async save() { console.log(`💾 [MongoDB Mock] Saved ${name} document`); return this; }
+                    static async find() { return []; }
+                    static async findOne() { return null; }
+                    static async findById() { return null; }
+                    static async countDocuments() { return 0; }
+                }
+            };
+            return { default: m, ...m };
+        }
+
+        if (clean === "axios" && window.axios) {
+            return { default: window.axios, ...window.axios };
+        }
+
+        return { default: {} };
+    }
+
+    async function __importModule(specifier) {
+        const cleanSpec = String(specifier || "").trim();
+
+        // 1. Built-in Node.js mocks
+        const nodeModules = ["express", "path", "fs", "dotenv", "cors", "mongoose", "url", "http", "https", "crypto"];
+        if (nodeModules.includes(cleanSpec.toLowerCase())) {
+            return __getNodeMock(cleanSpec);
+        }
+
+        // 2. Relative or local project files (e.g., "./codequest/src/server.js")
+        if (cleanSpec.startsWith(".") || cleanSpec.startsWith("/")) {
+            console.log(`📦 [Module Loaded] ${cleanSpec}`);
+            return { default: {}, __esModule: true };
+        }
+
+        // 3. External NPM package via ESM CDN
+        try {
+            const mod = await import(`https://esm.sh/${cleanSpec}`);
+            return mod;
+        } catch (e) {
+            console.warn(`⚠️ [Module Note] Could not fetch "${cleanSpec}" (${e.message}). Using fallback mock.`);
+            return { default: {}, ...window };
+        }
+    }
+
+    function __requireShim(specifier) {
+        const clean = String(specifier || "").trim().toLowerCase();
+        const mock = __getNodeMock(clean);
+        return mock.default || mock;
+    }
+
+    async function executeJavaScript(code, logCallback) {
         const originalLog = console.log;
         const originalWarn = console.warn;
         const originalError = console.error;
@@ -160,16 +326,28 @@
         let executionError = null;
 
         try {
-            // Safe evaluation via Async Function constructor
-            const runner = new Function(`
+            // Transform modern ES Module imports/exports into runnable async statements
+            const transformed = transformModuleCode(code);
+
+            // Safe async evaluation supporting top-level await and modules
+            const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+            const runner = new AsyncFunction("__importModule", "__requireShim", `
                 "use strict";
+                const require = __requireShim;
+                const process = { env: { PORT: 3000, NODE_ENV: "development" }, cwd: () => "/" };
+                const __dirname = "/";
+                const __filename = "/index.js";
+                const module = { exports: {} };
+                const exports = module.exports;
+
                 try {
-                    ${code}
+                    ${transformed}
                 } catch(err) {
                     throw err;
                 }
             `);
-            result = runner();
+
+            result = await runner(__importModule, __requireShim);
             if (result !== undefined) {
                 intercept("return", ["Return value =>", result]);
             }
@@ -334,8 +512,8 @@
                     runBtn.classList.add("is-running");
                     runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Running...`;
 
-                    setTimeout(() => {
-                        const execution = executeJavaScript(rawCode, (log) => {
+                    setTimeout(async () => {
+                        const execution = await executeJavaScript(rawCode, (log) => {
                             count++;
                             const item = document.createElement("div");
                             item.className = `log-line log-${log.type}`;
