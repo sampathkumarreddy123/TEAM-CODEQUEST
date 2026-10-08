@@ -54,7 +54,7 @@
         iceCandidatePoolSize: 10
     };
 
-    // DOM Elements
+    // Header & Context Elements
     const displayRoomIdEl = document.getElementById("displayRoomId");
     const copyInviteLinkBtn = document.getElementById("copyInviteLinkBtn");
     const invitePartnerBtn = document.getElementById("invitePartnerBtn");
@@ -63,6 +63,15 @@
     const webrtcStatusBadge = document.getElementById("webrtcStatusBadge");
     const questionContextTag = document.getElementById("questionContextTag");
     const questionContextLink = document.getElementById("questionContextLink");
+    const collabQuestionBanner = document.getElementById("collabQuestionBanner");
+    const bannerQuestionTitle = document.getElementById("bannerQuestionTitle");
+
+    // Mobile View Tab Elements
+    const mTabEditor = document.getElementById("mTabEditor");
+    const mTabMedia = document.getElementById("mTabMedia");
+    const mobileUnreadDot = document.getElementById("mobileUnreadDot");
+    const paneCollabEditor = document.getElementById("paneCollabEditor");
+    const paneCollabMedia = document.getElementById("paneCollabMedia");
 
     // Editor & Console
     const editorLangSelect = document.getElementById("editorLangSelect");
@@ -104,15 +113,27 @@
     const chatInputForm = document.getElementById("chatInputForm");
     const chatMessageInput = document.getElementById("chatMessageInput");
 
-    // Export Modal Elements
-    const exportAnswerBtn = document.getElementById("exportAnswerBtn");
-    const exportNotesInput = document.getElementById("exportNotesInput");
+    // Publish Modal Elements
+    const publishSolutionBtn = document.getElementById("publishSolutionBtn");
     const exportCodePreview = document.getElementById("exportCodePreview");
-    const confirmExportBtn = document.getElementById("confirmExportBtn");
+    const confirmPublishBtn = document.getElementById("confirmPublishBtn");
+    const confirmPublishBtnText = document.getElementById("confirmPublishBtnText");
     const exportModalEl = document.getElementById("exportAnswerModal");
     let exportModalInstance = null;
 
-    displayRoomIdEl.textContent = roomId;
+    // Publish Mode Tabs & Controls
+    const tabModeAnswer = document.getElementById("tabModeAnswer");
+    const tabModeQuestion = document.getElementById("tabModeQuestion");
+    const tabModeVault = document.getElementById("tabModeVault");
+    const selectedQuestionDisplay = document.getElementById("selectedQuestionDisplay");
+    const selectQuestionContainer = document.getElementById("selectQuestionContainer");
+    const chooseQuestionSelect = document.getElementById("chooseQuestionSelect");
+    const exportNotesInput = document.getElementById("exportNotesInput");
+    const newQuestionTitleInput = document.getElementById("newQuestionTitleInput");
+    const newQuestionTagsInput = document.getElementById("newQuestionTagsInput");
+    const newQuestionDescInput = document.getElementById("newQuestionDescInput");
+
+    if (displayRoomIdEl) displayRoomIdEl.textContent = roomId;
 
     // -------------------------------------------------------------
     // 2. INITIALIZATION & USER AUTH
@@ -132,11 +153,84 @@
             console.warn("Auth check note:", e);
         }
 
-        // Setup Question context link if provided
+        await initQuestionContext();
+    }
+
+    async function initQuestionContext() {
         if (questionId) {
-            questionContextTag.style.display = "inline-flex";
-            questionContextLink.href = `messageDetails.html?id=${questionId}`;
-            questionContextLink.textContent = `Question #${questionId.slice(-6)}`;
+            try {
+                const res = await fetch(`/api/questions/${encodeURIComponent(questionId)}`, { credentials: "include" });
+                if (res.ok) {
+                    const data = await res.json();
+                    const q = data.question || data;
+                    if (q && q.title) {
+                        if (questionContextTag) {
+                            questionContextTag.style.display = "inline-flex";
+                            if (questionContextLink) {
+                                questionContextLink.href = `messageDetails.html?id=${encodeURIComponent(questionId)}`;
+                                questionContextLink.textContent = `Q: ${q.title.length > 25 ? q.title.slice(0, 22) + "..." : q.title}`;
+                                questionContextLink.title = q.title;
+                            }
+                        }
+                        if (collabQuestionBanner && bannerQuestionTitle) {
+                            collabQuestionBanner.style.display = "flex";
+                            bannerQuestionTitle.textContent = q.title;
+                        }
+                        if (selectedQuestionDisplay) {
+                            selectedQuestionDisplay.innerHTML = `<span class="badge bg-primary me-2"><i class="fa-solid fa-link me-1"></i>Linked</span> <strong>${escapeHtml(q.title)}</strong>`;
+                        }
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn("Could not fetch question details:", err);
+            }
+
+            // Fallback display if fetch doesn't return title
+            if (questionContextTag) {
+                questionContextTag.style.display = "inline-flex";
+                if (questionContextLink) {
+                    questionContextLink.href = `messageDetails.html?id=${encodeURIComponent(questionId)}`;
+                    questionContextLink.textContent = `Question #${questionId.slice(-6)}`;
+                }
+            }
+            if (collabQuestionBanner && bannerQuestionTitle) {
+                collabQuestionBanner.style.display = "flex";
+                bannerQuestionTitle.textContent = `Question #${questionId.slice(-6)}`;
+            }
+            if (selectedQuestionDisplay) {
+                selectedQuestionDisplay.innerHTML = `<span class="badge bg-primary me-2"><i class="fa-solid fa-link me-1"></i>Linked ID:</span> <code>${escapeHtml(questionId)}</code>`;
+            }
+        } else {
+            // No question ID in URL
+            if (selectedQuestionDisplay) {
+                selectedQuestionDisplay.innerHTML = `<span class="text-warning"><i class="fa-solid fa-circle-info me-1"></i>No question linked directly.</span> Select one below, or switch to <strong>Ask as New Question</strong>.`;
+            }
+            if (selectQuestionContainer) {
+                selectQuestionContainer.style.display = "block";
+            }
+            loadRecentQuestions();
+        }
+    }
+
+    async function loadRecentQuestions() {
+        if (!chooseQuestionSelect) return;
+        try {
+            const res = await fetch("/api/collab/recent-questions");
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && Array.isArray(data.questions)) {
+                    chooseQuestionSelect.innerHTML = `<option value="">-- Select Question to Answer --</option>`;
+                    data.questions.forEach((q) => {
+                        const opt = document.createElement("option");
+                        opt.value = q._id || q.id;
+                        opt.textContent = q.title || "Untitled Question";
+                        chooseQuestionSelect.appendChild(opt);
+                    });
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load recent questions:", e);
         }
     }
 
@@ -675,13 +769,15 @@
         showToast("Code formatted with 4-space indentation");
     });
 
-    clearCodeBtn.addEventListener("click", () => {
-        if (confirm("Clear code editor for both users?")) {
-            collabCodeInput.value = "";
-            updateLineNumbers();
-            sendCodeChange();
-        }
-    });
+    if (clearCodeBtn) {
+        clearCodeBtn.addEventListener("click", () => {
+            if (confirm("Clear code editor for both users?")) {
+                collabCodeInput.value = "";
+                updateLineNumbers();
+                sendCodeChange();
+            }
+        });
+    }
 
     // -------------------------------------------------------------
     // 6. CODE RUNNER & SHARED LIVE CONSOLE
@@ -848,6 +944,11 @@
         `;
         chatMessagesContainer.appendChild(bubble);
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+        // On mobile, if media tab is currently hidden, light up the unread dot
+        if (!isMine && mobileUnreadDot && paneCollabMedia && paneCollabMedia.classList.contains("is-mobile-hidden")) {
+            mobileUnreadDot.style.display = "inline-block";
+        }
     }
 
     // Quick Chip clicks
@@ -860,7 +961,28 @@
     });
 
     // -------------------------------------------------------------
-    // 8. INVITE LINK & EXPORT AS ANSWER MODAL
+    // 8. MOBILE VIEW TAB SWITCHING
+    // -------------------------------------------------------------
+    if (mTabEditor && mTabMedia) {
+        mTabEditor.addEventListener("click", () => {
+            mTabEditor.classList.add("active");
+            mTabMedia.classList.remove("active");
+            if (paneCollabEditor) paneCollabEditor.classList.remove("is-mobile-hidden");
+            if (paneCollabMedia) paneCollabMedia.classList.add("is-mobile-hidden");
+        });
+
+        mTabMedia.addEventListener("click", () => {
+            mTabMedia.classList.add("active");
+            mTabEditor.classList.remove("active");
+            if (paneCollabMedia) paneCollabMedia.classList.remove("is-mobile-hidden");
+            if (paneCollabEditor) paneCollabEditor.classList.add("is-mobile-hidden");
+            // Clear unread notification dot when opening media/chat tab
+            if (mobileUnreadDot) mobileUnreadDot.style.display = "none";
+        });
+    }
+
+    // -------------------------------------------------------------
+    // 9. INVITE LINK & PROFESSIONAL MULTI-MODE PUBLISH MODAL
     // -------------------------------------------------------------
     function copyInviteLink() {
         const link = window.location.href;
@@ -871,63 +993,169 @@
         });
     }
 
-    copyInviteLinkBtn.addEventListener("click", copyInviteLink);
+    if (copyInviteLinkBtn) copyInviteLinkBtn.addEventListener("click", copyInviteLink);
     if (invitePartnerBtn) invitePartnerBtn.addEventListener("click", copyInviteLink);
 
-    // Export as Answer
-    exportAnswerBtn.addEventListener("click", () => {
-        const code = collabCodeInput.value;
-        if (!code.trim()) {
-            showToast("Editor is empty. Write code first before exporting.");
-            return;
-        }
+    // Track active publish mode ('answer', 'question', 'vault')
+    let currentPublishMode = "answer";
 
-        exportCodePreview.textContent = code;
-        if (window.bootstrap && exportModalEl) {
-            exportModalInstance = new bootstrap.Modal(exportModalEl);
-            exportModalInstance.show();
-        }
-    });
+    if (tabModeAnswer) {
+        tabModeAnswer.addEventListener("shown.bs.tab", () => {
+            currentPublishMode = "answer";
+            if (confirmPublishBtnText) confirmPublishBtnText.textContent = "Post as Answer";
+        });
+    }
+    if (tabModeQuestion) {
+        tabModeQuestion.addEventListener("shown.bs.tab", () => {
+            currentPublishMode = "question";
+            if (confirmPublishBtnText) confirmPublishBtnText.textContent = "Ask as Question";
+        });
+    }
+    if (tabModeVault) {
+        tabModeVault.addEventListener("shown.bs.tab", () => {
+            currentPublishMode = "vault";
+            if (confirmPublishBtnText) confirmPublishBtnText.textContent = "Save to Vault";
+        });
+    }
 
-    confirmExportBtn.addEventListener("click", async () => {
-        if (!questionId) {
-            alert("This debug room was not started from a specific question thread. You can copy the code manually into any question!");
-            return;
-        }
-
-        const code = collabCodeInput.value;
-        const notes = exportNotesInput.value.trim();
-        const lang = editorLangSelect.value;
-
-        confirmExportBtn.disabled = true;
-        confirmExportBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Posting...`;
-
-        try {
-            const res = await fetch("/api/collab/export-answer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ questionId, code, lang, notes })
-            });
-
-            const data = await res.json();
-            if (res.ok && data.success) {
-                showToast("🎉 Solution successfully exported and posted as an answer!");
-                if (exportModalInstance) exportModalInstance.hide();
-                setTimeout(() => {
-                    window.location.href = `messageDetails.html?id=${questionId}`;
-                }, 1500);
-            } else {
-                alert(data.error || "Failed to export answer. Please make sure you are logged in.");
+    // Open Publish Modal
+    if (publishSolutionBtn) {
+        publishSolutionBtn.addEventListener("click", () => {
+            const code = collabCodeInput.value;
+            if (!code.trim()) {
+                showToast("Editor is empty. Write code first before publishing.");
+                return;
             }
-        } catch (err) {
-            console.error("Export error:", err);
-            alert("Error posting answer. Please check your network.");
-        } finally {
-            confirmExportBtn.disabled = false;
-            confirmExportBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i>Post as Solution Answer`;
-        }
-    });
+
+            if (exportCodePreview) {
+                exportCodePreview.textContent = code;
+            }
+
+            if (window.bootstrap && exportModalEl) {
+                exportModalInstance = bootstrap.Modal.getInstance(exportModalEl) || new bootstrap.Modal(exportModalEl);
+                exportModalInstance.show();
+            }
+        });
+    }
+
+    // Confirm Publish / Export
+    if (confirmPublishBtn) {
+        confirmPublishBtn.addEventListener("click", async () => {
+            const code = collabCodeInput.value;
+            if (!code.trim()) {
+                alert("Please write some code before publishing.");
+                return;
+            }
+            const lang = editorLangSelect ? editorLangSelect.value : "javascript";
+
+            // MODE 1: Post as Answer to target question
+            if (currentPublishMode === "answer") {
+                const targetQId = questionId || (chooseQuestionSelect ? chooseQuestionSelect.value : null);
+                if (!targetQId) {
+                    alert("Please select a question to answer, or switch to the 'Ask as New Question' tab!");
+                    return;
+                }
+
+                const notes = exportNotesInput ? exportNotesInput.value.trim() : "";
+                confirmPublishBtn.disabled = true;
+                confirmPublishBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Posting Answer...`;
+
+                try {
+                    const res = await fetch("/api/collab/export-answer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ questionId: targetQId, code, lang, notes })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.success) {
+                        showToast("🎉 Solution successfully exported and posted as an answer!");
+                        if (exportModalInstance) exportModalInstance.hide();
+                        setTimeout(() => {
+                            window.location.href = `messageDetails.html?id=${encodeURIComponent(targetQId)}`;
+                        }, 1200);
+                    } else {
+                        alert(data.error || "Failed to post answer. Please ensure you are logged in.");
+                    }
+                } catch (err) {
+                    console.error("Export error:", err);
+                    alert("Error posting answer. Please check your network.");
+                } finally {
+                    confirmPublishBtn.disabled = false;
+                    confirmPublishBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i><span id="confirmPublishBtnText">Post as Answer</span>`;
+                }
+
+            // MODE 2: Ask as New Question
+            } else if (currentPublishMode === "question") {
+                const title = newQuestionTitleInput ? newQuestionTitleInput.value.trim() : "";
+                if (!title) {
+                    alert("Please enter a question title.");
+                    if (newQuestionTitleInput) newQuestionTitleInput.focus();
+                    return;
+                }
+
+                const tags = newQuestionTagsInput ? newQuestionTagsInput.value.trim() : "";
+                const description = newQuestionDescInput ? newQuestionDescInput.value.trim() : "";
+
+                confirmPublishBtn.disabled = true;
+                confirmPublishBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Creating Question...`;
+
+                try {
+                    const res = await fetch("/api/collab/export-question", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ title, code, lang, tags, description })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && data.success && data.questionId) {
+                        showToast("🚀 Question successfully created and published!");
+                        if (exportModalInstance) exportModalInstance.hide();
+                        setTimeout(() => {
+                            window.location.href = `messageDetails.html?id=${encodeURIComponent(data.questionId)}`;
+                        }, 1200);
+                    } else {
+                        alert(data.error || "Failed to create question. Please ensure you are logged in.");
+                    }
+                } catch (err) {
+                    console.error("Question creation error:", err);
+                    alert("Error creating question. Please check your network.");
+                } finally {
+                    confirmPublishBtn.disabled = false;
+                    confirmPublishBtn.innerHTML = `<i class="fa-solid fa-check me-1"></i><span id="confirmPublishBtnText">Ask as Question</span>`;
+                }
+
+            // MODE 3: Save to Vault
+            } else if (currentPublishMode === "vault") {
+                if (window.CodeQuestPro && window.CodeQuestPro.CodeVault && typeof window.CodeQuestPro.CodeVault.save === "function") {
+                    const snippetTitle = (collabQuestionBanner && bannerQuestionTitle && bannerQuestionTitle.textContent && !bannerQuestionTitle.textContent.startsWith("Loading"))
+                        ? bannerQuestionTitle.textContent
+                        : `Live Collab - ${roomId} (${lang.toUpperCase()})`;
+                    window.CodeQuestPro.CodeVault.save(snippetTitle, code, lang);
+                    showToast("💾 Snippet successfully saved to your personal Code Vault!");
+                    if (exportModalInstance) exportModalInstance.hide();
+                } else {
+                    try {
+                        const vault = JSON.parse(localStorage.getItem("codequest_vault") || "[]");
+                        vault.push({
+                            id: "vault_" + Date.now(),
+                            title: `Live Collab - ${roomId} (${lang.toUpperCase()})`,
+                            code: code,
+                            lang: lang,
+                            createdAt: new Date().toISOString()
+                        });
+                        localStorage.setItem("codequest_vault", JSON.stringify(vault));
+                        showToast("💾 Saved to your personal Code Vault!");
+                        if (exportModalInstance) exportModalInstance.hide();
+                    } catch (e) {
+                        showToast("Saved locally!");
+                    }
+                }
+            }
+        });
+    }
 
     // Helper: Toast notifications
     function showToast(msg) {

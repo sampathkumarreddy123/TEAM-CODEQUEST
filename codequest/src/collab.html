@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Collab Debug Room | CodeQuest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Live Pair Debug Room | CodeQuest</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/logo.png">
     <!-- Font Awesome 6 -->
@@ -12,7 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Base styles and feature styles -->
     <link rel="stylesheet" href="codequest-features.css">
-    <link rel="stylesheet" href="collab.css">
+    <link rel="stylesheet" href="collab.css?v=2.0.0">
 </head>
 <body class="collab-body">
 
@@ -21,64 +21,61 @@
         <div class="collab-nav-left">
             <a href="dashboard.html" class="collab-brand" title="Back to CodeQuest">
                 <img src="assets/codequest_logo.png" alt="Logo" class="brand-logo" onerror="this.src='assets/logo.png'">
-                <span class="brand-text">CODEQUEST</span>
+                <span class="brand-text d-none d-sm-inline">CODEQUEST</span>
             </a>
-            <div class="collab-room-badge">
+            <div class="collab-room-badge" id="copyInviteLinkBtn" title="Click to copy invite link">
                 <span class="pulse-dot"></span>
-                <span class="badge-title">ROOM:</span>
+                <span class="badge-title d-none d-md-inline">ROOM:</span>
                 <span class="badge-room-id" id="displayRoomId">CQ-....</span>
-                <button id="copyInviteLinkBtn" class="btn-copy-invite" title="Copy Shareable Invite Link">
-                    <i class="fa-regular fa-copy me-1"></i><span>Copy Link</span>
-                </button>
+                <i class="fa-regular fa-copy copy-icon-subtle"></i>
             </div>
-            <div class="collab-question-tag" id="questionContextTag" style="display: none;">
+            <div class="collab-question-tag d-none d-lg-flex" id="questionContextTag" style="display: none;">
                 <i class="fa-solid fa-code-commit me-1 text-info"></i>
-                <a id="questionContextLink" href="#" target="_blank" title="Open question in new tab">Question Context</a>
+                <a id="questionContextLink" href="#" target="_blank" title="Open question in new tab">Context</a>
             </div>
         </div>
 
-        <div class="collab-nav-center">
+        <div class="collab-nav-center d-none d-md-flex">
             <div class="connection-status-pill" id="connectionStatusPill">
                 <i class="fa-solid fa-circle-notch fa-spin text-warning me-1" id="connStatusIcon"></i>
-                <span id="connStatusText">Connecting to Room...</span>
+                <span id="connStatusText">Connecting...</span>
             </div>
         </div>
 
         <div class="collab-nav-right">
-            <!-- Language Selector -->
-            <div class="lang-selector-wrap">
-                <i class="fa-solid fa-code text-muted me-1"></i>
-                <select id="editorLangSelect" class="collab-select-lang" aria-label="Programming Language">
-                    <option value="javascript">JavaScript (ESM/Node)</option>
-                    <option value="html">HTML / Web Preview</option>
-                    <option value="python">Python</option>
-                    <option value="css">CSS</option>
-                    <option value="json">JSON</option>
-                </select>
-            </div>
-
             <!-- Run Code Button -->
             <button id="runCollabCodeBtn" class="btn btn-collab-action btn-collab-run" title="Run code in shared interactive sandbox">
-                <i class="fa-solid fa-play me-1"></i><span>Run Code</span>
+                <i class="fa-solid fa-play me-1"></i><span>Run</span>
             </button>
 
-            <!-- Export as Answer Button -->
-            <button id="exportAnswerBtn" class="btn btn-collab-action btn-collab-export" title="Post this solution directly as an answer">
-                <i class="fa-solid fa-paper-plane me-1"></i><span>Post as Answer</span>
+            <!-- Publish / Export Button (Post Answer, Ask Question, Save) -->
+            <button id="publishSolutionBtn" class="btn btn-collab-action btn-collab-export" title="Publish as Answer or Ask as Question">
+                <i class="fa-solid fa-cloud-arrow-up me-1"></i><span class="d-none d-sm-inline">Publish</span>
             </button>
 
             <!-- Leave Session Button -->
             <a href="dashboard.html" class="btn btn-collab-action btn-collab-leave" title="Exit room">
-                <i class="fa-solid fa-arrow-right-from-bracket me-1"></i><span>Leave</span>
+                <i class="fa-solid fa-arrow-right-from-bracket me-1"></i><span class="d-none d-md-inline">Leave</span>
             </a>
         </div>
     </header>
+
+    <!-- Mobile View Mode Switcher (Visible on Tablets & Phones < 992px) -->
+    <nav class="mobile-view-tabs-bar d-lg-none" aria-label="Mobile View Switcher">
+        <button class="mobile-view-btn active" data-view="editor" id="mTabEditor">
+            <i class="fa-solid fa-code me-1"></i>Editor & Console
+        </button>
+        <button class="mobile-view-btn" data-view="media" id="mTabMedia">
+            <i class="fa-solid fa-video me-1 text-danger"></i>Video & Chat
+            <span class="mobile-unread-dot" id="mobileUnreadDot" style="display: none;"></span>
+        </button>
+    </nav>
 
     <!-- Main Collab Workspace Grid -->
     <main class="collab-workspace">
         
         <!-- Left Section: Real-time Code Editor & Live Console -->
-        <section class="collab-editor-pane">
+        <section class="collab-editor-pane" id="paneCollabEditor">
             
             <!-- Editor Sub-Header -->
             <div class="editor-header-bar">
@@ -87,23 +84,41 @@
                     <span id="fileTabName">solution.js</span>
                     <span class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-cloud-check me-1"></i>Synced</span>
                 </div>
+                
                 <div class="editor-meta">
-                    <span class="collaborator-peer-count" id="activePeersCounter">
-                        <i class="fa-solid fa-users me-1 text-primary"></i>1 in room
-                    </span>
-                    <button id="formatCodeBtn" class="btn-editor-tool" title="Format indentation">
+                    <!-- Language Selector embedded cleanly -->
+                    <div class="lang-selector-wrap">
+                        <select id="editorLangSelect" class="collab-select-lang" aria-label="Programming Language">
+                            <option value="javascript">JavaScript</option>
+                            <option value="html">HTML/Web</option>
+                            <option value="python">Python</option>
+                            <option value="css">CSS</option>
+                            <option value="json">JSON</option>
+                        </select>
+                    </div>
+
+                    <button id="formatCodeBtn" class="btn-editor-tool" title="Format code indentation">
                         <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Format
                     </button>
-                    <button id="clearCodeBtn" class="btn-editor-tool" title="Clear editor">
-                        <i class="fa-solid fa-trash-can me-1"></i>Clear
-                    </button>
+
+                    <span class="collaborator-peer-count d-none d-sm-inline" id="activePeersCounter">
+                        <i class="fa-solid fa-users me-1 text-primary"></i>1 in room
+                    </span>
+                </div>
+            </div>
+
+            <!-- Context Banner (Shows question title if attached) -->
+            <div class="collab-question-banner" id="collabQuestionBanner" style="display: none;">
+                <div class="banner-content">
+                    <span class="badge bg-primary-subtle text-primary fw-bold me-2">Fixing:</span>
+                    <span class="banner-question-title" id="bannerQuestionTitle">Loading question details...</span>
                 </div>
             </div>
 
             <!-- Editor Container with Line Numbers -->
             <div class="code-editor-wrapper">
                 <div class="editor-line-numbers" id="editorLineNumbers">1</div>
-                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to debug together..."></textarea>
+                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to debug together in real-time..."></textarea>
                 <div class="remote-cursor-tag" id="remoteCursorTag" style="display: none;">
                     <span class="cursor-flag" id="cursorFlagText">@Partner</span>
                 </div>
@@ -114,7 +129,7 @@
                 <div class="console-drawer-header">
                     <div class="console-tabs">
                         <button class="console-tab-btn active" data-tab="console" id="tabBtnConsole">
-                            <i class="fa-solid fa-terminal me-1"></i>Live Console (<span id="consoleLogsCount">0</span>)
+                            <i class="fa-solid fa-terminal me-1"></i>Console (<span id="consoleLogsCount">0</span>)
                         </button>
                         <button class="console-tab-btn" data-tab="preview" id="tabBtnPreview">
                             <i class="fa-solid fa-window-maximize me-1"></i>Live Preview
@@ -133,7 +148,7 @@
                     <div class="console-pane active" id="paneConsole">
                         <div class="console-logs-list" id="consoleLogsList">
                             <div class="console-empty-state">
-                                <i class="fa-solid fa-play text-success me-1"></i> Click <b>Run Code</b> to execute and view stdout/errors shared across both screens.
+                                <i class="fa-solid fa-play text-success me-1"></i> Click <b>Run</b> to execute code shared across both screens.
                             </div>
                         </div>
                     </div>
@@ -148,13 +163,13 @@
         </section>
 
         <!-- Right Section: Face-to-Face Video Grid & Pair Chat -->
-        <aside class="collab-side-dock">
+        <aside class="collab-side-dock" id="paneCollabMedia">
             
             <!-- Video Call Grid -->
             <div class="video-conference-card">
                 <div class="video-card-header">
                     <span class="card-title-text"><i class="fa-solid fa-video me-1 text-danger"></i>Face-to-Face Live</span>
-                    <span class="webrtc-badge" id="webrtcStatusBadge">P2P Ready</span>
+                    <span class="webrtc-badge" id="webrtcStatusBadge">Ready</span>
                 </div>
 
                 <div class="video-grid-container">
@@ -185,7 +200,7 @@
                             </div>
                         </div>
                         <div class="video-user-tag">
-                            <span>You (Host)</span>
+                            <span>You</span>
                             <span id="localAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
@@ -193,13 +208,13 @@
 
                 <!-- Call Control Floating Toolbar -->
                 <div class="video-controls-toolbar">
-                    <button id="toggleMicBtn" class="btn-call-ctrl is-active" title="Mute/Unmute Microphone">
+                    <button id="toggleMicBtn" class="btn-call-ctrl is-active" title="Mute/Unmute Microphone" aria-label="Toggle Microphone">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
-                    <button id="toggleCamBtn" class="btn-call-ctrl is-active" title="Turn Camera On/Off">
+                    <button id="toggleCamBtn" class="btn-call-ctrl is-active" title="Turn Camera On/Off" aria-label="Toggle Camera">
                         <i class="fa-solid fa-video"></i>
                     </button>
-                    <button id="toggleScreenBtn" class="btn-call-ctrl" title="Share Screen">
+                    <button id="toggleScreenBtn" class="btn-call-ctrl d-none d-md-flex" title="Share Screen" aria-label="Share Screen">
                         <i class="fa-solid fa-display"></i>
                     </button>
                 </div>
@@ -208,25 +223,25 @@
             <!-- In-Room Pair Programming Chat & Notes -->
             <div class="collab-chat-card">
                 <div class="chat-card-header">
-                    <span><i class="fa-solid fa-comments me-1 text-primary"></i>Pair Chat & Debug Notes</span>
+                    <span><i class="fa-solid fa-comments me-1 text-primary"></i>Pair Chat & Notes</span>
                 </div>
 
                 <!-- Quick Action Chips -->
                 <div class="quick-snippets-bar">
-                    <button class="btn-quick-chip" data-msg="💡 Check line 12 — might be an undefined variable!">"Check line 12"</button>
-                    <button class="btn-quick-chip" data-msg="🚀 Let's run the code and see console logs!">"Run and test"</button>
-                    <button class="btn-quick-chip" data-msg="🎉 Bug solved! Ready to export answer.">"Solved!"</button>
+                    <button class="btn-quick-chip" data-msg="💡 Check line 10 — verify variable names!">"Check line 10"</button>
+                    <button class="btn-quick-chip" data-msg="🚀 Let's run the code and check console output.">"Run & Test"</button>
+                    <button class="btn-quick-chip" data-msg="🎉 Bug solved! Ready to publish.">"Solved! 🎉"</button>
                 </div>
 
                 <div class="chat-messages-container" id="chatMessagesContainer">
                     <div class="chat-system-message">
-                        <i class="fa-solid fa-handshake-angle me-1 text-info"></i> Welcome! You can talk face-to-face and type notes here.
+                        <i class="fa-solid fa-handshake-angle me-1 text-info"></i> Welcome! You can speak face-to-face and send debug notes here.
                     </div>
                 </div>
 
                 <form id="chatInputForm" class="chat-input-form">
                     <input type="text" id="chatMessageInput" class="chat-input-field" placeholder="Type a message or note..." autocomplete="off">
-                    <button type="submit" class="btn-chat-send" title="Send message">
+                    <button type="submit" class="btn-chat-send" title="Send message" aria-label="Send Message">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
@@ -236,31 +251,94 @@
 
     </main>
 
-    <!-- Export Solution Modal -->
+    <!-- Professional Publish / Export Modal (Answer OR New Question OR Vault) -->
     <div class="modal fade" id="exportAnswerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content collab-modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-circle-check text-success me-2"></i>Post Pair Debug Solution</h5>
+                    <h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>Publish Collaborative Code</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p class="text-secondary small mb-3">This will post your collaborative code as a verified answer to the question thread.</p>
                     
-                    <div class="mb-3">
-                        <label for="exportNotesInput" class="form-label text-light small fw-bold">Debug Notes / Explanation (Optional):</label>
-                        <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Explain the root cause and why this code fixes the issue..."></textarea>
+                    <!-- Mode Selector Nav Pills -->
+                    <ul class="nav nav-pills publish-nav-pills mb-3" id="publishModeTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tabModeAnswer" data-bs-toggle="pill" data-bs-target="#modeAnswerContent" type="button" role="tab">
+                                <i class="fa-solid fa-reply me-1"></i> Post as Answer
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tabModeQuestion" data-bs-toggle="pill" data-bs-target="#modeQuestionContent" type="button" role="tab">
+                                <i class="fa-solid fa-circle-question me-1"></i> Ask as New Question
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tabModeVault" data-bs-toggle="pill" data-bs-target="#modeVaultContent" type="button" role="tab">
+                                <i class="fa-solid fa-bookmark me-1"></i> Save to Code Vault
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- MODE 1: Post as Answer -->
+                        <div class="tab-pane fade show active" id="modeAnswerContent" role="tabpanel">
+                            <div class="target-question-card mb-3 p-3 rounded" id="targetQuestionCard">
+                                <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Target Question to Answer:</label>
+                                <div id="selectedQuestionDisplay" class="fw-bold text-light">Loading question info...</div>
+                                
+                                <!-- Dropdown if no question linked yet -->
+                                <div id="selectQuestionContainer" style="display: none;" class="mt-2">
+                                    <label for="chooseQuestionSelect" class="form-label small text-muted">Or pick an existing question to answer:</label>
+                                    <select id="chooseQuestionSelect" class="form-select collab-modal-input">
+                                        <option value="">-- Select Question --</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="exportNotesInput" class="form-label text-light small fw-bold">Explanation & Debug Notes (Optional):</label>
+                                <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Explain how you fixed the issue during pair-programming..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- MODE 2: Ask as New Question -->
+                        <div class="tab-pane fade" id="modeQuestionContent" role="tabpanel">
+                            <div class="mb-3">
+                                <label for="newQuestionTitleInput" class="form-label text-light small fw-bold">Question Title / Topic:</label>
+                                <input type="text" id="newQuestionTitleInput" class="form-control collab-modal-input" placeholder="e.g., How to handle async WebRTC peer connection properly?">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newQuestionTagsInput" class="form-label text-light small fw-bold">Tags (comma-separated):</label>
+                                <input type="text" id="newQuestionTagsInput" class="form-control collab-modal-input" placeholder="javascript, webrtc, debugging">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newQuestionDescInput" class="form-label text-light small fw-bold">Description of the problem:</label>
+                                <textarea id="newQuestionDescInput" class="form-control collab-modal-input" rows="2" placeholder="Details about what you tried or need help with..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- MODE 3: Save to Vault -->
+                        <div class="tab-pane fade" id="modeVaultContent" role="tabpanel">
+                            <div class="p-3 text-center bg-dark rounded border border-secondary mb-3">
+                                <i class="fa-solid fa-box-archive text-warning fs-3 mb-2"></i>
+                                <h6 class="text-light fw-bold">Save Directly to Your Personal Code Vault</h6>
+                                <p class="text-secondary small mb-0">Bookmark this solution for your personal reference. Accessible anytime from the Vault button.</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label text-light small fw-bold">Code Solution Preview:</label>
+                    <!-- Code Preview Accordion/Box -->
+                    <div class="mb-2">
+                        <label class="form-label text-light small fw-bold">Code Snippet to Publish:</label>
                         <pre class="export-preview-box"><code id="exportCodePreview"></code></pre>
                     </div>
+
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="confirmExportBtn" class="btn btn-success fw-bold">
-                        <i class="fa-solid fa-check me-1"></i>Post as Solution Answer
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmPublishBtn" class="btn btn-primary btn-sm fw-bold">
+                        <i class="fa-solid fa-check me-1"></i><span id="confirmPublishBtnText">Post as Answer</span>
                     </button>
                 </div>
             </div>
@@ -272,6 +350,6 @@
     <!-- CodeQuest Features (for Sandbox Runner & Toast API) -->
     <script src="codequest-features.js?v=2.3.0"></script>
     <!-- Collab Engine Script -->
-    <script src="collab.js?v=1.1.0"></script>
+    <script src="collab.js?v=2.0.0"></script>
 </body>
 </html>

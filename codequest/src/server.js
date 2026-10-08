@@ -1305,6 +1305,58 @@ app.post("/api/collab/export-answer", verifyToken, async (req, res) => {
     }
 });
 
+// Export debugged code as a New Question
+app.post("/api/collab/export-question", verifyToken, async (req, res) => {
+    try {
+        const { title, code, lang, tags, description } = req.body;
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: "Question title is required" });
+        }
+        const formattedQuestionText = `${title.trim()}\n\n${description ? `${description.trim()}\n\n` : ""}\`\`\`${lang || "javascript"}\n${(code || "").trim()}\n\`\`\``;
+
+        const tagList = Array.isArray(tags) ? tags : (tags ? String(tags).split(",").map(t => t.trim().toLowerCase()).filter(Boolean) : ["debugging", lang || "javascript"]);
+
+        const newQuestion = new Question({
+            userId: req.user._id,
+            questionText: formattedQuestionText,
+            tags: tagList
+        });
+
+        await newQuestion.save();
+
+        res.json({
+            success: true,
+            questionId: newQuestion._id,
+            message: "New question created successfully from Live Collab Room!"
+        });
+    } catch (err) {
+        console.error("Error creating collab question:", err);
+        res.status(500).json({ error: "Failed to create question" });
+    }
+});
+
+// Get recent questions for linking in Collab room
+app.get("/api/collab/recent-questions", async (req, res) => {
+    try {
+        const questions = await Question.find({})
+            .sort({ createdAt: -1 })
+            .limit(15)
+            .select("_id questionText isSolved createdAt")
+            .lean();
+        
+        const mapped = questions.map(q => ({
+            _id: q._id,
+            id: q._id,
+            title: q.questionText ? q.questionText.split("\n")[0].slice(0, 80) : "Untitled Question",
+            isSolved: q.isSolved
+        }));
+
+        res.json({ success: true, questions: mapped });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch questions" });
+    }
+});
+
 // Create HTTP server wrapping Express
 const server = http.createServer(app);
 
