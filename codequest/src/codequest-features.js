@@ -1940,12 +1940,382 @@
         }
     };
 
+    // -------------------------------------------------------------
+    // 7. REAL-TIME 1-ON-1 COLLAB CALL & NOTIFICATION MANAGER
+    // -------------------------------------------------------------
+    const LiveCallManager = {
+        currentUser: null,
+        activeWs: null,
+        activeIncomingCall: null,
+        activeOutgoingCall: null,
+        chimeInterval: null,
+        pollTimer: null,
+        outgoingCountdown: null,
+
+        async init() {
+            try {
+                const res = await fetch("/auth/status", { credentials: "include" });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.loggedIn) {
+                    this.currentUser = data;
+                    this.connectSocket();
+                    this.startPoll();
+                }
+            } catch (err) {
+                // Ignore auth check error
+            }
+        },
+
+        connectSocket() {
+            if (!this.currentUser) return;
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const wsUrl = `${protocol}//${window.location.host}/ws/collab`;
+
+            try {
+                this.activeWs = new WebSocket(wsUrl);
+
+                this.activeWs.onopen = () => {
+                    if (this.activeWs.readyState === WebSocket.OPEN) {
+                        this.activeWs.send(JSON.stringify({
+                            type: "register-user",
+                            userId: this.currentUser.userId
+                        }));
+                    }
+                };
+
+                this.activeWs.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === "incoming-call") {
+                            this.handleIncomingCall(data.call);
+                        } else if (data.type === "call-accepted") {
+                            this.handleOutgoingAccepted(data);
+                        } else if (data.type === "call-declined") {
+                            this.handleOutgoingDeclined(data);
+                        } else if (data.type === "call-cancelled") {
+                            this.handleIncomingCancelled(data);
+                        }
+                    } catch (e) {}
+                };
+
+                this.activeWs.onclose = () => {
+                    setTimeout(() => {
+                        if (this.currentUser) this.connectSocket();
+                    }, 6000);
+                };
+            } catch (e) {
+                console.warn("Call WS note:", e);
+            }
+        },
+
+        startPoll() {
+            if (this.pollTimer) clearInterval(this.pollTimer);
+            this.pollTimer = setInterval(async () => {
+                if (!this.currentUser) return;
+                try {
+                    const res = await fetch("/api/calls/active", { credentials: "include" });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    if (data.incoming && (!this.activeIncomingCall || this.activeIncomingCall.callId !== data.incoming.callId)) {
+                        this.handleIncomingCall(data.incoming);
+                    }
+                    if (this.activeOutgoingCall && data.outgoing) {
+                        if (data.outgoing.status === "accepted") {
+                            this.handleOutgoingAccepted(data.outgoing);
+                        } else if (data.outgoing.status === "declined") {
+                            this.handleOutgoingDeclined(data.outgoing);
+                        }
+                    }
+                } catch (e) {}
+            }, 3000);
+        },
+
+        playMelodicChime() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const playTone = (freq, start, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+                    gain.gain.setValueAtTime(0.07, ctx.currentTime + start);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + duration);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + start);
+                    osc.stop(ctx.currentTime + start + duration);
+                };
+                playTone(659.25, 0.0, 0.35); // E5
+                playTone(880.00, 0.18, 0.55); // A5
+            } catch (e) {}
+        },
+
+        startChimeLoop() {
+            this.stopChimeLoop();
+            this.playMelodicChime();
+            this.chimeInterval = setInterval(() => {
+                this.playMelodicChime();
+            }, 3000);
+        },
+
+        stopChimeLoop() {
+            if (this.chimeInterval) {
+                clearInterval(this.chimeInterval);
+                this.chimeInterval = null;
+            }
+        },
+
+        handleIncomingCall(call) {
+            if (!call) return;
+            if (this.activeIncomingCall && this.activeIncomingCall.callId === call.callId) return;
+            this.activeIncomingCall = call;
+
+            this.startChimeLoop();
+            this.renderIncomingCallModal(call);
+        },
+
+        renderIncomingCallModal(call) {
+            let modal = document.getElementById("codequestIncomingCallModal");
+            if (!modal) {
+                modal = document.createElement("div");
+                modal.id = "codequestIncomingCallModal";
+                modal.className = "cq-call-modal cq-call-incoming-modal";
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div class="cq-call-backdrop"></div>
+                <div class="cq-call-card">
+                    <div class="cq-call-header">
+                        <span class="cq-call-badge"><i class="fa-solid fa-phone me-1"></i> Incoming Live 1-on-1 Call</span>
+                    </div>
+                    <div class="cq-call-body">
+                        <div class="cq-call-avatar-ring">
+                            <div class="cq-call-pulse-wave"></div>
+                            <img src="${escapeHtml(call.caller.avatarUrl || 'default-avatar.png')}" alt="${escapeHtml(call.caller.username)}" class="cq-call-avatar" onerror="this.src='default-avatar.png'">
+                        </div>
+                        <h3 class="cq-call-username">${escapeHtml(call.caller.username)}</h3>
+                        <p class="cq-call-desc">wants to connect face-to-face for live pair-programming & collaborative debugging.</p>
+                    </div>
+                    <div class="cq-call-footer">
+                        <button type="button" class="btn-cq-call-decline" id="btnDeclineIncomingCall">
+                            <i class="fa-solid fa-phone-slash me-2"></i>Decline
+                        </button>
+                        <button type="button" class="btn-cq-call-accept" id="btnAcceptIncomingCall">
+                            <i class="fa-solid fa-phone me-2"></i>Accept & Join
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = "flex";
+
+            // Accept button
+            document.getElementById("btnAcceptIncomingCall")?.addEventListener("click", async () => {
+                this.stopChimeLoop();
+                modal.style.display = "none";
+                try {
+                    const res = await fetch("/api/calls/respond", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ callId: call.callId, action: "accept" })
+                    });
+                    const data = await res.json();
+                    if (data && data.roomUrl) {
+                        window.location.href = data.roomUrl;
+                    } else if (call.roomId) {
+                        window.location.href = `/collab.html?room=${call.roomId}`;
+                    }
+                } catch (err) {
+                    if (call.roomId) window.location.href = `/collab.html?room=${call.roomId}`;
+                }
+            });
+
+            // Decline button
+            document.getElementById("btnDeclineIncomingCall")?.addEventListener("click", async () => {
+                this.stopChimeLoop();
+                modal.style.display = "none";
+                this.activeIncomingCall = null;
+                try {
+                    await fetch("/api/calls/respond", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ callId: call.callId, action: "decline" })
+                    });
+                } catch (e) {}
+            });
+        },
+
+        handleIncomingCancelled() {
+            this.stopChimeLoop();
+            const modal = document.getElementById("codequestIncomingCallModal");
+            if (modal) modal.style.display = "none";
+            this.activeIncomingCall = null;
+            showAppToast("Call cancelled by caller.");
+        },
+
+        // Initiate call to a user
+        async startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl }) {
+            if (!this.currentUser) {
+                try {
+                    const res = await fetch("/auth/status", { credentials: "include" });
+                    const data = await res.json();
+                    if (data && data.loggedIn) {
+                        this.currentUser = data;
+                    } else {
+                        showAppToast("⚠️ Please log in to start live calls with developers.");
+                        return;
+                    }
+                } catch (e) {
+                    showAppToast("⚠️ Please log in to start live calls.");
+                    return;
+                }
+            }
+
+            if (String(this.currentUser.userId) === String(targetUserId)) {
+                showAppToast("ℹ️ You cannot call yourself.");
+                return;
+            }
+
+            this.renderOutgoingCallModal({ targetUsername, targetAvatarUrl });
+
+            try {
+                const res = await fetch("/api/calls/initiate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ targetUserId, targetUsername })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || "Could not initiate call");
+                }
+
+                const data = await res.json();
+                this.activeOutgoingCall = data.call;
+
+                // Watch for acceptance or timeout
+                let remainingSeconds = 45;
+                const timerEl = document.getElementById("cqOutgoingTimer");
+                if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
+                this.outgoingCountdown = setInterval(() => {
+                    remainingSeconds--;
+                    if (timerEl) timerEl.textContent = `Ringing (${remainingSeconds}s)...`;
+                    if (remainingSeconds <= 0 || !this.activeOutgoingCall) {
+                        clearInterval(this.outgoingCountdown);
+                        if (this.activeOutgoingCall) {
+                            this.cancelOutgoingCall();
+                            showAppToast(`ℹ️ ${targetUsername} is not available right now.`);
+                        }
+                    }
+                }, 1000);
+
+            } catch (err) {
+                this.closeOutgoingModal();
+                showAppToast("❌ " + err.message);
+            }
+        },
+
+        renderOutgoingCallModal({ targetUsername, targetAvatarUrl }) {
+            let modal = document.getElementById("codequestOutgoingCallModal");
+            if (!modal) {
+                modal = document.createElement("div");
+                modal.id = "codequestOutgoingCallModal";
+                modal.className = "cq-call-modal cq-call-outgoing-modal";
+                document.body.appendChild(modal);
+            }
+
+            modal.innerHTML = `
+                <div class="cq-call-backdrop"></div>
+                <div class="cq-call-card">
+                    <div class="cq-call-header">
+                        <span class="cq-call-badge"><i class="fa-solid fa-satellite-dish me-1"></i> Calling Developer...</span>
+                    </div>
+                    <div class="cq-call-body">
+                        <div class="cq-call-avatar-ring">
+                            <div class="cq-call-pulse-wave"></div>
+                            <img src="${escapeHtml(targetAvatarUrl || 'default-avatar.png')}" alt="${escapeHtml(targetUsername)}" class="cq-call-avatar" onerror="this.src='default-avatar.png'">
+                        </div>
+                        <h3 class="cq-call-username">${escapeHtml(targetUsername)}</h3>
+                        <p class="cq-call-desc" id="cqOutgoingStatus">Live notification sent. Waiting for them to answer...</p>
+                        <span class="cq-call-timer" id="cqOutgoingTimer">Ringing (45s)...</span>
+                    </div>
+                    <div class="cq-call-footer">
+                        <button type="button" class="btn-cq-call-cancel" id="btnCancelOutgoingCall">
+                            <i class="fa-solid fa-phone-slash me-2"></i>Cancel Call
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.style.display = "flex";
+
+            document.getElementById("btnCancelOutgoingCall")?.addEventListener("click", () => {
+                this.cancelOutgoingCall();
+            });
+        },
+
+        async cancelOutgoingCall() {
+            if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
+            const call = this.activeOutgoingCall;
+            this.activeOutgoingCall = null;
+            this.closeOutgoingModal();
+
+            if (call) {
+                try {
+                    await fetch("/api/calls/respond", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify({ callId: call.callId, action: "cancel" })
+                    });
+                } catch (e) {}
+            }
+        },
+
+        closeOutgoingModal() {
+            const modal = document.getElementById("codequestOutgoingCallModal");
+            if (modal) modal.style.display = "none";
+        },
+
+        handleOutgoingAccepted(data) {
+            if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
+            const statusEl = document.getElementById("cqOutgoingStatus");
+            if (statusEl) statusEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Call Accepted! Connecting to Live Collab Room...</span>`;
+
+            setTimeout(() => {
+                this.closeOutgoingModal();
+                const rId = data.roomId || (this.activeOutgoingCall ? this.activeOutgoingCall.roomId : null);
+                this.activeOutgoingCall = null;
+                if (rId) {
+                    window.location.href = `/collab.html?room=${rId}`;
+                }
+            }, 800);
+        },
+
+        handleOutgoingDeclined() {
+            if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
+            const statusEl = document.getElementById("cqOutgoingStatus");
+            if (statusEl) statusEl.innerHTML = `<span class="text-danger fw-bold"><i class="fa-solid fa-circle-xmark me-1"></i> Call was declined. Developer is unavailable.</span>`;
+
+            setTimeout(() => {
+                this.closeOutgoingModal();
+                this.activeOutgoingCall = null;
+            }, 2500);
+        }
+    };
+
     // Auto-initialize when DOM is ready
     document.addEventListener("DOMContentLoaded", () => {
         CodeVault.updateCountBadge();
         enhanceCodeSnippetBlocks();
         initAllTextareaFormatters();
         AudioWalkthrough.initVoiceRecorderStudio();
+        LiveCallManager.init();
 
         // Wire up any #codeVaultBtn in navbar
         document.querySelectorAll("#codeVaultBtn, .btn-open-vault").forEach(btn => {
@@ -1953,6 +2323,19 @@
                 e.preventDefault();
                 openVaultModal();
             });
+        });
+
+        // Delegate direct 1-on-1 call buttons across feeds and cards
+        document.addEventListener("click", (e) => {
+            const callBtn = e.target.closest(".btn-direct-call-user");
+            if (callBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const targetUserId = callBtn.dataset.userId;
+                const targetUsername = callBtn.dataset.username;
+                const targetAvatarUrl = callBtn.dataset.avatar;
+                LiveCallManager.startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl });
+            }
         });
 
         // Watch for dynamic DOM additions (e.g. newly loaded questions/answers)
@@ -1967,6 +2350,8 @@
     window.CodeQuestPro = {
         CodeVault,
         AudioWalkthrough,
+        LiveCallManager,
+        startCallWithUser: (opts) => LiveCallManager.startCallWithUser(opts),
         openVaultModal,
         openDiffModal,
         renderQuestGamification,

@@ -138,6 +138,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (tabQuestionsCount) tabQuestionsCount.textContent = qCount;
         if (tabAnswersCount) tabAnswersCount.textContent = aCount;
 
+        // 1-on-1 Call Action Button (only visible when viewing another user's profile)
+        const callWrap = document.getElementById("profileCallActionWrap");
+        const callBtn = document.getElementById("btnCallProfileUser");
+        if (callWrap && callBtn) {
+            if (!isOwn) {
+                callWrap.style.display = "inline-flex";
+                callBtn.onclick = (e) => {
+                    e.preventDefault();
+                    if (window.CodeQuestPro && typeof window.CodeQuestPro.startCallWithUser === "function") {
+                        window.CodeQuestPro.startCallWithUser({
+                            targetUserId: profile._id,
+                            targetUsername: profile.username,
+                            targetAvatarUrl: profile.avatarUrl
+                        });
+                    } else {
+                        window.location.href = `/collab.html?targetUser=${encodeURIComponent(profile.username || "")}`;
+                    }
+                };
+            } else {
+                callWrap.style.display = "none";
+            }
+        }
+
         const usernameText = profile.username || "User";
         document.title = `${usernameText}'s Profile - CodeQuest`;
 

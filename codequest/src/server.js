@@ -1654,6 +1654,178 @@ app.post("/api/execute-code", async (req, res) => {
     }
 });
 
+// ----------------- Real-Time 1-on-1 Call Signaling & Invitations -----------------
+const activeCalls = new Map(); // callId -> callData
+const activeUserSockets = new Map(); // userId -> Set<WebSocket>
+
+function notifyUserSocket(userId, payload) {
+    if (!userId) return;
+    const uid = String(userId);
+    const set = activeUserSockets.get(uid);
+    if (set && set.size > 0) {
+        const msg = JSON.stringify(payload);
+        set.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+                try { ws.send(msg); } catch (e) {}
+            }
+        });
+    }
+}
+
+// 1. Initiate 1-on-1 Call from Profile or Author Card
+app.post("/api/calls/initiate", verifyToken, async (req, res) => {
+    try {
+        const { targetUserId, targetUsername } = req.body;
+        if (!targetUserId && !targetUsername) {
+            return res.status(400).json({ error: "Target user ID or username is required" });
+        }
+
+        let target = null;
+        if (targetUserId) {
+            try { target = await User.findById(targetUserId); } catch(e){}
+        }
+        if (!target && targetUsername) {
+            target = await User.findOne({ username: targetUsername });
+        }
+        if (!target) {
+            return res.status(404).json({ error: "Target user not found" });
+        }
+
+        if (String(target._id) === String(req.user._id)) {
+            return res.status(400).json({ error: "You cannot call yourself" });
+        }
+
+        const roomId = "CALL-" + Math.floor(100000 + Math.random() * 900000);
+        const callId = "call_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
+
+        const callData = {
+            callId,
+            caller: {
+                id: String(req.user._id),
+                username: req.user.username,
+                avatarUrl: req.user.avatarUrl || "default-avatar.png"
+            },
+            target: {
+                id: String(target._id),
+                username: target.username,
+                avatarUrl: target.avatarUrl || "default-avatar.png"
+            },
+            roomId,
+            status: "ringing",
+            createdAt: Date.now()
+        };
+
+        activeCalls.set(callId, callData);
+
+        // Pre-create room for instant entry
+        getOrCreateRoom(roomId, {
+            title: `1-on-1 Call: ${req.user.username} & ${target.username}`,
+            lang: "javascript"
+        });
+
+        // Push real-time notification to recipient via WebSocket
+        notifyUserSocket(String(target._id), {
+            type: "incoming-call",
+            call: callData
+        });
+
+        res.json({ success: true, call: callData, roomId });
+    } catch (err) {
+        console.error("Error initiating call:", err);
+        res.status(500).json({ error: "Failed to initiate call: " + err.message });
+    }
+});
+
+// 2. Poll Active Calls (fallback & state sync)
+app.get("/api/calls/active", async (req, res) => {
+    try {
+        const token = req.cookies.token;
+        if (!token) return res.json({ incoming: null, outgoing: null });
+        const user = await User.findOne({ token });
+        if (!user) return res.json({ incoming: null, outgoing: null });
+
+        const currentUserId = String(user._id);
+        const now = Date.now();
+
+        // Expire calls older than 50 seconds
+        for (const [cId, call] of activeCalls.entries()) {
+            if (now - call.createdAt > 50000) {
+                if (call.status === "ringing") call.status = "timeout";
+                if (now - call.createdAt > 90000) activeCalls.delete(cId);
+            }
+        }
+
+        let incoming = null;
+        let outgoing = null;
+
+        for (const call of activeCalls.values()) {
+            if (call.target.id === currentUserId && call.status === "ringing") {
+                incoming = call;
+            }
+            if (call.caller.id === currentUserId && (call.status === "ringing" || call.status === "accepted" || call.status === "declined" || call.status === "cancelled")) {
+                outgoing = call;
+            }
+        }
+
+        res.json({ incoming, outgoing });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3. Respond to Call (accept, decline, cancel)
+app.post("/api/calls/respond", verifyToken, async (req, res) => {
+    try {
+        const { callId, action } = req.body;
+        const call = activeCalls.get(callId);
+        if (!call) {
+            return res.status(404).json({ error: "Call invitation not found or expired" });
+        }
+
+        const currentUserId = String(req.user._id);
+
+        if (action === "accept") {
+            if (call.target.id !== currentUserId) {
+                return res.status(403).json({ error: "Only the recipient can accept this call" });
+            }
+            call.status = "accepted";
+
+            // Push to caller
+            notifyUserSocket(call.caller.id, {
+                type: "call-accepted",
+                callId: call.callId,
+                roomId: call.roomId
+            });
+
+            return res.json({
+                success: true,
+                call,
+                roomId: call.roomId,
+                roomUrl: `/collab.html?room=${call.roomId}`
+            });
+        } else if (action === "decline") {
+            call.status = "declined";
+            notifyUserSocket(call.caller.id, {
+                type: "call-declined",
+                callId: call.callId
+            });
+            return res.json({ success: true, status: "declined" });
+        } else if (action === "cancel") {
+            call.status = "cancelled";
+            notifyUserSocket(call.target.id, {
+                type: "call-cancelled",
+                callId: call.callId
+            });
+            return res.json({ success: true, status: "cancelled" });
+        }
+
+        res.status(400).json({ error: "Invalid action" });
+    } catch (err) {
+        console.error("Error responding to call:", err);
+        res.status(500).json({ error: "Failed to respond to call" });
+    }
+});
+
 // Create HTTP server wrapping Express
 const server = http.createServer(app);
 
@@ -1669,6 +1841,17 @@ wss.on("connection", (ws, req) => {
         try {
             const data = JSON.parse(raw);
             const { type, roomId } = data;
+
+            // Global user registration for incoming call notifications
+            if (type === "register-user" && data.userId) {
+                const uid = String(data.userId);
+                if (!activeUserSockets.has(uid)) {
+                    activeUserSockets.set(uid, new Set());
+                }
+                activeUserSockets.get(uid).add(ws);
+                ws.registeredUserId = uid;
+                return;
+            }
 
             if (type === "join-room") {
                 currentRoomId = String(roomId || "").trim().toUpperCase();
@@ -1811,6 +1994,12 @@ wss.on("connection", (ws, req) => {
     });
 
     ws.on("close", () => {
+        if (ws.registeredUserId && activeUserSockets.has(ws.registeredUserId)) {
+            const set = activeUserSockets.get(ws.registeredUserId);
+            set.delete(ws);
+            if (set.size === 0) activeUserSockets.delete(ws.registeredUserId);
+        }
+
         if (currentRoomId && currentPeerId && collabRooms.has(currentRoomId)) {
             const room = collabRooms.get(currentRoomId);
             room.peers.delete(currentPeerId);

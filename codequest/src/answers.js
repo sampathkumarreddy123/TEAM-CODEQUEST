@@ -419,9 +419,14 @@ document.addEventListener("DOMContentLoaded", async function () {
                             <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="answer-avatar" onerror="this.src='default-avatar.png'">
                         </a>
                         <div class="answer-meta">
-                            <div class="d-flex align-items-center gap-1">
+                            <div class="d-flex align-items-center gap-1 flex-wrap">
                                 <a href="profile.html?userId=${authorId}" class="answer-author-name">${escapeHtml(authorName)}</a>
                                 ${authorIsAdmin ? `<span class="badge-admin-tag" title="Verified Administrator"><i class="fa-solid fa-shield-halved"></i> Admin</span>` : ""}
+                                ${(!isOwner && authorId) ? `
+                                    <button class="btn-direct-call-user" data-user-id="${authorId}" data-username="${escapeHtml(authorName)}" data-avatar="${escapeHtml(authorAvatar)}" title="Start Live 1-on-1 Call with ${escapeHtml(authorName)}">
+                                        <i class="fa-solid fa-phone me-1"></i>Call
+                                    </button>
+                                ` : ""}
                             </div>
                             ${isQuestionAuthor ? `<span class="author-badge">Author</span>` : ""}
                             ${isAcceptedSolution ? `<span class="badge-accepted-solution"><i class="fa-solid fa-check"></i> Accepted Solution</span>` : ""}

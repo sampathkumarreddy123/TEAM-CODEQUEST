@@ -309,16 +309,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
             card.innerHTML = `
                 <div class="card-top-row">
-                    <a href="profile.html?userId=${authorId}" class="author-chip" title="View ${escapeHtml(authorName)}'s profile">
-                        <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="author-avatar" onerror="this.src='default-avatar.png'" />
-                        <div class="author-info">
-                            <div class="d-flex align-items-center gap-1">
-                                <span class="author-name">${escapeHtml(authorName)}</span>
-                                ${authorIsAdmin ? `<span class="badge-admin-tag" title="Verified Administrator"><i class="fa-solid fa-shield-halved"></i> Admin</span>` : ""}
+                    <div class="d-flex align-items-center">
+                        <a href="profile.html?userId=${authorId}" class="author-chip" title="View ${escapeHtml(authorName)}'s profile">
+                            <img src="${escapeHtml(authorAvatar)}" alt="${escapeHtml(authorName)}" class="author-avatar" onerror="this.src='default-avatar.png'" />
+                            <div class="author-info">
+                                <div class="d-flex align-items-center gap-1">
+                                    <span class="author-name">${escapeHtml(authorName)}</span>
+                                    ${authorIsAdmin ? `<span class="badge-admin-tag" title="Verified Administrator"><i class="fa-solid fa-shield-halved"></i> Admin</span>` : ""}
+                                </div>
+                                <span class="post-time">${timeAgo}</span>
                             </div>
-                            <span class="post-time">${timeAgo}</span>
-                        </div>
-                    </a>
+                        </a>
+                        ${(!isOwner && authorId) ? `
+                            <button class="btn-direct-call-user" data-user-id="${authorId}" data-username="${escapeHtml(authorName)}" data-avatar="${escapeHtml(authorAvatar)}" title="Start Live 1-on-1 Call with ${escapeHtml(authorName)}">
+                                <i class="fa-solid fa-phone me-1"></i>Call
+                            </button>
+                        ` : ""}
+                    </div>
                     <div class="card-top-badges">
                         ${isPinned ? `<span class="badge-pinned"><i class="fa-solid fa-thumbtack"></i> Pinned</span>` : ""}
                         ${isLocked ? `<span class="badge-locked"><i class="fa-solid fa-lock"></i> Locked</span>` : ""}
