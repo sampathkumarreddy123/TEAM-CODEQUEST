@@ -872,12 +872,26 @@ document.addEventListener("DOMContentLoaded", function () {
             const fmt = btn.dataset.fmt;
             if (!textarea) return;
 
-            if (fmt === "code-block") {
-                insertMarkdown(textarea, "\n```javascript\n", "\n```\n", "// Write your code here");
+            if (fmt === "paragraph") {
+                if (window.CodeQuestPro && window.CodeQuestPro.formatAsParagraph) {
+                    window.CodeQuestPro.formatAsParagraph(textarea);
+                } else {
+                    insertMarkdown(textarea, "\n\n", "\n\n", "Paragraph text");
+                }
+            } else if (fmt === "code-block") {
+                if (window.CodeQuestPro && window.CodeQuestPro.formatAsCodeBlock) {
+                    window.CodeQuestPro.formatAsCodeBlock(textarea);
+                } else {
+                    insertMarkdown(textarea, "\n```javascript\n", "\n```\n", "// Write your code here");
+                }
             } else if (fmt === "code-inline") {
                 insertMarkdown(textarea, "`", "`", "code");
             } else if (fmt === "bold") {
                 insertMarkdown(textarea, "**", "**", "bold text");
+            } else if (fmt === "quote") {
+                insertMarkdown(textarea, "\n> ", "\n", "Quoted text");
+            } else if (fmt === "list") {
+                insertMarkdown(textarea, "\n- ", "\n- Item 2\n", "Item 1");
             }
         });
     });

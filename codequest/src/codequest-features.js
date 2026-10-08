@@ -760,10 +760,317 @@
         }
     }
 
+    // -------------------------------------------------------------
+    // 7. INBUILT SMART CODEBLOCK DETECTION & PARAGRAPH FORMATTER
+    // -------------------------------------------------------------
+    function detectCodeSnippet(text) {
+        if (!text || typeof text !== "string") return null;
+        const trimmed = text.trim();
+        if (!trimmed || trimmed.length < 8) return null;
+
+        // If already enclosed in codeblock backticks, don't double wrap
+        if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+            return null;
+        }
+
+        const lines = trimmed.split("\n");
+        let codeScore = 0;
+        let detectedLang = "javascript";
+
+        // Heuristics for language detection
+        const hasJsKeywords = /\b(const|let|var|function|return|console\.log|import|export|class|async|await|=>)\b/.test(trimmed);
+        const hasPythonKeywords = /\b(def |import |from |class |elif |print\(|lambda |__init__|self\.)/.test(trimmed);
+        const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(trimmed);
+        const hasCssSyntax = /\{[\s\S]*?[a-z-]+:\s*[^;]+;[\s\S]*?\}/i.test(trimmed);
+        const hasSqlKeywords = /\b(SELECT|FROM|WHERE|INSERT INTO|UPDATE|DELETE FROM|GROUP BY|ORDER BY|JOIN)\b/i.test(trimmed);
+        const hasCppOrJava = /\b(public static void|System\.out\.println|#include\s*<|std::|int main\(|cout\s*<<)\b/.test(trimmed);
+
+        if (hasHtmlTags) {
+            codeScore += 4;
+            detectedLang = "html";
+        } else if (hasPythonKeywords) {
+            codeScore += 4;
+            detectedLang = "python";
+        } else if (hasCssSyntax) {
+            codeScore += 4;
+            detectedLang = "css";
+        } else if (hasSqlKeywords) {
+            codeScore += 4;
+            detectedLang = "sql";
+        } else if (hasCppOrJava) {
+            codeScore += 4;
+            detectedLang = "cpp";
+        } else if (hasJsKeywords) {
+            codeScore += 4;
+            detectedLang = "javascript";
+        }
+
+        // Structural symbols check
+        const codeSymbols = (trimmed.match(/[{}\[\]();=><+\-*\/&|!]/g) || []).length;
+        if (codeSymbols >= 6) codeScore += 2;
+
+        // Multi-line indentation
+        if (lines.length >= 2) {
+            const indented = lines.filter(l => l.startsWith("  ") || l.startsWith("\t") || l.startsWith("    ")).length;
+            if (indented >= 1) codeScore += 2;
+            if (lines.length >= 3) codeScore += 1;
+        }
+
+        if (codeScore >= 4) {
+            return { isCode: true, lang: detectedLang };
+        }
+        return null;
+    }
+
+    function insertMarkdownToTextarea(textarea, prefix, suffix, defaultText) {
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const current = textarea.value;
+        const selected = current.substring(start, end) || defaultText;
+        const replacement = prefix + selected + suffix;
+        textarea.value = current.substring(0, start) + replacement + current.substring(end);
+        textarea.focus();
+        textarea.selectionStart = start + prefix.length;
+        textarea.selectionEnd = start + prefix.length + selected.length;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function formatAsParagraph(textarea) {
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        const selected = val.substring(start, end);
+
+        if (selected) {
+            // Strip any codeblock backticks or inline code backticks from selection
+            let clean = selected
+                .replace(/^```[a-zA-Z0-9_-]*\n?/gm, "")
+                .replace(/```$/gm, "")
+                .replace(/`([^`]+)`/g, "$1")
+                .trim();
+
+            const formatted = `\n\n${clean}\n\n`;
+            textarea.value = val.substring(0, start) + formatted + val.substring(end);
+            textarea.focus();
+            textarea.selectionStart = start + 2;
+            textarea.selectionEnd = start + 2 + clean.length;
+        } else {
+            const insertText = "\n\nParagraph text here...\n\n";
+            textarea.value = val.substring(0, start) + insertText + val.substring(end);
+            textarea.focus();
+            textarea.selectionStart = start + 2;
+            textarea.selectionEnd = start + insertText.length - 2;
+        }
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function formatAsCodeBlock(textarea) {
+        if (!textarea) return;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        const selected = val.substring(start, end).trim();
+
+        const lang = "javascript";
+        const code = selected || "// Paste or write your code here";
+        const formatted = "\n```" + lang + "\n" + code + "\n```\n";
+
+        textarea.value = val.substring(0, start) + formatted + val.substring(end);
+        textarea.focus();
+        const codeStart = start + lang.length + 5;
+        textarea.selectionStart = codeStart;
+        textarea.selectionEnd = codeStart + code.length;
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function attachSmartCodeDetection(textarea) {
+        if (!textarea || textarea.getAttribute("data-smart-code-attached")) return;
+        textarea.setAttribute("data-smart-code-attached", "true");
+
+        let helperBanner = null;
+
+        function showHelperBanner(pastedOriginal, formattedCode, lang, rangeStart, rangeLength) {
+            removeHelperBanner();
+
+            helperBanner = document.createElement("div");
+            helperBanner.className = "code-paste-helper-banner";
+            helperBanner.innerHTML = `
+                <div class="helper-info">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold me-1">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Auto CodeBlock
+                    </span>
+                    <span>Program code detected (${lang}).</span>
+                </div>
+                <div class="helper-actions">
+                    <button type="button" class="btn-paste-opt btn-opt-paragraph" title="Revert to normal text paragraph">
+                        <i class="fa-solid fa-paragraph me-1"></i> As Paragraph
+                    </button>
+                    <button type="button" class="btn-paste-opt btn-opt-code active" title="Keep formatted as Code Block">
+                        <i class="fa-solid fa-code me-1"></i> As Code Block
+                    </button>
+                    <button type="button" class="btn-close-paste-helper" title="Dismiss">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            `;
+
+            // Insert above textarea
+            const parent = textarea.parentElement;
+            if (parent) {
+                parent.insertBefore(helperBanner, textarea);
+            }
+
+            // Paragraph button clicked
+            const pBtn = helperBanner.querySelector(".btn-opt-paragraph");
+            if (pBtn) {
+                pBtn.addEventListener("click", () => {
+                    const currentVal = textarea.value;
+                    const before = currentVal.substring(0, rangeStart);
+                    const after = currentVal.substring(rangeStart + rangeLength);
+                    textarea.value = before + pastedOriginal + after;
+                    textarea.focus();
+                    textarea.selectionStart = rangeStart;
+                    textarea.selectionEnd = rangeStart + pastedOriginal.length;
+                    rangeLength = pastedOriginal.length;
+                    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+                    pBtn.classList.add("active");
+                    helperBanner.querySelector(".btn-opt-code").classList.remove("active");
+                    helperBanner.querySelector(".helper-info span:last-child").textContent = "Switched to Paragraph text.";
+                    setTimeout(removeHelperBanner, 1600);
+                });
+            }
+
+            // Code block button clicked
+            const cBtn = helperBanner.querySelector(".btn-opt-code");
+            if (cBtn) {
+                cBtn.addEventListener("click", () => {
+                    const currentVal = textarea.value;
+                    const before = currentVal.substring(0, rangeStart);
+                    const after = currentVal.substring(rangeStart + rangeLength);
+                    textarea.value = before + formattedCode + after;
+                    textarea.focus();
+                    textarea.selectionStart = rangeStart;
+                    textarea.selectionEnd = rangeStart + formattedCode.length;
+                    rangeLength = formattedCode.length;
+                    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+                    cBtn.classList.add("active");
+                    pBtn.classList.remove("active");
+                    helperBanner.querySelector(".helper-info span:last-child").textContent = "Kept as Code Block.";
+                    setTimeout(removeHelperBanner, 1600);
+                });
+            }
+
+            // Close button
+            const closeBtn = helperBanner.querySelector(".btn-close-paste-helper");
+            if (closeBtn) {
+                closeBtn.addEventListener("click", removeHelperBanner);
+            }
+
+            // Auto dismiss after 10s
+            setTimeout(() => {
+                if (helperBanner) removeHelperBanner();
+            }, 10000);
+        }
+
+        function removeHelperBanner() {
+            if (helperBanner && helperBanner.parentElement) {
+                helperBanner.parentElement.removeChild(helperBanner);
+            }
+            helperBanner = null;
+        }
+
+        // On Paste event
+        textarea.addEventListener("paste", (e) => {
+            const pastedText = (e.clipboardData || window.clipboardData)?.getData("text");
+            if (!pastedText) return;
+
+            const detection = detectCodeSnippet(pastedText);
+            if (detection && detection.isCode) {
+                e.preventDefault();
+
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const currentVal = textarea.value;
+
+                // Ensure clean newlines around code block
+                const preBreak = (start > 0 && currentVal[start - 1] !== "\n") ? "\n" : "";
+                const postBreak = (end < currentVal.length && currentVal[end] !== "\n") ? "\n" : "";
+
+                const formatted = preBreak + "```" + detection.lang + "\n" + pastedText.trim() + "\n```" + postBreak;
+
+                textarea.value = currentVal.substring(0, start) + formatted + currentVal.substring(end);
+                textarea.selectionStart = start + formatted.length;
+                textarea.selectionEnd = start + formatted.length;
+                textarea.dispatchEvent(new Event("input", { bubbles: true }));
+
+                showHelperBanner(pastedText, formatted, detection.lang, start, formatted.length);
+            }
+        });
+
+        // Smart typing shortcut: typing ``` and pressing Enter or Space
+        textarea.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                const start = textarea.selectionStart;
+                const currentVal = textarea.value;
+                const lineBefore = currentVal.substring(0, start).split("\n").pop();
+
+                const match = lineBefore.match(/^```([a-zA-Z0-9_-]*)$/);
+                if (match) {
+                    e.preventDefault();
+                    const lang = match[1] || "javascript";
+                    const lineStartPos = start - lineBefore.length;
+                    const codeBlockTemplate = "```" + lang + "\n\n```\n";
+
+                    textarea.value = currentVal.substring(0, lineStartPos) + codeBlockTemplate + currentVal.substring(start);
+                    const cursorPosition = lineStartPos + lang.length + 4;
+                    textarea.selectionStart = cursorPosition;
+                    textarea.selectionEnd = cursorPosition;
+                    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+            }
+        });
+    }
+
+    function initAllTextareaFormatters() {
+        document.querySelectorAll("textarea#reply, textarea#modalQuestionText, textarea#editQuestionText, textarea#editAnswerText, textarea.cq-textarea, textarea.composer-textarea").forEach(textarea => {
+            attachSmartCodeDetection(textarea);
+        });
+
+        // Delegate all .btn-fmt clicks across the entire page
+        document.querySelectorAll(".btn-fmt:not([data-bound='true'])").forEach(btn => {
+            btn.setAttribute("data-bound", "true");
+            btn.addEventListener("click", () => {
+                const targetId = btn.dataset.target;
+                const textarea = document.getElementById(targetId);
+                const fmt = btn.dataset.fmt;
+                if (!textarea) return;
+
+                if (fmt === "paragraph") {
+                    formatAsParagraph(textarea);
+                } else if (fmt === "code-block") {
+                    formatAsCodeBlock(textarea);
+                } else if (fmt === "code-inline") {
+                    insertMarkdownToTextarea(textarea, "`", "`", "code");
+                } else if (fmt === "bold") {
+                    insertMarkdownToTextarea(textarea, "**", "**", "bold text");
+                } else if (fmt === "quote") {
+                    insertMarkdownToTextarea(textarea, "\n> ", "\n", "Quoted note or citation");
+                } else if (fmt === "list") {
+                    insertMarkdownToTextarea(textarea, "\n- ", "\n- Item 2\n", "Item 1");
+                }
+            });
+        });
+    }
+
     // Auto-initialize when DOM is ready
     document.addEventListener("DOMContentLoaded", () => {
         CodeVault.updateCountBadge();
         enhanceCodeSnippetBlocks();
+        initAllTextareaFormatters();
 
         // Wire up any #codeVaultBtn in navbar
         document.querySelectorAll("#codeVaultBtn, .btn-open-vault").forEach(btn => {
@@ -776,6 +1083,7 @@
         // Watch for dynamic DOM additions (e.g. newly loaded questions/answers)
         const observer = new MutationObserver(() => {
             enhanceCodeSnippetBlocks();
+            initAllTextareaFormatters();
         });
         observer.observe(document.body, { childList: true, subtree: true });
     });
@@ -787,6 +1095,9 @@
         openDiffModal,
         renderQuestGamification,
         enhanceCodeSnippetBlocks,
+        attachSmartCodeDetection,
+        formatAsParagraph,
+        formatAsCodeBlock,
         showAppToast
     };
 

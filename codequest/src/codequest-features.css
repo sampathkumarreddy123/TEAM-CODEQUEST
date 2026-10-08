@@ -542,3 +542,87 @@
 .achievement-card.is-locked .achievement-status {
   color: #64748b;
 }
+
+/* ---------------- 6. Inbuilt Smart Code Paste Helper Banner ---------------- */
+.code-paste-helper-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  animation: slideBannerDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  font-size: 0.82rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+@keyframes slideBannerDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.code-paste-helper-banner .helper-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.code-paste-helper-banner .helper-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-paste-opt {
+  background-color: white;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.btn-paste-opt:hover {
+  background-color: whitesmoke;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btn-paste-opt.active {
+  background-color: #e0f2fe;
+  color: #0284c7;
+  border-color: #38bdf8;
+}
+
+.btn-close-paste-helper {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-close-paste-helper:hover {
+  color: #475569;
+  background-color: #e2e8f0;
+}
