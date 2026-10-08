@@ -386,6 +386,11 @@ document.addEventListener("DOMContentLoaded", async function () {
             const canAcceptSolution = (questionData && questionData.isOwner) || isAdmin;
             const canManageAnswer = isOwner || isAdmin || answer.canManage;
 
+            // Check if both question and answer have code blocks for Diff Comparator
+            const qHasCode = questionData && questionData.questionText && questionData.questionText.includes("```");
+            const ansHasCode = answer.answerText && answer.answerText.includes("```");
+            const canCompareDiff = qHasCode && ansHasCode;
+
             card.innerHTML = `
                 <div class="answer-top-row">
                     <div class="answer-author-wrap">
@@ -403,6 +408,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                         </div>
                     </div>
                     <div class="answer-card-actions">
+                        ${canCompareDiff ? `
+                            <button class="btn-compare-diff" title="Compare this answer's fix with original question code">
+                                <i class="fa-solid fa-code-compare me-1"></i> Compare Fix
+                            </button>
+                        ` : ""}
                         <button class="btn-like-answer ${isAnsLiked ? "liked" : ""}" title="${isAnsLiked ? "Unlike answer" : "Upvote answer"}">
                             <i class="fa-${isAnsLiked ? "solid" : "regular"} fa-heart"></i>
                             <span class="ans-like-count">${ansLikes}</span>
@@ -418,6 +428,18 @@ document.addEventListener("DOMContentLoaded", async function () {
                 </div>
                 <div class="answer-content">${formatContent(answer.answerText)}</div>
             `;
+
+            // Solution Diff Comparator Button
+            const diffBtn = card.querySelector(".btn-compare-diff");
+            if (diffBtn) {
+                diffBtn.addEventListener("click", () => {
+                    const qCode = extractCodeSnippet(questionData ? questionData.questionText : "");
+                    const aCode = extractCodeSnippet(answer.answerText);
+                    if (window.CodeQuestPro && window.CodeQuestPro.openDiffModal) {
+                        window.CodeQuestPro.openDiffModal(qCode, aCode);
+                    }
+                });
+            }
 
             // Like Answer Button
             const likeAnsBtn = card.querySelector(".btn-like-answer");
@@ -888,6 +910,12 @@ document.addEventListener("DOMContentLoaded", async function () {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    }
+
+    function extractCodeSnippet(text) {
+        if (!text) return "";
+        const match = text.match(/```(?:[a-zA-Z0-9_-]+\n)?([\s\S]*?)```/);
+        return match ? match[1].trim() : text.trim();
     }
 
     // ----------------- Profile Picture Lightbox -----------------

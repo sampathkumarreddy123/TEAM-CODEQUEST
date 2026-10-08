@@ -112,6 +112,112 @@ function checkIsAdmin(user) {
     return adminList.includes(username);
 }
 
+// ----------------- Gamification & Quest System Helper -----------------
+function computeUserGamification(user, questionsCount, answersCount, userQuestions = [], userAnswers = []) {
+    const isAdmin = checkIsAdmin(user);
+    
+    // Calculate total likes received
+    const qLikes = userQuestions.reduce((sum, q) => sum + (q.likes || 0), 0);
+    const aLikes = userAnswers.reduce((sum, a) => sum + (a.likes || 0), 0);
+    const totalLikes = qLikes + aLikes;
+
+    // Calculate accepted solutions count
+    const solutionsCount = userAnswers.filter(a => a.questionId && a.questionId.isSolved && String(a.questionId.solvedAnswerId) === String(a._id)).length;
+
+    // XP formula: questions (15 XP) + answers (25 XP) + solutions (60 XP) + likes (8 XP)
+    const xp = (questionsCount * 15) + (answersCount * 25) + (solutionsCount * 60) + (totalLikes * 8);
+
+    // Levels and Rank Titles
+    let level = 1;
+    let rankTitle = "Novice Explorer";
+    let baseLevelXp = 0;
+    let nextLevelXp = 100;
+
+    if (xp >= 1000) {
+        level = 5;
+        rankTitle = "Legendary Architect";
+        baseLevelXp = 1000;
+        nextLevelXp = 2500;
+    } else if (xp >= 500) {
+        level = 4;
+        rankTitle = "Quest Master";
+        baseLevelXp = 500;
+        nextLevelXp = 1000;
+    } else if (xp >= 250) {
+        level = 3;
+        rankTitle = "Bug Hunter";
+        baseLevelXp = 250;
+        nextLevelXp = 500;
+    } else if (xp >= 100) {
+        level = 2;
+        rankTitle = "Code Crafter";
+        baseLevelXp = 100;
+        nextLevelXp = 250;
+    }
+
+    const range = Math.max(1, nextLevelXp - baseLevelXp);
+    const currentProgress = Math.max(0, xp - baseLevelXp);
+    const xpProgressPercent = Math.min(100, Math.round((currentProgress / range) * 100));
+
+    // Dynamic Quest Achievement Badges
+    const badges = [
+        {
+            id: "first_quest",
+            title: "First Quest",
+            description: "Asked your first question in CodeQuest",
+            icon: "fa-regular fa-paper-plane",
+            unlocked: questionsCount >= 1
+        },
+        {
+            id: "problem_solver",
+            title: "Problem Solver",
+            description: "Contributed an answer to help the community",
+            icon: "fa-solid fa-code-pull-request",
+            unlocked: answersCount >= 1
+        },
+        {
+            id: "master_mind",
+            title: "Solution Master",
+            description: "Authored a verified accepted solution",
+            icon: "fa-solid fa-circle-check",
+            unlocked: solutionsCount >= 1
+        },
+        {
+            id: "community_pillar",
+            title: "Community Pillar",
+            description: "Earned 5 or more upvotes from fellow developers",
+            icon: "fa-solid fa-heart",
+            unlocked: totalLikes >= 5
+        },
+        {
+            id: "prolific_coder",
+            title: "Prolific Contributor",
+            description: "Shared 5 or more solutions with the community",
+            icon: "fa-solid fa-award",
+            unlocked: answersCount >= 5
+        },
+        {
+            id: "admin_guardian",
+            title: "Community Guardian",
+            description: "Verified platform administrator and moderator",
+            icon: "fa-solid fa-shield-halved",
+            unlocked: isAdmin
+        }
+    ];
+
+    return {
+        xp,
+        level,
+        rankTitle,
+        baseLevelXp,
+        nextLevelXp,
+        xpProgressPercent,
+        totalLikes,
+        solutionsCount,
+        badges
+    };
+}
+
 // ----------------- Auth Middleware -----------------
 async function verifyToken(req, res, next) {
     try {
@@ -304,8 +410,10 @@ app.get("/profile", verifyToken, async (req, res) => {
         const userQuestions = await Question.find({ userId: req.user._id }).sort({ createdAt: -1 });
         const userAnswers = await Answer.find({ userId: req.user._id })
             .sort({ createdAt: -1 })
-            .populate("questionId", "questionText isSolved")
+            .populate("questionId", "questionText isSolved solvedAnswerId")
             .lean();
+
+        const gamification = computeUserGamification(req.user, questionsCount, answersCount, userQuestions, userAnswers);
 
         res.json({
             _id: req.user._id,
@@ -316,7 +424,8 @@ app.get("/profile", verifyToken, async (req, res) => {
             questionsCount,
             answersCount,
             questions: userQuestions,
-            answers: userAnswers
+            answers: userAnswers,
+            gamification
         });
     } catch (error) {
         console.error("❌ Error fetching own profile:", error);
@@ -337,8 +446,10 @@ app.get("/users/:userId", async (req, res) => {
         const userQuestions = await Question.find({ userId: user._id }).sort({ createdAt: -1 });
         const userAnswers = await Answer.find({ userId: user._id })
             .sort({ createdAt: -1 })
-            .populate("questionId", "questionText isSolved")
+            .populate("questionId", "questionText isSolved solvedAnswerId")
             .lean();
+
+        const gamification = computeUserGamification(user, questionsCount, answersCount, userQuestions, userAnswers);
 
         res.json({
             _id: user._id,
@@ -349,7 +460,8 @@ app.get("/users/:userId", async (req, res) => {
             questionsCount,
             answersCount,
             questions: userQuestions,
-            answers: userAnswers
+            answers: userAnswers,
+            gamification
         });
     } catch (error) {
         console.error("❌ Error fetching user profile:", error);

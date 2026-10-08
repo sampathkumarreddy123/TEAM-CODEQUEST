@@ -1,0 +1,544 @@
+/* =============================================================
+   CODEQUEST INNOVATIVE FEATURES STYLES
+   - Live Code Runner & Sandbox Terminal
+   - Personal Dev Code Vault
+   - Solution Code Diff Comparator
+   - Quest Gamification & Achievement Badges
+   ============================================================= */
+
+/* ---------------- 1. Code Snippet Header Actions ---------------- */
+.code-snippet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background-color: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 0.78rem;
+}
+
+.code-snippet-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-snippet-action {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  line-height: 1.4;
+}
+
+.btn-snippet-action:hover {
+  background-color: #334155;
+  color: #ffffff;
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+.btn-run-code {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.btn-run-code:hover {
+  background: #22c55e;
+  border-color: #22c55e;
+  color: #052e16;
+}
+
+.btn-run-code.is-running {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: #eab308;
+  color: #fef08a;
+}
+
+.btn-vault-code:hover {
+  color: #fde047;
+  border-color: #ca8a04;
+}
+
+/* ---------------- 2. Code Runner Drawer (Terminal & Sandbox) ---------------- */
+.code-runner-drawer {
+  background-color: #0b1120;
+  border-top: 1px solid #1e293b;
+  overflow: hidden;
+  animation: slideDrawerDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDrawerDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.runner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background-color: #0f172a;
+  border-bottom: 1px solid #1e293b;
+}
+
+.runner-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.runner-tab {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.runner-tab:hover {
+  color: #f1f5f9;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.runner-tab.active {
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.12);
+}
+
+.runner-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-runner-action {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.74rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-runner-action:hover {
+  color: #f1f5f9;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.runner-body {
+  padding: 10px 14px;
+  min-height: 90px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.82rem;
+}
+
+.runner-logs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.runner-empty-hint {
+  color: #64748b;
+  font-style: italic;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+}
+
+.log-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.5;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.log-time {
+  color: #475569;
+  font-size: 0.72rem;
+  user-select: none;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.log-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.log-badge-log {
+  background-color: #1e293b;
+  color: #94a3b8;
+}
+
+.log-badge-warn {
+  background-color: #854d0e;
+  color: #fef08a;
+}
+
+.log-badge-error {
+  background-color: #991b1b;
+  color: #fecaca;
+}
+
+.log-badge-return {
+  background-color: #065f46;
+  color: #a7f3d0;
+}
+
+.log-badge-success {
+  background-color: #15803d;
+  color: #bbf7d0;
+}
+
+.log-text {
+  color: #e2e8f0;
+  flex: 1;
+}
+
+.log-error .log-text {
+  color: #f87171;
+}
+
+.log-warn .log-text {
+  color: #fde047;
+}
+
+.log-return .log-text {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.runner-preview-frame {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  background-color: #ffffff;
+}
+
+/* ---------------- 3. Code Vault Navbar Button & Cards ---------------- */
+.btn-vault-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+  border-color: #e2e8f0;
+  background-color: white;
+  color: #334155;
+}
+
+.btn-vault-nav:hover {
+  background-color: whitesmoke;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.vault-badge-count {
+  background-color: #f59e0b;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.vault-card {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s;
+}
+
+.vault-card:hover {
+  border-color: #cbd5e1;
+}
+
+.vault-source-link {
+  text-decoration: none;
+}
+
+.vault-source-link:hover {
+  color: #0284c7 !important;
+  text-decoration: underline;
+}
+
+.vault-code-block {
+  background-color: #0f172a;
+  color: #f8fafc;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+/* ---------------- 4. Solution Code Diff Comparator ---------------- */
+.btn-compare-diff {
+  background-color: whitesmoke;
+  border: 1px solid #e2e8f0;
+  color: #0284c7;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.btn-compare-diff:hover {
+  background-color: #e0f2fe;
+  border-color: #38bdf8;
+  color: #0369a1;
+}
+
+.diff-legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.diff-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.legend-red {
+  background-color: #fee2e2;
+  border: 1px solid #f87171;
+}
+
+.legend-green {
+  background-color: #dcfce7;
+  border: 1px solid #4ade80;
+}
+
+.diff-table-wrapper {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+}
+
+.diff-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.diff-table tr {
+  line-height: 1.6;
+}
+
+.diff-num {
+  width: 40px;
+  text-align: right;
+  padding: 1px 8px;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  user-select: none;
+  border-right: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+}
+
+.diff-sign {
+  width: 20px;
+  text-align: center;
+  padding: 1px 4px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.diff-code {
+  padding: 1px 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-code code {
+  font-family: inherit;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.diff-row-added {
+  background-color: #f0fdf4;
+  color: #166534;
+}
+
+.diff-row-added .diff-sign {
+  color: #16a34a;
+}
+
+.diff-row-removed {
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.diff-row-removed .diff-sign {
+  color: #dc2626;
+}
+
+.diff-row-same {
+  color: #334155;
+}
+
+/* ---------------- 5. Quest Gamification & Achievement Badges ---------------- */
+.quest-level-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.quest-level-badge {
+  background-color: #fef3c7;
+  border: 1px solid #fde047;
+  color: #92400e;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.quest-rank-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.achievement-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+
+.achievement-card.is-unlocked {
+  border-color: #86efac;
+  background: linear-gradient(to bottom, #ffffff, #f0fdf4);
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.08);
+}
+
+.achievement-card.is-unlocked .achievement-icon-wrap {
+  background-color: #dcfce7;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.achievement-card.is-locked {
+  opacity: 0.65;
+  filter: grayscale(0.5);
+}
+
+.achievement-card.is-locked .achievement-icon-wrap {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+
+.achievement-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  border: 1px solid;
+}
+
+.achievement-info {
+  flex: 1;
+}
+
+.achievement-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 2px;
+}
+
+.achievement-desc {
+  font-size: 0.74rem;
+  color: #64748b;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+
+.achievement-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+}
+
+.achievement-card.is-unlocked .achievement-status {
+  color: #16a34a;
+}
+
+.achievement-card.is-locked .achievement-status {
+  color: #64748b;
+}

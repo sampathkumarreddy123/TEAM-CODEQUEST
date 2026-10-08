@@ -141,6 +141,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const usernameText = profile.username || "User";
         document.title = `${usernameText}'s Profile - CodeQuest`;
 
+        // Render Quest Gamification (Level, XP, & Achievements Showcase)
+        if (profile.gamification && window.CodeQuestPro && window.CodeQuestPro.renderQuestGamification) {
+            const gamificationContainer = document.getElementById("questGamificationContainer");
+            window.CodeQuestPro.renderQuestGamification(profile.gamification, gamificationContainer);
+        }
+
         // Render initial activity
         renderCurrentActivity();
     }
