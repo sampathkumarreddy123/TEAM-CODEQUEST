@@ -302,6 +302,26 @@
         return mock.default || mock;
     }
 
+    function decodeHtmlEntities(str) {
+        if (!str) return "";
+        let prev = "";
+        let curr = String(str);
+        let maxPasses = 3;
+        while (curr !== prev && maxPasses-- > 0) {
+            prev = curr;
+            curr = curr
+                .replace(/&gt;/g, ">")
+                .replace(/&lt;/g, "<")
+                .replace(/&amp;/g, "&")
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&apos;/g, "'")
+                .replace(/&nbsp;/g, " ")
+                .replace(/\u00a0/g, " ");
+        }
+        return curr;
+    }
+
     async function executeJavaScript(code, logCallback) {
         const originalLog = console.log;
         const originalWarn = console.warn;
@@ -339,25 +359,29 @@
         let executionError = null;
 
         try {
+            // First decode HTML entities (e.g. &gt; => >, &amp; => &, preventing SyntaxError on arrow functions () => {})
+            const cleanCode = decodeHtmlEntities(code);
+
             // Transform modern ES Module imports/exports into runnable async statements
-            const transformed = transformModuleCode(code);
+            const transformed = transformModuleCode(cleanCode);
 
-            // Safe async evaluation supporting top-level await and modules
-            const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-            const runner = new AsyncFunction("__importModule", "__requireShim", `
-                "use strict";
-                const require = __requireShim;
-                const process = { env: { PORT: 3000, NODE_ENV: "development" }, cwd: () => "/" };
-                const __dirname = "/";
-                const __filename = "/index.js";
-                const module = { exports: {} };
-                const exports = module.exports;
+            // Safe async evaluation supporting top-level await, modules, and arrow functions
+            const runner = new Function("__importModule", "__requireShim", `
+                return (async () => {
+                    "use strict";
+                    const require = __requireShim;
+                    const process = { env: { PORT: 3000, NODE_ENV: "development" }, cwd: () => "/" };
+                    const __dirname = "/";
+                    const __filename = "/index.js";
+                    const module = { exports: {} };
+                    const exports = module.exports;
 
-                try {
-                    ${transformed}
-                } catch(err) {
-                    throw err;
-                }
+                    try {
+                        ${transformed}
+                    } catch(err) {
+                        throw err;
+                    }
+                })();
             `);
 
             result = await runner(__importModule, __requireShim);
@@ -514,8 +538,11 @@
                     logsList.innerHTML = "";
                     let count = 0;
 
+                    const codeTarget = wrapper.querySelector("pre code, pre.code-snippet-block, code");
+                    const activeCode = decodeHtmlEntities(codeTarget ? (codeTarget.textContent || codeTarget.innerText || "") : rawCode).trim();
+
                     // If HTML/DOM snippet, default to preview
-                    if (rawCode.trim().startsWith("<") && (rawCode.includes("</div>") || rawCode.includes("</button>") || rawCode.includes("<html>"))) {
+                    if (activeCode.trim().startsWith("<") && (activeCode.includes("</div>") || activeCode.includes("</button>") || activeCode.includes("<html>"))) {
                         const previewTab = drawer.querySelector(".runner-tab[data-tab='preview']");
                         if (previewTab) previewTab.click();
                         return;
@@ -526,7 +553,7 @@
                     runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Running...`;
 
                     setTimeout(async () => {
-                        const execution = await executeJavaScript(rawCode, (log) => {
+                        const execution = await executeJavaScript(activeCode, (log) => {
                             count++;
                             const item = document.createElement("div");
                             item.className = `log-line log-${log.type}`;
@@ -568,8 +595,11 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     const qId = urlParams.get("questionId") || "";
 
+                    const codeTarget = wrapper.querySelector("pre code, pre.code-snippet-block, code");
+                    const activeCode = decodeHtmlEntities(codeTarget ? (codeTarget.textContent || codeTarget.innerText || "") : rawCode).trim();
+
                     const res = CodeVault.save({
-                        code: rawCode,
+                        code: activeCode,
                         lang: lang || "javascript",
                         title: title || "Code Snippet",
                         questionId: qId
@@ -598,9 +628,10 @@
 
     function renderLivePreview(code, iframe, lang) {
         if (!iframe) return;
+        const cleanCode = decodeHtmlEntities(code);
         let htmlContent = "";
-        if (code.trim().startsWith("<!DOCTYPE") || code.trim().startsWith("<html")) {
-            htmlContent = code;
+        if (cleanCode.trim().startsWith("<!DOCTYPE") || cleanCode.trim().startsWith("<html")) {
+            htmlContent = cleanCode;
         } else {
             htmlContent = `
                 <!DOCTYPE html>
@@ -614,7 +645,7 @@
                     </style>
                 </head>
                 <body>
-                    ${lang === "html" || code.includes("<") ? code : `<div id="app"></div><script>${code}<\/script>`}
+                    ${lang === "html" || cleanCode.includes("<") ? cleanCode : `<div id="app"></div><script>${cleanCode}<\/script>`}
                 </body>
                 </html>
             `;
@@ -1818,7 +1849,9 @@
         attachSmartCodeDetection,
         formatAsParagraph,
         formatAsCodeBlock,
-        showAppToast
+        showAppToast,
+        executeJavaScript,
+        decodeHtmlEntities
     };
 
 })();
