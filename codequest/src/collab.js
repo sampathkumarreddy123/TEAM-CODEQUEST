@@ -893,8 +893,38 @@
 
         let execution = { logs: [], duration: "0.00", error: null };
 
-        // Use CodeQuestPro sandbox engine if available
-        if (window.CodeQuestPro && typeof window.CodeQuestPro.executeJavaScript === "function") {
+        if (lang && lang !== "javascript") {
+            try {
+                const response = await fetch("/api/execute-code", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: code, lang: lang })
+                });
+                const data = await response.json();
+                const captured = [];
+                if (data.output && data.output.trim()) {
+                    data.output.trim().split("\n").forEach(line => {
+                        captured.push({ type: "log", text: line });
+                    });
+                }
+                if (data.error && data.error.trim()) {
+                    data.error.trim().split("\n").forEach(line => {
+                        captured.push({ type: "error", text: line });
+                    });
+                }
+                if (captured.length === 0) {
+                    captured.push({ type: "return", text: "Code executed cleanly without console logs." });
+                }
+                execution.logs = captured;
+                execution.duration = data.duration ? (parseFloat(data.duration) * 1000).toFixed(2) : "45.00";
+                if (data.error && !data.output) {
+                    execution.error = new Error(data.error);
+                }
+            } catch (err) {
+                execution.logs = [{ type: "error", text: "Execution failed: " + err.message }];
+                execution.error = err;
+            }
+        } else if (window.CodeQuestPro && typeof window.CodeQuestPro.executeJavaScript === "function") {
             execution = await window.CodeQuestPro.executeJavaScript(code, () => {});
         } else {
             // Native fallback evaluation

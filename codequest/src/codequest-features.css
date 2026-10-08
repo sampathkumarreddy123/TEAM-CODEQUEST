@@ -202,6 +202,17 @@
   color: #94a3b8;
 }
 
+.log-badge-info,
+.log-badge-stdout {
+  background-color: #0369a1;
+  color: #bae6fd;
+}
+
+.log-badge-stderr {
+  background-color: #991b1b;
+  color: #fecaca;
+}
+
 .log-badge-warn {
   background-color: #854d0e;
   color: #fef08a;

@@ -419,7 +419,7 @@
             const codeEl = wrapper.querySelector("code, .code-snippet-block");
             const rawCode = (codeEl ? codeEl.innerText || codeEl.textContent : "").trim();
             const langTag = wrapper.querySelector(".code-lang-tag");
-            const lang = (langTag ? langTag.innerText || langTag.textContent : "code").trim().toLowerCase().replace(/[^a-z0-9_-]/g, "");
+            const lang = (langTag ? langTag.innerText || langTag.textContent : "code").trim().toLowerCase().replace(/[^a-z0-9_+#-]/g, "");
 
             // Header actions
             let actionsWrap = wrapper.querySelector(".code-snippet-actions");
@@ -434,9 +434,9 @@
                 }
             }
 
-            // Check if snippet is runnable
-            const runnableLangs = ["javascript", "js", "html", "css", "dom", "web", "typescript", "ts", "json", "code"];
-            const isRunnable = runnableLangs.includes(lang) || rawCode.includes("console.log") || rawCode.includes("function") || rawCode.includes("<");
+            // Snippet is runnable in any programming language (Python, C, C++, Java, JS, Go, Rust, PHP, etc.)
+            const nonRunnableLangs = ["markdown", "md", "text", "txt", "diff", "plaintext"];
+            const isRunnable = rawCode.length > 0 && !nonRunnableLangs.includes(lang);
 
             actionsWrap.innerHTML = `
                 ${isRunnable ? `
@@ -524,7 +524,7 @@
                 });
             }
 
-            // Run Button Click
+            // Run Button Click (Universal multi-language runner: Python, C, C++, Java, JS, Rust, Go, PHP, etc.)
             const runBtn = wrapper.querySelector(".btn-run-code");
             if (runBtn) {
                 runBtn.addEventListener("click", () => {
@@ -542,49 +542,132 @@
                     const activeCode = decodeHtmlEntities(codeTarget ? (codeTarget.textContent || codeTarget.innerText || "") : rawCode).trim();
 
                     // If HTML/DOM snippet, default to preview
-                    if (activeCode.trim().startsWith("<") && (activeCode.includes("</div>") || activeCode.includes("</button>") || activeCode.includes("<html>"))) {
+                    if (lang === "html" || (activeCode.trim().startsWith("<") && (activeCode.includes("</div>") || activeCode.includes("</button>") || activeCode.includes("<html>")))) {
                         const previewTab = drawer.querySelector(".runner-tab[data-tab='preview']");
                         if (previewTab) previewTab.click();
                         return;
                     }
 
-                    // Run as JavaScript
+                    // Ensure Console tab is selected
+                    const consoleTab = drawer.querySelector(".runner-tab[data-tab='console']");
+                    if (consoleTab) consoleTab.click();
+
                     runBtn.classList.add("is-running");
                     runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Running...`;
+                    const displayLangName = (lang && lang !== "code") ? lang.toUpperCase() : "PROGRAM";
+                    logsList.innerHTML = `<div class="runner-empty-hint"><i class="fa-solid fa-spinner fa-spin me-1 text-primary"></i>Executing ${escapeHtml(displayLangName)} code...</div>`;
 
                     setTimeout(async () => {
-                        const execution = await executeJavaScript(activeCode, (log) => {
-                            count++;
-                            const item = document.createElement("div");
-                            item.className = `log-line log-${log.type}`;
-                            item.innerHTML = `
-                                <span class="log-time">${log.time}</span>
-                                <span class="log-badge log-badge-${log.type}">${log.type.toUpperCase()}</span>
-                                <span class="log-text">${escapeHtml(log.text)}</span>
-                            `;
-                            logsList.appendChild(item);
-                        });
+                        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        try {
+                            const response = await fetch("/api/execute-code", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ code: activeCode, lang: lang })
+                            });
 
-                        if (execution.logs.length === 0) {
-                            logsList.innerHTML = `
-                                <div class="log-line log-success">
+                            if (!response.ok) {
+                                throw new Error(`Server returned HTTP ${response.status}`);
+                            }
+
+                            const result = await response.json();
+                            logsList.innerHTML = "";
+
+                            if (result.output && result.output.trim()) {
+                                const outLines = result.output.trim().split("\n");
+                                outLines.forEach(line => {
+                                    count++;
+                                    const item = document.createElement("div");
+                                    item.className = "log-line log-log";
+                                    item.innerHTML = `
+                                        <span class="log-time">${timeStr}</span>
+                                        <span class="log-badge log-badge-info">STDOUT</span>
+                                        <span class="log-text">${escapeHtml(line)}</span>
+                                    `;
+                                    logsList.appendChild(item);
+                                });
+                            }
+
+                            if (result.error && result.error.trim()) {
+                                const errLines = result.error.trim().split("\n");
+                                errLines.forEach(line => {
+                                    count++;
+                                    const item = document.createElement("div");
+                                    item.className = "log-line log-error";
+                                    item.innerHTML = `
+                                        <span class="log-time">${timeStr}</span>
+                                        <span class="log-badge log-badge-error">STDERR</span>
+                                        <span class="log-text">${escapeHtml(line)}</span>
+                                    `;
+                                    logsList.appendChild(item);
+                                });
+                            }
+
+                            if ((!result.output || !result.output.trim()) && (!result.error || !result.error.trim())) {
+                                count++;
+                                const item = document.createElement("div");
+                                item.className = "log-line log-success";
+                                item.innerHTML = `
+                                    <span class="log-time">${timeStr}</span>
                                     <span class="log-badge log-badge-success">DONE</span>
-                                    <span class="log-text">Code executed cleanly without console logs (${execution.duration}ms).</span>
-                                </div>
-                            `;
-                        }
+                                    <span class="log-text">Program executed cleanly (${result.duration || "0.02"}s).</span>
+                                `;
+                                logsList.appendChild(item);
+                            }
 
-                        logCountEl.textContent = count;
-                        if (execTimeEl) {
-                            execTimeEl.textContent = `⏱️ ${execution.duration}ms`;
-                            execTimeEl.style.display = "inline";
-                        }
+                            logCountEl.textContent = count;
+                            if (execTimeEl) {
+                                execTimeEl.textContent = `⏱️ ${result.duration ? result.duration + 's' : 'done'}`;
+                                execTimeEl.style.display = "inline";
+                            }
+                        } catch (fetchErr) {
+                            // If backend execute endpoint fails and snippet is JS/web, fallback to browser executeJavaScript
+                            if (["javascript", "js", "web", "code"].includes(lang) || !lang) {
+                                logsList.innerHTML = "";
+                                count = 0;
+                                const execution = await executeJavaScript(activeCode, (log) => {
+                                    count++;
+                                    const item = document.createElement("div");
+                                    item.className = `log-line log-${log.type}`;
+                                    item.innerHTML = `
+                                        <span class="log-time">${log.time}</span>
+                                        <span class="log-badge log-badge-${log.type}">${log.type.toUpperCase()}</span>
+                                        <span class="log-text">${escapeHtml(log.text)}</span>
+                                    `;
+                                    logsList.appendChild(item);
+                                });
 
-                        runBtn.classList.remove("is-running");
-                        runBtn.innerHTML = `<i class="fa-solid fa-rotate-right me-1"></i>Run`;
+                                if (execution.logs.length === 0) {
+                                    logsList.innerHTML = `
+                                        <div class="log-line log-success">
+                                            <span class="log-badge log-badge-success">DONE</span>
+                                            <span class="log-text">Code executed cleanly without console logs (${execution.duration}ms).</span>
+                                        </div>
+                                    `;
+                                }
+
+                                logCountEl.textContent = count;
+                                if (execTimeEl) {
+                                    execTimeEl.textContent = `⏱️ ${execution.duration}ms`;
+                                    execTimeEl.style.display = "inline";
+                                }
+                            } else {
+                                logsList.innerHTML = `
+                                    <div class="log-line log-error">
+                                        <span class="log-badge log-badge-error">ERROR</span>
+                                        <span class="log-text">Execution failed: ${escapeHtml(fetchErr.message)}</span>
+                                    </div>
+                                `;
+                                logCountEl.textContent = "1";
+                            }
+                        } finally {
+                            runBtn.classList.remove("is-running");
+                            runBtn.innerHTML = `<i class="fa-solid fa-rotate-right me-1"></i>Run`;
+                        }
                     }, 50);
                 });
             }
+
 
             // Save to Vault Click
             const vaultBtn = wrapper.querySelector(".btn-vault-code");

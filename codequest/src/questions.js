@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let escaped = escapeHtml(text);
         
         // Multi-line code blocks ```lang\ncode\n``` or ```code```
-        escaped = escaped.replace(/```(?:([a-zA-Z0-9_-]+)\n)?([\s\S]*?)```/g, function (match, lang, code) {
+        escaped = escaped.replace(/```(?:([a-zA-Z0-9_+#.-]+)[^\n]*\n)?([\s\S]*?)```/g, function (match, lang, code) {
             const displayLang = (lang && lang.trim()) ? lang.trim() : "code";
             const cleanCode = (code !== undefined ? code : "").trim();
             return `
