@@ -83,8 +83,29 @@ document.addEventListener("DOMContentLoaded", async function () {
         
         // Multi-line code blocks ```lang\ncode\n``` or ```code```
         escaped = escaped.replace(/```(?:([a-zA-Z0-9_+#.-]+)[^\n]*\n)?([\s\S]*?)```/g, function (match, lang, code) {
-            const displayLang = (lang && lang.trim()) ? lang.trim() : "code";
+            let displayLang = (lang && lang.trim()) ? lang.trim().toLowerCase() : "";
             const cleanCode = (code !== undefined ? code : "").trim();
+            const unescaped = cleanCode.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+
+            // Auto-detect or correct language badge so Java, Python, C++ are not incorrectly shown as "javascript"
+            if (!displayLang || displayLang === "code" || displayLang === "javascript") {
+                if (/\b(import\s+java\.|package\s+[a-z0-9_.]+|public\s+class|System\.(out|err)|Scanner\s+\w+|String\[\]\s*args)\b/.test(unescaped)) {
+                    displayLang = "java";
+                } else if (/\b(#include\s*<|std::|int\s+main\s*\(|cout\s*<<|cin\s*>>)\b/.test(unescaped)) {
+                    displayLang = "cpp";
+                } else if (/\b(def\s+\w+\(|elif\s+|print\(|import\s+math|from\s+\w+\s+import)\b/.test(unescaped) && !unescaped.includes("console.log")) {
+                    displayLang = "python";
+                } else if (/\b(package\s+main|func\s+main\(\)|fmt\.Print)/.test(unescaped)) {
+                    displayLang = "go";
+                } else if (/\b(fn\s+main\(\)|println!)/.test(unescaped)) {
+                    displayLang = "rust";
+                } else if (/<\?php|\$[a-zA-Z_]\w*\s*=/.test(unescaped)) {
+                    displayLang = "php";
+                } else if (!displayLang) {
+                    displayLang = "code";
+                }
+            }
+
             return `
                 <div class="code-snippet-wrapper">
                     <div class="code-snippet-header">
@@ -673,7 +694,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 if (window.CodeQuestPro && window.CodeQuestPro.formatAsCodeBlock) {
                     window.CodeQuestPro.formatAsCodeBlock(textarea);
                 } else {
-                    insertMarkdown(textarea, "\n```javascript\n", "\n```\n", "// Write your code here");
+                    insertMarkdown(textarea, "\n```\n", "\n```\n", "// Write your code here");
                 }
             } else if (fmt === "code-inline") {
                 insertMarkdown(textarea, "`", "`", "code");

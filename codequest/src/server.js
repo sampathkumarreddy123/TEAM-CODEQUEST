@@ -1475,17 +1475,30 @@ app.post("/api/execute-code", async (req, res) => {
 
         let targetLang = (lang || "").toLowerCase().trim().replace(/[^a-z0-9_+#-]/g, "");
 
-        // Auto-detect language if generic or unspecified
-        if (!targetLang || targetLang === "code") {
+        // Intelligent language detection / override (handles code mislabeled as javascript or generic)
+        const isJava = /\b(import\s+java\.|package\s+[a-z0-9_.]+|public\s+class|System\.(out|err)\.print|Scanner\s+\w+|String\[\]\s*args|new\s+Scanner|throws\s+Exception)\b/.test(cleanCode);
+        const isCpp = /\b(#include\s*<|std::cout|std::cin|std::endl|int\s+main\s*\(|cout\s*<<)\b/.test(cleanCode);
+        const isPython = (/\b(def\s+\w+\(|elif\s+|print\(|import\s+math|import\s+sys|from\s+\w+\s+import)\b/.test(cleanCode) || (cleanCode.includes("print(") && cleanCode.includes(":"))) && !cleanCode.includes("console.log");
+        const isGo = /\b(package\s+main|func\s+main\(\)|fmt\.Print)/.test(cleanCode);
+        const isRust = /\b(fn\s+main\(\)|println!|let\s+mut\s+)/.test(cleanCode);
+        const isPhp = /<\?php|\$[a-zA-Z_]\w*\s*=|\becho\s+["']/.test(cleanCode);
+
+        if (isJava) {
+            targetLang = "java";
+        } else if (isCpp) {
+            targetLang = "cpp";
+        } else if (isPython) {
+            targetLang = "python";
+        } else if (isGo) {
+            targetLang = "go";
+        } else if (isRust) {
+            targetLang = "rust";
+        } else if (isPhp) {
+            targetLang = "php";
+        } else if (!targetLang || targetLang === "code" || targetLang === "javascript") {
             if (cleanCode.startsWith("<") && (cleanCode.includes("</div>") || cleanCode.includes("</button>") || cleanCode.includes("<html>"))) targetLang = "html";
-            else if (cleanCode.includes("def ") || cleanCode.includes("print(") || cleanCode.includes("elif ") || (cleanCode.includes("import ") && !cleanCode.includes("from '"))) targetLang = "python";
-            else if (cleanCode.includes("#include <") || cleanCode.includes("std::cout") || cleanCode.includes("printf(")) targetLang = "cpp";
-            else if (cleanCode.includes("public class ") || cleanCode.includes("System.out.println")) targetLang = "java";
             else if (cleanCode.includes("SELECT ") && cleanCode.includes("FROM ")) targetLang = "sql";
-            else if (cleanCode.includes("package main") || cleanCode.includes("func main()")) targetLang = "go";
-            else if (cleanCode.includes("fn main()") || cleanCode.includes("println!")) targetLang = "rust";
-            else if (cleanCode.startsWith("<?php") || cleanCode.includes("echo ")) targetLang = "php";
-            else targetLang = "javascript";
+            else if (!targetLang || targetLang === "code") targetLang = "javascript";
         }
 
         const startTime = Date.now();
@@ -1548,9 +1561,23 @@ app.post("/api/execute-code", async (req, res) => {
         // 4. JAVA
         if (["java"].includes(targetLang)) {
             let javaCode = cleanCode;
-            if (javaCode.includes("public class ")) {
-                javaCode = javaCode.replace(/public\s+class\s+([A-Za-z0-9_]+)/, "class Prog");
+            if (/public\s+class\s+[A-Za-z0-9_]+/i.test(javaCode)) {
+                javaCode = javaCode.replace(/public\s+class\s+[A-Za-z0-9_]+/i, "class Prog");
+            } else if (/class\s+[A-Za-z0-9_]+/i.test(javaCode)) {
+                javaCode = javaCode.replace(/class\s+([A-Za-z0-9_]+)/i, "class Prog");
+            } else if (!javaCode.includes("class ")) {
+                const imports = [];
+                const statements = [];
+                javaCode.split("\n").forEach(line => {
+                    if (line.trim().startsWith("import ") || line.trim().startsWith("package ")) {
+                        imports.push(line);
+                    } else {
+                        statements.push(line);
+                    }
+                });
+                javaCode = `${imports.join("\n")}\n\nclass Prog {\n    public static void main(String[] args) {\n        ${statements.join("\n        ")}\n    }\n}`;
             }
+
             const wb = await runWandbox("openjdk-jdk-21+35", javaCode);
             return res.json({
                 success: wb.status === "0",

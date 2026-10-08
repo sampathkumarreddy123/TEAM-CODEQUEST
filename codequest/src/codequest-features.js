@@ -419,7 +419,18 @@
             const codeEl = wrapper.querySelector("code, .code-snippet-block");
             const rawCode = (codeEl ? codeEl.innerText || codeEl.textContent : "").trim();
             const langTag = wrapper.querySelector(".code-lang-tag");
-            const lang = (langTag ? langTag.innerText || langTag.textContent : "code").trim().toLowerCase().replace(/[^a-z0-9_+#-]/g, "");
+            let lang = (langTag ? langTag.innerText || langTag.textContent : "code").trim().toLowerCase().replace(/[^a-z0-9_+#-]/g, "");
+
+            // Auto-detect or correct language if generic, missing, or mislabeled as javascript
+            if (!lang || lang === "code" || lang === "javascript") {
+                const detected = detectCodeSnippet(rawCode);
+                if (detected && detected.lang && (detected.lang !== "javascript" || !lang || lang === "code")) {
+                    lang = detected.lang;
+                    if (langTag) {
+                        langTag.innerHTML = `<i class="fa-solid fa-code me-1"></i>${escapeHtml(lang)}`;
+                    }
+                }
+            }
 
             // Header actions
             let actionsWrap = wrapper.querySelector(".code-snippet-actions");
@@ -552,9 +563,16 @@
                     const consoleTab = drawer.querySelector(".runner-tab[data-tab='console']");
                     if (consoleTab) consoleTab.click();
 
+                    // Dynamically detect language if unmarked or mislabeled
+                    let runLang = lang;
+                    const dynamicCheck = detectCodeSnippet(activeCode);
+                    if (dynamicCheck && dynamicCheck.lang && (!runLang || runLang === "code" || runLang === "javascript")) {
+                        runLang = dynamicCheck.lang;
+                    }
+
                     runBtn.classList.add("is-running");
                     runBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Running...`;
-                    const displayLangName = (lang && lang !== "code") ? lang.toUpperCase() : "PROGRAM";
+                    const displayLangName = (runLang && runLang !== "code") ? runLang.toUpperCase() : "PROGRAM";
                     logsList.innerHTML = `<div class="runner-empty-hint"><i class="fa-solid fa-spinner fa-spin me-1 text-primary"></i>Executing ${escapeHtml(displayLangName)} code...</div>`;
 
                     setTimeout(async () => {
@@ -563,7 +581,7 @@
                             const response = await fetch("/api/execute-code", {
                                 method: "POST",
                                 headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ code: activeCode, lang: lang })
+                                body: JSON.stringify({ code: activeCode, lang: runLang })
                             });
 
                             if (!response.ok) {
@@ -1082,31 +1100,47 @@
         let codeScore = 0;
         let detectedLang = "javascript";
 
-        // Heuristics for language detection
-        const hasJsKeywords = /\b(const|let|var|function|return|console\.log|import|export|class|async|await|=>)\b/.test(trimmed);
-        const hasPythonKeywords = /\b(def |import |from |class |elif |print\(|lambda |__init__|self\.)/.test(trimmed);
-        const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(trimmed);
-        const hasCssSyntax = /\{[\s\S]*?[a-z-]+:\s*[^;]+;[\s\S]*?\}/i.test(trimmed);
-        const hasSqlKeywords = /\b(SELECT|FROM|WHERE|INSERT INTO|UPDATE|DELETE FROM|GROUP BY|ORDER BY|JOIN)\b/i.test(trimmed);
-        const hasCppOrJava = /\b(public static void|System\.out\.println|#include\s*<|std::|int main\(|cout\s*<<)\b/.test(trimmed);
+        // Heuristics for language detection (Java and C++ must precede generic JS keywords)
+        const hasJava = /\b(import\s+java\.|package\s+[a-z0-9_.]+|public\s+class|public\s+static\s+void|System\.(out|err)|Scanner\s+\w+|String\[\]\s*args|new\s+Scanner|throws\s+Exception)\b/.test(trimmed);
+        const hasCpp = /\b(#include\s*<|std::|int\s+main\s*\(|cout\s*<<|cin\s*>>|printf\s*\(|scanf\s*\()\b/.test(trimmed);
+        const hasPython = (/\b(def\s+\w+\(|elif\s+|print\(|import\s+math|import\s+sys|from\s+\w+\s+import|lambda\s+|__init__|self\.|range\(\d+\))\b/.test(trimmed) || (trimmed.includes("print(") && trimmed.includes(":"))) && !trimmed.includes("console.log");
+        const hasGo = /\b(package\s+main|func\s+main\(\)|fmt\.Print)/.test(trimmed);
+        const hasRust = /\b(fn\s+main\(\)|println!|let\s+mut\s+)/.test(trimmed);
+        const hasPhp = /<\?php|\$[a-zA-Z_]\w*\s*=|\becho\s+["']/.test(trimmed);
+        const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(trimmed) && (trimmed.includes("</div>") || trimmed.includes("</button>") || trimmed.includes("<html>") || trimmed.includes("</p>"));
+        const hasCssSyntax = /\{[\s\S]*?[a-z-]+:\s*[^;]+;[\s\S]*?\}/i.test(trimmed) && !trimmed.includes("function") && !trimmed.includes("class ");
+        const hasSqlKeywords = /\b(SELECT\s+[\s\S]+FROM|INSERT\s+INTO|UPDATE\s+\w+\s+SET|DELETE\s+FROM)\b/i.test(trimmed);
+        const hasJsKeywords = /\b(const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|function\s+\w+\(|console\.log|async\s+function|export\s+default|document\.getElementById|addEventListener|=>)\b/.test(trimmed);
 
-        if (hasHtmlTags) {
-            codeScore += 4;
-            detectedLang = "html";
-        } else if (hasPythonKeywords) {
-            codeScore += 4;
+        if (hasJava) {
+            codeScore += 5;
+            detectedLang = "java";
+        } else if (hasCpp) {
+            codeScore += 5;
+            detectedLang = "cpp";
+        } else if (hasPython) {
+            codeScore += 5;
             detectedLang = "python";
+        } else if (hasGo) {
+            codeScore += 5;
+            detectedLang = "go";
+        } else if (hasRust) {
+            codeScore += 5;
+            detectedLang = "rust";
+        } else if (hasPhp) {
+            codeScore += 5;
+            detectedLang = "php";
+        } else if (hasHtmlTags) {
+            codeScore += 5;
+            detectedLang = "html";
         } else if (hasCssSyntax) {
-            codeScore += 4;
+            codeScore += 5;
             detectedLang = "css";
         } else if (hasSqlKeywords) {
-            codeScore += 4;
+            codeScore += 5;
             detectedLang = "sql";
-        } else if (hasCppOrJava) {
-            codeScore += 4;
-            detectedLang = "cpp";
         } else if (hasJsKeywords) {
-            codeScore += 4;
+            codeScore += 5;
             detectedLang = "javascript";
         }
 
@@ -1178,13 +1212,21 @@
         const val = textarea.value;
         const selected = val.substring(start, end).trim();
 
-        const lang = "javascript";
+        let lang = "";
+        if (selected) {
+            const detected = detectCodeSnippet(selected);
+            if (detected && detected.lang) {
+                lang = detected.lang;
+            }
+        }
+
+        const langTag = lang || "";
         const code = selected || "// Paste or write your code here";
-        const formatted = "\n```" + lang + "\n" + code + "\n```\n";
+        const formatted = "\n```" + langTag + "\n" + code + "\n```\n";
 
         textarea.value = val.substring(0, start) + formatted + val.substring(end);
         textarea.focus();
-        const codeStart = start + lang.length + 5;
+        const codeStart = start + langTag.length + 5;
         textarea.selectionStart = codeStart;
         textarea.selectionEnd = codeStart + code.length;
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
@@ -1326,7 +1368,7 @@
                 const match = lineBefore.match(/^```([a-zA-Z0-9_-]*)$/);
                 if (match) {
                     e.preventDefault();
-                    const lang = match[1] || "javascript";
+                    const lang = match[1] || "";
                     const lineStartPos = start - lineBefore.length;
                     const codeBlockTemplate = "```" + lang + "\n\n```\n";
 
