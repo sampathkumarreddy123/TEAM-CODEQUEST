@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Pair Debug Room | CodeQuest</title>
+    <title>Live Pair Debug Huddle | CodeQuest</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/logo.png">
     <!-- Font Awesome 6 -->
@@ -12,241 +12,226 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Base styles and feature styles -->
     <link rel="stylesheet" href="codequest-features.css">
-    <link rel="stylesheet" href="collab.css?v=2.0.0">
+    <link rel="stylesheet" href="collab.css?v=2.5.0">
 </head>
 <body class="collab-body">
 
-    <!-- Top Collab Navigation Bar -->
+    <!-- Top Slack-Style Navigation Header -->
     <header class="collab-navbar">
         <div class="collab-nav-left">
-            <a href="dashboard.html" class="collab-brand" title="Back to CodeQuest">
+            <a href="dashboard.html" class="collab-brand" title="Back to Dashboard">
                 <img src="assets/codequest_logo.png" alt="Logo" class="brand-logo" onerror="this.src='assets/logo.png'">
-                <span class="brand-text d-none d-sm-inline">CODEQUEST</span>
+                <span class="brand-text">CodeQuest</span>
             </a>
-            <div class="collab-room-badge" id="copyInviteLinkBtn" title="Click to copy invite link">
-                <span class="pulse-dot"></span>
-                <span class="badge-title d-none d-md-inline">ROOM:</span>
-                <span class="badge-room-id" id="displayRoomId">CQ-....</span>
-                <i class="fa-regular fa-copy copy-icon-subtle"></i>
-            </div>
-            <div class="collab-question-tag d-none d-lg-flex" id="questionContextTag" style="display: none;">
-                <i class="fa-solid fa-code-commit me-1 text-info"></i>
-                <a id="questionContextLink" href="#" target="_blank" title="Open question in new tab">Context</a>
+            <div class="slack-channel-pill" id="copyInviteLinkBtn" title="Click to copy invite link">
+                <i class="fa-solid fa-hashtag text-secondary me-1"></i>
+                <span class="room-pill-id" id="displayRoomId">huddle-room</span>
+                <i class="fa-regular fa-copy copy-icon ms-2" id="copyIcon"></i>
+                <span class="copied-tooltip" id="copiedTooltip">Copied!</span>
             </div>
         </div>
 
-        <div class="collab-nav-center d-none d-md-flex">
-            <div class="connection-status-pill" id="connectionStatusPill">
-                <i class="fa-solid fa-circle-notch fa-spin text-warning me-1" id="connStatusIcon"></i>
+        <div class="collab-nav-center">
+            <div class="huddle-status-pill" id="connectionStatusPill">
+                <span class="huddle-status-dot" id="connStatusDot"></span>
                 <span id="connStatusText">Connecting...</span>
+                <span class="huddle-peer-count ms-2" id="activePeersCounter">1 in huddle</span>
             </div>
         </div>
 
         <div class="collab-nav-right">
             <!-- Run Code Button -->
-            <button id="runCollabCodeBtn" class="btn btn-collab-action btn-collab-run" title="Run code in shared interactive sandbox">
+            <button id="runCollabCodeBtn" class="btn btn-slack-action btn-slack-run" title="Run code in shared sandbox">
                 <i class="fa-solid fa-play me-1"></i><span>Run</span>
             </button>
 
-            <!-- Publish / Export Button (Post Answer, Ask Question, Save) -->
-            <button id="publishSolutionBtn" class="btn btn-collab-action btn-collab-export" data-bs-toggle="modal" data-bs-target="#exportAnswerModal" title="Publish as Answer or Ask as Question">
+            <!-- Publish Solution Button -->
+            <button id="publishSolutionBtn" class="btn btn-slack-action btn-slack-publish" data-bs-toggle="modal" data-bs-target="#exportAnswerModal" title="Publish collaborative solution">
                 <i class="fa-solid fa-cloud-arrow-up me-1"></i><span class="d-none d-sm-inline">Publish</span>
             </button>
 
-            <!-- Leave Session Button -->
-            <a href="dashboard.html" class="btn btn-collab-action btn-collab-leave" title="Exit room">
-                <i class="fa-solid fa-arrow-right-from-bracket me-1"></i><span class="d-none d-md-inline">Leave</span>
+            <!-- Leave Huddle Button -->
+            <a href="dashboard.html" class="btn btn-slack-action btn-slack-leave" id="leaveRoomBtn" title="Leave Huddle">
+                <i class="fa-solid fa-phone-slash me-1"></i><span>Leave</span>
             </a>
         </div>
     </header>
 
-    <!-- Mobile View Mode Switcher (Visible on Tablets & Phones < 992px) -->
+    <!-- Mobile View Mode Switcher -->
     <nav class="mobile-view-tabs-bar d-lg-none" aria-label="Mobile View Switcher">
         <button class="mobile-view-btn active" data-view="editor" id="mTabEditor">
-            <i class="fa-solid fa-code me-1"></i>Editor & Console
+            <i class="fa-solid fa-code me-1"></i>Code & Console
         </button>
         <button class="mobile-view-btn" data-view="media" id="mTabMedia">
-            <i class="fa-solid fa-video me-1 text-danger"></i>Video & Chat
+            <i class="fa-solid fa-video me-1"></i>Huddle & Chat
             <span class="mobile-unread-dot" id="mobileUnreadDot" style="display: none;"></span>
         </button>
     </nav>
 
-    <!-- Main Collab Workspace Grid -->
+    <!-- Main Workspace Grid -->
     <main class="collab-workspace">
         
-        <!-- Left Section: Real-time Code Editor & Live Console -->
+        <!-- Left Pane: Code Editor & Console Drawer -->
         <section class="collab-editor-pane" id="paneCollabEditor">
             
             <!-- Editor Sub-Header -->
             <div class="editor-header-bar">
-                <div class="editor-tab-active">
-                    <i class="fa-brands fa-js text-warning me-1" id="fileTabIcon"></i>
-                    <span id="fileTabName">solution.js</span>
-                    <span class="sync-indicator" id="syncIndicator"><i class="fa-solid fa-cloud-check me-1"></i>Synced</span>
+                <div class="editor-file-tab">
+                    <i class="fa-brands fa-js text-warning me-2" id="fileTabIcon"></i>
+                    <span id="fileTabName" class="file-name">solution.js</span>
+                    <span class="sync-badge" id="syncIndicator"><i class="fa-solid fa-check me-1"></i>Synced</span>
                 </div>
                 
-                <div class="editor-meta">
-                    <!-- Language Selector embedded cleanly -->
+                <div class="editor-actions">
                     <div class="lang-selector-wrap">
-                        <select id="editorLangSelect" class="collab-select-lang" aria-label="Programming Language">
+                        <select id="editorLangSelect" class="slack-select-lang" aria-label="Programming Language">
                             <option value="javascript">JavaScript</option>
                             <option value="python">Python</option>
                             <option value="cpp">C / C++</option>
                             <option value="java">Java</option>
-                            <option value="html">HTML/Web</option>
+                            <option value="html">HTML</option>
                             <option value="css">CSS</option>
                             <option value="json">JSON</option>
                         </select>
                     </div>
-
-                    <button id="formatCodeBtn" class="btn-editor-tool" title="Format code indentation">
-                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Format
-                    </button>
-
-                    <span class="collaborator-peer-count d-none d-sm-inline" id="activePeersCounter">
-                        <i class="fa-solid fa-users me-1 text-primary"></i>1 in room
-                    </span>
                 </div>
             </div>
 
-            <!-- Context Banner (Shows question title if attached) -->
-            <div class="collab-question-banner" id="collabQuestionBanner" style="display: none;">
-                <div class="banner-content">
-                    <span class="badge bg-primary-subtle text-primary fw-bold me-2">Fixing:</span>
-                    <span class="banner-question-title" id="bannerQuestionTitle">Loading question details...</span>
-                </div>
-            </div>
-
-            <!-- Editor Container with Line Numbers -->
+            <!-- Code Editor Area -->
             <div class="code-editor-wrapper">
                 <div class="editor-line-numbers" id="editorLineNumbers">1</div>
-                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to debug together in real-time..."></textarea>
-                <div class="remote-cursor-tag" id="remoteCursorTag" style="display: none;">
-                    <span class="cursor-flag" id="cursorFlagText">@Partner</span>
-                </div>
+                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to pair-debug in real-time..."></textarea>
             </div>
 
-            <!-- Bottom Console / Live Output Drawer -->
+            <!-- Bottom Console Drawer -->
             <div class="collab-console-drawer">
                 <div class="console-drawer-header">
-                    <div class="console-tabs">
-                        <button class="console-tab-btn active" data-tab="console" id="tabBtnConsole">
-                            <i class="fa-solid fa-terminal me-1"></i>Console (<span id="consoleLogsCount">0</span>)
-                        </button>
-                        <button class="console-tab-btn" data-tab="preview" id="tabBtnPreview">
-                            <i class="fa-solid fa-window-maximize me-1"></i>Live Preview
-                        </button>
+                    <div class="console-title">
+                        <i class="fa-solid fa-terminal me-2 text-secondary"></i>Console Output
                     </div>
-                    <div class="console-drawer-actions">
+                    <div class="console-actions">
                         <span id="collabExecTime" class="exec-time-pill" style="display: none;"></span>
-                        <button id="clearConsoleBtn" class="btn-console-clear" title="Clear console output">
-                            <i class="fa-solid fa-eraser me-1"></i>Clear
+                        <button id="clearConsoleBtn" class="btn-console-clear" title="Clear console">
+                            <i class="fa-solid fa-trash-can me-1"></i>Clear
                         </button>
                     </div>
                 </div>
 
                 <div class="console-drawer-body">
-                    <!-- Console Logs Tab -->
-                    <div class="console-pane active" id="paneConsole">
-                        <div class="console-logs-list" id="consoleLogsList">
-                            <div class="console-empty-state">
-                                <i class="fa-solid fa-play text-success me-1"></i> Click <b>Run</b> to execute code shared across both screens.
-                            </div>
+                    <div class="console-logs-list" id="consoleLogsList">
+                        <div class="console-empty-state">
+                            <i class="fa-solid fa-circle-play text-muted me-1"></i> Ready. Click <b>Run</b> to execute code.
                         </div>
-                    </div>
-
-                    <!-- Live HTML Preview Tab -->
-                    <div class="console-pane" id="panePreview" style="display: none;">
-                        <iframe id="collabPreviewFrame" sandbox="allow-scripts" title="Live Preview Screen"></iframe>
                     </div>
                 </div>
             </div>
 
         </section>
 
-        <!-- Right Section: Face-to-Face Video Grid & Pair Chat -->
+        <!-- Right Pane: Slack Huddle Face-to-Face & Chat -->
         <aside class="collab-side-dock" id="paneCollabMedia">
             
-            <!-- Video Call Grid -->
-            <div class="video-conference-card" id="videoConferenceCard">
-                <div class="video-card-header">
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="card-title-text"><i class="fa-solid fa-video me-1 text-danger"></i>Face-to-Face Live</span>
-                        <span class="webrtc-badge" id="webrtcStatusBadge">Ready</span>
-                    </div>
-                    <div class="video-header-actions">
-                        <button id="toggleVideoLayoutBtn" class="btn-video-expand" title="Expand / Maximize Video View" type="button">
-                            <i class="fa-solid fa-expand me-1" id="expandVideoIcon"></i><span id="expandVideoText">Expand</span>
-                        </button>
-                    </div>
-                </div>
+            <!-- Hidden Dedicated Audio Element for Clean WebRTC Voice Stream -->
+            <audio id="remoteAudio" autoplay playsinline></audio>
 
-                <div class="video-grid-container" id="videoGridContainer">
-                    <!-- Remote Peer Video (Large Primary) -->
-                    <div class="video-box remote-video-box" id="remoteVideoContainer">
+            <!-- Huddle Video Stage -->
+            <div class="huddle-stage-container" id="huddleStageContainer">
+                
+                <div class="huddle-stage" id="huddleStage">
+                    
+                    <!-- Remote Peer Tile -->
+                    <div class="huddle-tile remote-tile" id="remotePeerTile">
                         <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
-                        <div class="unmute-audio-banner" id="unmuteAudioBanner" style="display: none;" title="Click anywhere to unmute">
-                            <i class="fa-solid fa-volume-xmark me-1"></i>Tap to unmute partner
-                        </div>
-                        <div class="video-placeholder" id="remoteVideoPlaceholder">
-                            <div class="placeholder-avatar">
-                                <i class="fa-solid fa-user-astronaut"></i>
+                        
+                        <!-- Fallback Avatar Card when Camera is Off or Connecting -->
+                        <div class="huddle-avatar-card" id="remoteVideoPlaceholder">
+                            <div class="huddle-avatar-circle" id="remoteAvatarCircle">
+                                <span id="remoteAvatarInitials">P</span>
                             </div>
-                            <div class="placeholder-text" id="remotePlaceholderText">Waiting for partner to join...</div>
+                            <div class="huddle-tile-name" id="remoteUserName">Partner</div>
+                            <div class="huddle-tile-sub" id="remotePlaceholderText">Waiting for partner to join...</div>
                         </div>
-                        <div class="video-user-tag" id="remoteUserTag">
-                            <span id="remoteUserName"><i class="fa-solid fa-user me-1"></i>Partner</span>
-                            <span id="remoteAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
+
+                        <!-- Tile Bottom Info Tag -->
+                        <div class="huddle-tile-tag">
+                            <span class="user-label" id="remoteUserTagLabel">Partner</span>
+                            <span class="mic-status" id="remoteAudioStatusIcon">
+                                <i class="fa-solid fa-microphone text-success"></i>
+                            </span>
                         </div>
                     </div>
 
-                    <!-- Local User Video (Picture-in-Picture Tile) -->
-                    <div class="video-box local-video-box" id="localVideoContainer" title="Click to swap video view">
+                    <!-- Local User Tile (Picture-in-Picture / Floating) -->
+                    <div class="huddle-tile local-tile" id="localPeerTile">
                         <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
-                        <div class="video-placeholder" id="localVideoPlaceholder" style="display: none;">
-                            <div class="placeholder-avatar-sm">
-                                <i class="fa-solid fa-user"></i>
+                        
+                        <!-- Fallback Avatar Card when Camera is Off -->
+                        <div class="huddle-avatar-card" id="localVideoPlaceholder" style="display: none;">
+                            <div class="huddle-avatar-circle sm">
+                                <span id="localAvatarInitials">You</span>
                             </div>
+                            <div class="huddle-tile-name" id="localUserNameTag">You</div>
                         </div>
-                        <div class="video-user-tag" id="localUserTag">
-                            <span id="localUserNameTag">You</span>
-                            <span id="localAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
+
+                        <!-- Tile Bottom Info Tag -->
+                        <div class="huddle-tile-tag">
+                            <span class="user-label">You</span>
+                            <span class="mic-status" id="localAudioStatusIcon">
+                                <i class="fa-solid fa-microphone text-success"></i>
+                            </span>
                         </div>
                     </div>
+
                 </div>
 
-                <!-- Call Control Floating Toolbar -->
-                <div class="video-controls-toolbar">
-                    <button id="toggleMicBtn" class="btn-call-ctrl is-active" title="Mute/Unmute Microphone" aria-label="Toggle Microphone">
+                <!-- Slack Floating Control Bar (Pill Toolbar) -->
+                <div class="huddle-controls-pill">
+                    <!-- Mic Toggle -->
+                    <button id="toggleMicBtn" class="btn-huddle-ctrl" title="Mute / Unmute" aria-label="Toggle Microphone">
                         <i class="fa-solid fa-microphone"></i>
                     </button>
-                    <button id="toggleCamBtn" class="btn-call-ctrl is-active" title="Turn Camera On/Off" aria-label="Toggle Camera">
+
+                    <!-- Camera Toggle -->
+                    <button id="toggleCamBtn" class="btn-huddle-ctrl" title="Start / Stop Video" aria-label="Toggle Camera">
                         <i class="fa-solid fa-video"></i>
                     </button>
-                    <button id="toggleScreenBtn" class="btn-call-ctrl" title="Share Screen" aria-label="Share Screen">
+
+                    <!-- Screen Share -->
+                    <button id="toggleScreenBtn" class="btn-huddle-ctrl" title="Share Screen" aria-label="Share Screen">
                         <i class="fa-solid fa-display"></i>
                     </button>
-                    <button id="swapVideoBtn" class="btn-call-ctrl" title="Swap Main & PIP Cameras" aria-label="Swap Cameras">
-                        <i class="fa-solid fa-repeat"></i>
+
+                    <!-- Toggle In-Huddle Chat -->
+                    <button id="toggleChatBtn" class="btn-huddle-ctrl" title="In-Huddle Chat" aria-label="Toggle Chat">
+                        <i class="fa-regular fa-comment-dots"></i>
+                    </button>
+
+                    <!-- Leave / Hangup Button -->
+                    <button id="hangupBtn" class="btn-huddle-ctrl btn-huddle-hangup" title="Leave Huddle" aria-label="Leave Huddle">
+                        <i class="fa-solid fa-phone-slash"></i>
                     </button>
                 </div>
+
             </div>
 
-            <!-- In-Room Pair Programming Chat & Notes -->
-            <div class="collab-chat-card">
-                <div class="chat-card-header">
-                    <span><i class="fa-solid fa-comments me-1 text-primary"></i>Pair Chat & Notes</span>
+            <!-- In-Huddle Pair Chat Card -->
+            <div class="huddle-chat-panel" id="huddleChatPanel">
+                <div class="chat-header">
+                    <span><i class="fa-regular fa-comments me-2 text-secondary"></i>Huddle Chat</span>
+                    <button id="closeChatBtn" class="btn-close-chat" title="Minimize Chat">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
                 </div>
 
                 <div class="chat-messages-container" id="chatMessagesContainer">
                     <div class="chat-system-message">
-                        <i class="fa-solid fa-handshake-angle me-1 text-info"></i> Welcome! You can speak face-to-face and send debug notes here.
+                        Huddle started. Real-time messages sent here are visible to both developers.
                     </div>
                 </div>
 
                 <form id="chatInputForm" class="chat-input-form">
-                    <input type="text" id="chatMessageInput" class="chat-input-field" placeholder="Type a message or note..." autocomplete="off">
-                    <button type="submit" class="btn-chat-send" title="Send message" aria-label="Send Message">
+                    <input type="text" id="chatMessageInput" class="chat-input-field" placeholder="Send a message in huddle..." autocomplete="off">
+                    <button type="submit" class="btn-chat-send" title="Send" aria-label="Send Message">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
@@ -261,7 +246,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content collab-modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>Publish Collaborative Code</h5>
+                    <h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-up text-secondary me-2"></i>Publish Collaborative Code</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -275,7 +260,7 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tabModeQuestion" data-bs-toggle="pill" data-bs-target="#modeQuestionContent" type="button" role="tab">
-                                <i class="fa-solid fa-circle-question me-1"></i> Ask as New Question
+                                <i class="fa-solid fa-circle-question me-1"></i> Ask as Question
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -289,12 +274,11 @@
                         <!-- MODE 1: Post as Answer -->
                         <div class="tab-pane fade show active" id="modeAnswerContent" role="tabpanel">
                             <div class="target-question-card mb-3 p-3 rounded" id="targetQuestionCard">
-                                <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Target Question to Answer:</label>
-                                <div id="selectedQuestionDisplay" class="fw-bold text-light">Loading question info...</div>
+                                <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Target Question:</label>
+                                <div id="selectedQuestionDisplay" class="fw-semibold text-light">Loading question...</div>
                                 
-                                <!-- Dropdown if no question linked yet -->
                                 <div id="selectQuestionContainer" style="display: none;" class="mt-2">
-                                    <label for="chooseQuestionSelect" class="form-label small text-muted">Or pick an existing question to answer:</label>
+                                    <label for="chooseQuestionSelect" class="form-label small text-muted">Select an existing question to answer:</label>
                                     <select id="chooseQuestionSelect" class="form-select collab-modal-input">
                                         <option value="">-- Select Question --</option>
                                     </select>
@@ -302,52 +286,49 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="exportNotesInput" class="form-label text-light small fw-bold">Explanation & Debug Notes (Optional):</label>
-                                <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Explain how you fixed the issue during pair-programming..."></textarea>
+                                <label for="exportNotesInput" class="form-label text-light small fw-semibold">Explanation Notes (Optional):</label>
+                                <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Briefly explain the solution..."></textarea>
                             </div>
                         </div>
 
                         <!-- MODE 2: Ask as New Question -->
                         <div class="tab-pane fade" id="modeQuestionContent" role="tabpanel">
                             <div class="mb-3">
-                                <label for="newQuestionTitleInput" class="form-label text-light small fw-bold">Question Title / Topic:</label>
+                                <label for="newQuestionTitleInput" class="form-label text-light small fw-semibold">Question Title / Topic:</label>
                                 <input type="text" id="newQuestionTitleInput" class="form-control collab-modal-input" placeholder="e.g., How to handle async WebRTC peer connection properly?">
                             </div>
                             <div class="mb-3">
-                                <label for="newQuestionTagsInput" class="form-label text-light small fw-bold">Tags (comma-separated):</label>
+                                <label for="newQuestionTagsInput" class="form-label text-light small fw-semibold">Tags (comma-separated):</label>
                                 <input type="text" id="newQuestionTagsInput" class="form-control collab-modal-input" placeholder="javascript, webrtc, debugging">
                             </div>
                             <div class="mb-3">
-                                <label for="newQuestionDescInput" class="form-label text-light small fw-bold">Description of the problem:</label>
-                                <textarea id="newQuestionDescInput" class="form-control collab-modal-input" rows="2" placeholder="Details about what you tried or need help with..."></textarea>
+                                <label for="newQuestionDescInput" class="form-label text-light small fw-semibold">Description:</label>
+                                <textarea id="newQuestionDescInput" class="form-control collab-modal-input" rows="2" placeholder="Describe the problem you need help with..."></textarea>
                             </div>
                         </div>
 
                         <!-- MODE 3: Save to Vault -->
                         <div class="tab-pane fade" id="modeVaultContent" role="tabpanel">
-                            <div class="p-3 text-center bg-dark rounded border border-secondary mb-3">
-                                <i class="fa-solid fa-box-archive text-warning fs-3 mb-2"></i>
-                                <h6 class="text-light fw-bold">Save Directly to Your Personal Code Vault</h6>
-                                <p class="text-secondary small mb-0">Bookmark this solution for your personal reference. Accessible anytime from the Vault button.</p>
+                            <div class="p-3 text-center rounded border border-secondary mb-3" style="background: rgba(255,255,255,0.02);">
+                                <i class="fa-solid fa-box-archive text-secondary fs-3 mb-2"></i>
+                                <h6 class="text-light fw-semibold">Save to Personal Code Vault</h6>
+                                <p class="text-secondary small mb-0">Bookmark this solution for your personal reference.</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Code Snippet Input Box -->
+                    <!-- Code Snippet Box -->
                     <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label for="exportCodePreview" class="form-label text-light small fw-bold mb-0">
-                                <i class="fa-solid fa-code me-1 text-info"></i>Code Snippet to Publish:
-                            </label>
-                            <span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size: 0.72rem;">Editable</span>
-                        </div>
-                        <textarea id="exportCodePreview" class="form-control collab-modal-input font-monospace" rows="5" placeholder="// Type or review code snippet here..."></textarea>
+                        <label for="exportCodePreview" class="form-label text-light small fw-semibold mb-1">
+                            <i class="fa-solid fa-code me-1 text-secondary"></i>Code Snippet to Publish:
+                        </label>
+                        <textarea id="exportCodePreview" class="form-control collab-modal-input font-monospace" rows="5" placeholder="// Code snippet..."></textarea>
                     </div>
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" id="confirmPublishBtn" class="btn btn-primary btn-sm fw-bold">
+                    <button type="button" class="btn btn-collab-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="confirmPublishBtn" class="btn btn-collab-modal-publish">
                         <i class="fa-solid fa-check me-1"></i><span id="confirmPublishBtnText">Post as Answer</span>
                     </button>
                 </div>
@@ -360,6 +341,6 @@
     <!-- CodeQuest Features (for Sandbox Runner & Toast API) -->
     <script src="codequest-features.js?v=2.3.0"></script>
     <!-- Collab Engine Script -->
-    <script src="collab.js?v=2.0.0"></script>
+    <script src="collab.js?v=2.5.0"></script>
 </body>
 </html>

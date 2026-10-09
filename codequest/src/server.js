@@ -2030,6 +2030,46 @@ wss.on("connection", (ws, req) => {
                     lang: data.lang
                 });
 
+                // Check if 1-on-1 room is already full (max 2 active developers)
+                if (room.peers.size >= 2) {
+                    let isReconnecting = false;
+                    for (const peer of room.peers.values()) {
+                        if (peer.user && currentUser && (
+                            (peer.user.id && currentUser.id && String(peer.user.id) === String(currentUser.id)) ||
+                            (peer.user.username && currentUser.username && String(peer.user.username).toLowerCase() === String(currentUser.username).toLowerCase())
+                        )) {
+                            isReconnecting = true;
+                            break;
+                        }
+                    }
+
+                    if (!isReconnecting) {
+                        const currentMembers = [];
+                        room.peers.forEach((p) => {
+                            if (p.user && p.user.username) currentMembers.push(p.user.username);
+                        });
+
+                        ws.send(JSON.stringify({
+                            type: "room-full",
+                            roomId: currentRoomId,
+                            message: "This 1-on-1 session is already full (2/2 developers connected).",
+                            members: currentMembers
+                        }));
+
+                        // Notify the 2 members inside the room that a 3rd person attempted to join
+                        room.peers.forEach((peer) => {
+                            if (peer.ws.readyState === WebSocket.OPEN) {
+                                peer.ws.send(JSON.stringify({
+                                    type: "third-person-attempted",
+                                    visitor: currentUser ? currentUser.username : "Another developer",
+                                    roomId: currentRoomId
+                                }));
+                            }
+                        });
+                        return;
+                    }
+                }
+
                 // Gather list of existing peers in the room
                 const existingPeers = [];
                 room.peers.forEach((peer, pId) => {
@@ -2124,6 +2164,20 @@ wss.on("connection", (ws, req) => {
 
             // Synchronized Run Event: broadcast run trigger & results
             if (type === "run-code" || type === "run-result") {
+                room.peers.forEach((peer, pId) => {
+                    if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify({
+                            ...data,
+                            fromPeerId: currentPeerId,
+                            fromUser: currentUser ? currentUser.username : "Partner"
+                        }));
+                    }
+                });
+                return;
+            }
+
+            // Synchronized Publish Events: broadcast to partner
+            if (type === "publish-modal-opened" || type === "solution-published") {
                 room.peers.forEach((peer, pId) => {
                     if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
                         peer.ws.send(JSON.stringify({
