@@ -2008,13 +2008,29 @@ wss.on("connection", (ws, req) => {
 
             // WebRTC Signaling: route offer, answer, ice-candidate
             if (type === "webrtc-signal") {
-                const targetPeer = room.peers.get(data.targetPeerId);
-                if (targetPeer && targetPeer.ws.readyState === WebSocket.OPEN) {
-                    targetPeer.ws.send(JSON.stringify({
-                        type: "webrtc-signal",
-                        fromPeerId: currentPeerId,
-                        signal: data.signal
-                    }));
+                let sent = false;
+                if (data.targetPeerId) {
+                    const targetPeer = room.peers.get(data.targetPeerId);
+                    if (targetPeer && targetPeer.ws.readyState === WebSocket.OPEN) {
+                        targetPeer.ws.send(JSON.stringify({
+                            type: "webrtc-signal",
+                            fromPeerId: currentPeerId,
+                            signal: data.signal
+                        }));
+                        sent = true;
+                    }
+                }
+                if (!sent) {
+                    // Fallback for 1-on-1 rooms: deliver to any other open peer in the room
+                    room.peers.forEach((peer, pId) => {
+                        if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
+                            peer.ws.send(JSON.stringify({
+                                type: "webrtc-signal",
+                                fromPeerId: currentPeerId,
+                                signal: data.signal
+                            }));
+                        }
+                    });
                 }
                 return;
             }

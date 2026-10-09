@@ -49,22 +49,8 @@
             { urls: "stun:stun3.l.google.com:19302" },
             { urls: "stun:stun4.l.google.com:19302" },
             { urls: "stun:stun.cloudflare.com:3478" },
-            { urls: "stun:openrelay.metered.ca:80" },
-            {
-                urls: "turn:openrelay.metered.ca:80",
-                username: "openrelay",
-                credential: "openrelay"
-            },
-            {
-                urls: "turn:openrelay.metered.ca:443",
-                username: "openrelay",
-                credential: "openrelay"
-            },
-            {
-                urls: "turn:openrelay.metered.ca:443?transport=tcp",
-                username: "openrelay",
-                credential: "openrelay"
-            }
+            { urls: "stun:stun.services.mozilla.com:3478" },
+            { urls: "stun:stun.nextcloud.com:443" }
         ],
         iceCandidatePoolSize: 10
     };
@@ -343,8 +329,10 @@
                 // Send our current code so new peer has latest version
                 sendCodeChange();
 
-                // Receiver creates peer connection waiting for offer
-                initiatePeerConnection(remotePeerId, false);
+                // Receiver creates peer connection waiting for offer only if not already active
+                if (!peerConnection || peerConnection.signalingState === "closed") {
+                    initiatePeerConnection(remotePeerId, false);
+                }
                 break;
 
             case "webrtc-signal":
@@ -421,29 +409,192 @@
     // -------------------------------------------------------------
     // 4. WEBRTC FACE-TO-FACE VIDEO & AUDIO STREAM
     // -------------------------------------------------------------
-    async function initLocalMedia() {
-        try {
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 30 } },
-                audio: true
-            });
-            localVideo.srcObject = localStream;
-            localVideoPlaceholder.style.display = "none";
-        } catch (err) {
-            console.warn("Could not access camera/mic:", err.name, err.message);
-            // Fallback: Audio only or dummy stream
+    let isPhysicalCameraActive = false;
+
+    /**
+     * Create an animated Virtual Developer Video Stream via HTML5 Canvas.
+     * Guaranteed to work even on insecure HTTP network IPs, laptops without webcams,
+     * or when camera permissions are not yet granted.
+     */
+    function createVirtualMediaStream(user, existingAudioStream) {
+        const canvas = document.createElement("canvas");
+        canvas.width = 640;
+        canvas.height = 480;
+        const ctx = canvas.getContext("2d");
+
+        let frame = 0;
+        const username = (user && user.username) ? user.username : "Developer";
+        const initials = username.slice(0, 2).toUpperCase();
+
+        function drawVirtualVideo() {
+            frame++;
+            // Background dark cyber gradient
+            const grad = ctx.createLinearGradient(0, 0, 640, 480);
+            grad.addColorStop(0, "#080c14");
+            grad.addColorStop(0.5, "#0f172a");
+            grad.addColorStop(1, "#1e1b4b");
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 640, 480);
+
+            // Animated subtle tech grid
+            ctx.strokeStyle = "rgba(99, 102, 241, 0.07)";
+            ctx.lineWidth = 1;
+            const gridSize = 40;
+            const offset = (frame * 0.5) % gridSize;
+            for (let x = offset; x < 640; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, 480);
+                ctx.stroke();
+            }
+            for (let y = 0; y < 480; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(640, y);
+                ctx.stroke();
+            }
+
+            // Concentric pulsing radar waves
+            const pulse1 = Math.sin(frame * 0.04) * 12;
+            ctx.strokeStyle = "rgba(99, 102, 241, 0.35)";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(320, 205, 85 + pulse1, 0, Math.PI * 2);
+            ctx.stroke();
+
+            const pulse2 = Math.cos(frame * 0.04) * 10;
+            ctx.strokeStyle = "rgba(16, 185, 129, 0.4)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(320, 205, 105 + pulse2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Avatar circle background
+            const circleGrad = ctx.createLinearGradient(240, 125, 400, 285);
+            circleGrad.addColorStop(0, "#6366f1");
+            circleGrad.addColorStop(1, "#8b5cf6");
+            ctx.fillStyle = circleGrad;
+            ctx.beginPath();
+            ctx.arc(320, 205, 75, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Avatar border
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // User initials
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 46px Inter, system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(initials, 320, 205);
+
+            // User name display
+            ctx.font = "bold 22px Inter, system-ui, sans-serif";
+            ctx.fillStyle = "#f8fafc";
+            ctx.fillText(username, 320, 318);
+
+            // Live Call Status Badge
+            const dotPulse = Math.sin(frame * 0.1) > 0 ? 1 : 0.4;
+            ctx.fillStyle = `rgba(16, 185, 129, ${dotPulse})`;
+            ctx.beginPath();
+            ctx.arc(235, 355, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.font = "600 13px Inter, system-ui, sans-serif";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText("CodeQuest Live Feed Active", 335, 355);
+
+            // Animated audio equalizer bars
+            const bars = 20;
+            const startX = 320 - (bars * 12) / 2;
+            for (let i = 0; i < bars; i++) {
+                const h = Math.abs(Math.sin(frame * 0.07 + i * 0.35)) * 26 + 4;
+                const barGrad = ctx.createLinearGradient(0, 425 - h, 0, 425);
+                barGrad.addColorStop(0, "#38bdf8");
+                barGrad.addColorStop(1, "#6366f1");
+                ctx.fillStyle = barGrad;
+                ctx.fillRect(startX + i * 12, 425 - h, 7, h);
+            }
+
+            requestAnimationFrame(drawVirtualVideo);
+        }
+        drawVirtualVideo();
+
+        const canvasStream = canvas.captureStream ? canvas.captureStream(30) : null;
+        const finalStream = new MediaStream();
+
+        if (canvasStream && canvasStream.getVideoTracks().length > 0) {
+            finalStream.addTrack(canvasStream.getVideoTracks()[0]);
+        }
+
+        // Add audio track if provided or create clean synthetic audio track
+        if (existingAudioStream && existingAudioStream.getAudioTracks().length > 0) {
+            finalStream.addTrack(existingAudioStream.getAudioTracks()[0]);
+        } else {
             try {
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                localVideoPlaceholder.style.display = "flex";
-                webrtcStatusBadge.textContent = "Audio Only";
-                showToast("🎤 Audio mode active (No camera detected or permission denied)");
-            } catch (audioErr) {
-                console.warn("No mic found either, running in silent mode:", audioErr);
-                localStream = new MediaStream();
-                localVideoPlaceholder.style.display = "flex";
-                webrtcStatusBadge.textContent = "Avatar Mode";
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    const audioCtx = new AudioContextClass();
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    gain.gain.value = 0.00001; // virtually silent carrier
+                    const dst = audioCtx.createMediaStreamDestination();
+                    osc.connect(gain);
+                    gain.connect(dst);
+                    osc.start();
+                    if (dst.stream && dst.stream.getAudioTracks().length > 0) {
+                        finalStream.addTrack(dst.stream.getAudioTracks()[0]);
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not generate synthetic audio carrier:", e);
             }
         }
+
+        return finalStream;
+    }
+
+    async function initLocalMedia() {
+        const canUsePhysicalMedia = !!(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function");
+
+        if (canUsePhysicalMedia) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
+                    audio: true
+                });
+                isPhysicalCameraActive = true;
+                localVideo.srcObject = localStream;
+                localVideoPlaceholder.style.display = "none";
+                showToast("📹 Webcam & microphone connected!");
+                return;
+            } catch (err) {
+                console.warn("Physical camera access denied or device busy:", err.name, err.message);
+                // Try audio only with microphone
+                try {
+                    const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    localStream = createVirtualMediaStream(currentUser, audioStream);
+                    isPhysicalCameraActive = false;
+                    localVideo.srcObject = localStream;
+                    localVideoPlaceholder.style.display = "none";
+                    showToast("🎙️ Mic active (Live Developer Video Stream active)");
+                    return;
+                } catch (audioErr) {
+                    console.warn("Microphone access unavailable:", audioErr);
+                }
+            }
+        } else {
+            console.warn("navigator.mediaDevices unavailable (non-HTTPS LAN origin across network). Using animated Virtual Video Stream.");
+            showToast("🌐 Network connection: Live Developer Video Stream active");
+        }
+
+        // Guaranteed fallback: high-fidelity virtual animated developer stream
+        localStream = createVirtualMediaStream(currentUser, null);
+        isPhysicalCameraActive = false;
+        localVideo.srcObject = localStream;
+        localVideoPlaceholder.style.display = "none";
     }
 
     function attachTracksToPeerConnection() {
@@ -455,9 +606,9 @@
             localStream.getTracks().forEach((track) => {
                 const existing = senders.find(s => s.track && s.track.kind === track.kind);
                 if (existing) {
-                    existing.replaceTrack(track);
+                    try { existing.replaceTrack(track); } catch(e) {}
                 } else {
-                    peerConnection.addTrack(track, localStream);
+                    try { peerConnection.addTrack(track, localStream); } catch(e) {}
                 }
             });
         }
@@ -528,7 +679,12 @@
     function initiatePeerConnection(targetId, isCaller) {
         if (targetId) remotePeerId = targetId;
 
-        if (peerConnection) {
+        // If a healthy peer connection already exists, avoid destroying it
+        if (peerConnection && peerConnection.signalingState !== "closed") {
+            if (!isCaller && (peerConnection.signalingState === "have-remote-offer" || peerConnection.connectionState === "connected")) {
+                console.log("Peer connection already in flight, avoiding reset");
+                return;
+            }
             try { peerConnection.close(); } catch(e) {}
             peerConnection = null;
         }
@@ -541,7 +697,7 @@
         // Attach local tracks or transceivers
         attachTracksToPeerConnection();
 
-        // On remote track received (handles both event.streams and unified plan track additions)
+        // On remote track received
         peerConnection.ontrack = (event) => {
             console.log("📹 [WebRTC] Remote track received:", event.track.kind, event.track.id);
 
@@ -549,12 +705,10 @@
                 remoteMediaStream = new MediaStream();
             }
 
-            // Always add the incoming track to remoteMediaStream if not already added
             if (!remoteMediaStream.getTracks().some(t => t.id === event.track.id)) {
                 remoteMediaStream.addTrack(event.track);
             }
 
-            // Also import any tracks in event.streams[0]
             if (event.streams && event.streams[0]) {
                 event.streams[0].getTracks().forEach(t => {
                     if (!remoteMediaStream.getTracks().some(existing => existing.id === t.id)) {
@@ -563,7 +717,6 @@
                 });
             }
 
-            // Bind to remoteVideo
             if (remoteVideo.srcObject !== remoteMediaStream) {
                 remoteVideo.srcObject = remoteMediaStream;
             }
@@ -573,7 +726,6 @@
             }
             remoteVideo.style.display = "block";
 
-            // If track was muted, wait for unmute to ensure smooth playback
             event.track.onunmute = () => {
                 console.log("🟢 Remote track unmuted and active:", event.track.kind);
                 if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
@@ -616,11 +768,13 @@
             peerConnection.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
                 .then((offer) => peerConnection.setLocalDescription(offer))
                 .then(() => {
-                    ws.send(JSON.stringify({
-                        type: "webrtc-signal",
-                        targetPeerId: targetId || remotePeerId,
-                        signal: { sdp: peerConnection.localDescription }
-                    }));
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "webrtc-signal",
+                            targetPeerId: targetId || remotePeerId,
+                            signal: { sdp: peerConnection.localDescription }
+                        }));
+                    }
                 })
                 .catch((e) => console.error("Error creating SDP offer:", e));
         }
@@ -632,27 +786,47 @@
         }
 
         if (signal.sdp) {
-            if (!peerConnection) {
+            if (!peerConnection || peerConnection.signalingState === "closed") {
                 initiatePeerConnection(remotePeerId, false);
             }
 
-            await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-            await processQueuedIceCandidates();
+            try {
+                if (signal.sdp.type === "offer") {
+                    if (peerConnection.signalingState !== "stable") {
+                        console.warn("Rollback local description due to incoming offer collision");
+                        try {
+                            await peerConnection.setLocalDescription({ type: "rollback" });
+                        } catch(rbErr) {
+                            initiatePeerConnection(remotePeerId, false);
+                        }
+                    }
 
-            if (signal.sdp.type === "offer") {
-                attachTracksToPeerConnection();
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    await processQueuedIceCandidates();
 
-                const answer = await peerConnection.createAnswer({
-                    offerToReceiveAudio: true,
-                    offerToReceiveVideo: true
-                });
-                await peerConnection.setLocalDescription(answer);
+                    attachTracksToPeerConnection();
 
-                ws.send(JSON.stringify({
-                    type: "webrtc-signal",
-                    targetPeerId: remotePeerId,
-                    signal: { sdp: peerConnection.localDescription }
-                }));
+                    const answer = await peerConnection.createAnswer({
+                        offerToReceiveAudio: true,
+                        offerToReceiveVideo: true
+                    });
+                    await peerConnection.setLocalDescription(answer);
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "webrtc-signal",
+                            targetPeerId: remotePeerId,
+                            signal: { sdp: peerConnection.localDescription }
+                        }));
+                    }
+                } else if (signal.sdp.type === "answer") {
+                    if (peerConnection.signalingState === "have-local-offer") {
+                        await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                        await processQueuedIceCandidates();
+                    }
+                }
+            } catch (err) {
+                console.error("Error handling SDP:", err);
             }
         } else if (signal.candidate) {
             if (!peerConnection || !peerConnection.remoteDescription || !peerConnection.remoteDescription.type) {
@@ -688,8 +862,34 @@
         }
     });
 
-    toggleCamBtn.addEventListener("click", () => {
+    toggleCamBtn.addEventListener("click", async () => {
         isVideoOff = !isVideoOff;
+
+        // If turning camera ON and physical camera is available but not yet activated, try to activate webcam
+        if (!isVideoOff && !isPhysicalCameraActive && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+            try {
+                const physStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } }
+                });
+                const physTrack = physStream.getVideoTracks()[0];
+                if (physTrack) {
+                    isPhysicalCameraActive = true;
+                    if (peerConnection) {
+                        const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === "video");
+                        if (sender) sender.replaceTrack(physTrack);
+                    }
+                    if (localStream && localStream.getVideoTracks()[0]) {
+                        localStream.removeTrack(localStream.getVideoTracks()[0]);
+                    }
+                    if (localStream) localStream.addTrack(physTrack);
+                    localVideo.srcObject = localStream;
+                    showToast("📷 Physical camera activated!");
+                }
+            } catch (physErr) {
+                console.warn("Physical camera start note:", physErr);
+            }
+        }
+
         if (localStream) {
             localStream.getVideoTracks().forEach(t => t.enabled = !isVideoOff);
         }
