@@ -2129,7 +2129,7 @@ function performStaticCodeAnalysis(code, lang, errorOutput, action) {
 
 app.post("/api/execute-code", async (req, res) => {
     try {
-        let { code, lang } = req.body;
+        let { code, lang, input, stdin } = req.body;
         if (!code || !code.trim()) {
             return res.status(400).json({ error: "Code cannot be empty" });
         }
@@ -2165,6 +2165,18 @@ app.post("/api/execute-code", async (req, res) => {
             if (cleanCode.startsWith("<") && (cleanCode.includes("</div>") || cleanCode.includes("</button>") || cleanCode.includes("<html>"))) targetLang = "html";
             else if (cleanCode.includes("SELECT ") && cleanCode.includes("FROM ")) targetLang = "sql";
             else if (!targetLang || targetLang === "code") targetLang = "javascript";
+        }
+
+        const customInput = input !== undefined ? input : (stdin !== undefined ? stdin : "");
+        if (customInput && customInput.trim()) {
+            const execRes = await executeCodeWithStdin(cleanCode, targetLang, customInput);
+            return res.json({
+                success: execRes.success,
+                lang: targetLang,
+                output: execRes.stdout || (execRes.success ? "Code executed cleanly." : ""),
+                error: execRes.stderr,
+                duration: execRes.duration
+            });
         }
 
         const startTime = Date.now();

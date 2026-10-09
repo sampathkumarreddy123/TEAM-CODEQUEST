@@ -1,9 +1,9 @@
 /* ==========================================================================
-   CODEQUEST PREMIUM COLLABORATIVE PLATFORM DESIGN SYSTEM
-   - Predominantly Light Theme: Clean White & Soft Neutral Surfaces
-   - Palette: #F8FAFC (BG), #FFFFFF (Surface), #0F172A (Text), #2563EB (Primary)
-   - Fonts: Inter for UI & JetBrains Mono for Code
-   - Full Responsive Layout (Desktop, Tablet, Mobile 360px+)
+   CODEQUEST LIVE COLLABORATIVE PLATFORM DESIGN SYSTEM
+   - Clean Light Theme (#F8FAFC, #FFFFFF, #0F172A, #2563EB)
+   - Layout:
+     * Left Column: Code Editor + Split Custom Input (stdin) & Output (stdout)
+     * Right Column: Video Cam Stage + Pair Chat Box
    ========================================================================== */
 
 :root {
@@ -62,7 +62,7 @@ body.cq-collab-body {
 
 /* ================= 1. TOP NAVIGATION BAR ================= */
 .cq-navbar {
-    height: 58px;
+    height: 56px;
     background: var(--cq-surface);
     border-bottom: 1px solid var(--cq-border);
     display: flex;
@@ -76,7 +76,7 @@ body.cq-collab-body {
 .cq-nav-left {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
 .cq-brand {
@@ -92,12 +92,6 @@ body.cq-collab-body {
     width: 28px;
     border-radius: 6px;
     object-fit: contain;
-}
-
-.cq-brand-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
 }
 
 .cq-brand-title {
@@ -157,68 +151,9 @@ body.cq-collab-body {
     opacity: 1;
 }
 
-/* Center Workspace Tabs Navigation */
-.cq-workspace-tabs {
+.cq-nav-center {
     display: flex;
     align-items: center;
-    gap: 4px;
-    background: var(--cq-surface-subtle);
-    padding: 3px;
-    border-radius: 8px;
-    border: 1px solid var(--cq-border);
-}
-
-.cq-tab-btn {
-    border: none;
-    background: transparent;
-    color: var(--cq-text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    transition: all 0.15s ease;
-    position: relative;
-}
-
-.cq-tab-btn:hover {
-    color: var(--cq-text);
-    background: rgba(255, 255, 255, 0.6);
-}
-
-.cq-tab-btn.active {
-    background: var(--cq-surface);
-    color: var(--cq-primary);
-    box-shadow: var(--cq-shadow-sm);
-}
-
-.cq-tab-badge {
-    background: var(--cq-border);
-    color: var(--cq-text);
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 5px;
-    border-radius: 999px;
-    margin-left: 2px;
-}
-
-.cq-draft-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--cq-warning);
-    display: inline-block;
-    margin-left: 2px;
-}
-
-/* Right Nav Controls */
-.cq-nav-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .cq-presence-status {
@@ -226,7 +161,7 @@ body.cq-collab-body {
     align-items: center;
     background: var(--cq-surface-subtle);
     border: 1px solid var(--cq-border);
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 500;
@@ -256,6 +191,22 @@ body.cq-collab-body {
     font-size: 11px;
     border-left: 1px solid var(--cq-border);
     padding-left: 6px;
+}
+
+.cq-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cq-select-sm {
+    font-size: 12px;
+    padding: 4px 24px 4px 10px;
+    border-radius: 6px;
+    border-color: var(--cq-border);
+    width: auto;
+    background-color: var(--cq-surface);
+    font-weight: 500;
 }
 
 /* Button Variants */
@@ -299,40 +250,6 @@ body.cq-collab-body {
     border-color: var(--cq-border-focus);
 }
 
-.btn-cq-ghost {
-    background: transparent;
-    color: var(--cq-text-muted);
-    border: 1px solid transparent;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    position: relative;
-}
-
-.btn-cq-ghost:hover, .btn-cq-ghost.active {
-    background: var(--cq-surface-subtle);
-    color: var(--cq-text);
-    border-color: var(--cq-border);
-}
-
-.btn-cq-ghost-sm {
-    background: transparent;
-    color: var(--cq-text-muted);
-    border: 1px solid var(--cq-border);
-    padding: 3px 8px;
-    border-radius: 5px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-cq-ghost-sm:hover {
-    background: var(--cq-surface-subtle);
-    color: var(--cq-text);
-}
-
 .btn-cq-ghost-xs {
     background: transparent;
     border: none;
@@ -368,63 +285,40 @@ body.cq-collab-body {
     color: #fff;
 }
 
-.cq-unread-bubble {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    background: var(--cq-danger);
-    color: #fff;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 4px;
-    border-radius: 999px;
-}
-
-/* ================= 2. MAIN WORKSPACE LAYOUT ================= */
+/* ================= 2. MAIN LAYOUT (2-COLUMN SPLIT) ================= */
 .cq-main-layout {
     display: flex;
     flex: 1;
     overflow: hidden;
     position: relative;
+    background: var(--cq-bg);
 }
 
-.cq-content-area {
+/* LEFT COLUMN: EDITOR + I/O */
+.cq-editor-column {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    position: relative;
-    background: var(--cq-bg);
+    padding: 10px;
+    gap: 10px;
 }
 
-.cq-view-pane {
-    display: none;
-    flex: 1;
-    height: 100%;
-    overflow-y: auto;
-    position: relative;
-}
-
-.cq-view-pane.active {
-    display: flex;
-    flex-direction: column;
-}
-
-/* ================= 3. VIEW 1: CODE EDITOR ================= */
+/* Editor Card */
 .cq-editor-card {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    margin: 12px;
     background: var(--cq-surface);
     border: 1px solid var(--cq-border);
     border-radius: var(--cq-radius);
     box-shadow: var(--cq-shadow-sm);
+    min-height: 280px;
 }
 
 .cq-editor-topbar {
-    height: 42px;
+    height: 40px;
     background: var(--cq-surface);
     border-bottom: 1px solid var(--cq-border);
     display: flex;
@@ -441,7 +335,6 @@ body.cq-collab-body {
 }
 
 .cq-lang-icon {
-    color: var(--cq-warning);
     font-size: 16px;
 }
 
@@ -475,22 +368,6 @@ body.cq-collab-body {
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.6; }
-}
-
-.cq-editor-tools {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cq-select-sm {
-    font-size: 12px;
-    padding: 3px 24px 3px 8px;
-    border-radius: 6px;
-    border-color: var(--cq-border);
-    width: auto;
-    background-color: var(--cq-surface);
-    font-weight: 500;
 }
 
 .cq-editor-workspace {
@@ -571,18 +448,26 @@ body.cq-collab-body {
     white-space: nowrap;
 }
 
-/* Console Drawer */
-.cq-console-drawer {
-    height: 180px;
-    min-height: 100px;
-    max-height: 380px;
-    border-top: 1px solid var(--cq-border);
-    display: flex;
-    flex-direction: column;
-    background: var(--cq-surface);
+/* ================= 3. SPLIT I/O PANEL (INPUT & OUTPUT) ================= */
+.cq-io-panel {
+    height: 210px;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
-.cq-console-header {
+.cq-io-box {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-io-header {
     height: 34px;
     background: var(--cq-surface-subtle);
     border-bottom: 1px solid var(--cq-border);
@@ -594,6 +479,23 @@ body.cq-collab-body {
     font-weight: 600;
 }
 
+.cq-io-title {
+    color: var(--cq-text);
+}
+
+.cq-io-textarea {
+    flex: 1;
+    border: none;
+    resize: none;
+    font-family: var(--cq-font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    outline: none;
+    background: var(--cq-surface);
+    color: var(--cq-text);
+}
+
 .cq-exec-pill {
     background: var(--cq-border);
     color: var(--cq-text);
@@ -601,13 +503,12 @@ body.cq-collab-body {
     padding: 1px 6px;
     border-radius: 4px;
     font-family: var(--cq-font-mono);
-    margin-right: 8px;
 }
 
 .cq-console-body {
     flex: 1;
     overflow-y: auto;
-    padding: 10px 14px;
+    padding: 8px 12px;
     font-family: var(--cq-font-mono);
     font-size: 12px;
     line-height: 1.6;
@@ -618,7 +519,7 @@ body.cq-collab-body {
 .cq-console-empty {
     color: #64748B;
     font-family: var(--cq-font-sans);
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .cq-log-line {
@@ -631,568 +532,37 @@ body.cq-collab-body {
 .cq-log-line.stderr { color: #F87171; }
 .cq-log-line.system { color: #94A3B8; font-style: italic; }
 
-/* ================= 4. VIEW 2: SMART TEST LAB ================= */
-.cq-lab-container {
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.cq-lab-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-.cq-pane-heading {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--cq-text);
-    margin-bottom: 4px;
-}
-
-.cq-pane-sub {
-    font-size: 13px;
-    color: var(--cq-text-muted);
-    margin: 0;
-}
-
-.cq-lab-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cq-lab-summary-bar {
-    display: flex;
-    gap: 24px;
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    padding: 12px 18px;
-    border-radius: var(--cq-radius);
-    margin-bottom: 20px;
-    box-shadow: var(--cq-shadow-sm);
-}
-
-.cq-lab-stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-}
-
-.cq-stat-label {
-    color: var(--cq-text-muted);
-}
-
-.cq-stat-val {
-    font-weight: 700;
-    font-family: var(--cq-font-mono);
-}
-
-.cq-test-cases-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.cq-test-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 16px;
-    box-shadow: var(--cq-shadow-sm);
-    transition: border-color 0.15s ease;
-}
-
-.cq-test-card:hover {
-    border-color: var(--cq-border-focus);
-}
-
-.cq-test-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-.cq-test-badge {
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 999px;
-    text-transform: uppercase;
-}
-
-.cq-test-badge.pending { background: var(--cq-surface-subtle); color: var(--cq-text-muted); }
-.cq-test-badge.passed { background: var(--cq-success-subtle); color: var(--cq-success); }
-.cq-test-badge.failed { background: var(--cq-danger-subtle); color: var(--cq-danger); }
-
-.cq-test-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-}
-
-.cq-test-box-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--cq-text-muted);
-    text-transform: uppercase;
-    margin-bottom: 4px;
-}
-
-.cq-test-box-content {
-    background: var(--cq-surface-subtle);
-    border: 1px solid var(--cq-border);
-    border-radius: 6px;
-    padding: 8px;
-    font-family: var(--cq-font-mono);
-    font-size: 12px;
-    height: 72px;
-    overflow-y: auto;
-    white-space: pre;
-}
-
-/* ================= 5. VIEW 3: SHARED PUBLISHING WORKSPACE ================= */
-.cq-publish-container {
-    padding: 24px;
-    max-width: 1300px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.cq-publish-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 24px;
-}
-
-.cq-badge-draft {
-    background: var(--cq-warning-subtle);
-    color: var(--cq-warning);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
-}
-
-.cq-publish-form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.cq-form-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 20px;
-    box-shadow: var(--cq-shadow-sm);
-    margin-bottom: 20px;
-}
-
-.cq-form-section-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--cq-text);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-}
-
-.cq-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--cq-text);
-    margin-bottom: 4px;
-}
-
-.cq-input, .cq-textarea {
-    border: 1px solid var(--cq-border);
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--cq-text);
-    background: var(--cq-surface);
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.cq-input:focus, .cq-textarea:focus {
-    border-color: var(--cq-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-    outline: none;
-}
-
-.cq-select-xs {
-    font-size: 11px;
-    padding: 2px 20px 2px 6px;
-    border-radius: 4px;
-    width: auto;
-    border-color: var(--cq-border);
-}
-
-.cq-coauthor-note {
-    font-size: 12px;
-    color: var(--cq-text-muted);
-}
-
-/* ================= 6. VIEW 4: TIME-TRAVEL HISTORY ================= */
-.cq-history-container {
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.cq-history-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-.cq-history-grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 20px;
-}
-
-.cq-section-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--cq-text);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-bottom: 12px;
-}
-
-.cq-checkpoint-timeline {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 580px;
-    overflow-y: auto;
-}
-
-.cq-checkpoint-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.cq-checkpoint-card:hover {
-    border-color: var(--cq-primary);
-    background: var(--cq-surface-subtle);
-}
-
-.cq-checkpoint-card.active {
-    border-color: var(--cq-primary);
-    background: var(--cq-primary-subtle);
-}
-
-.cq-checkpoint-time {
-    font-size: 11px;
-    color: var(--cq-text-muted);
-}
-
-.cq-checkpoint-author {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--cq-text);
-}
-
-.cq-checkpoint-note {
-    font-size: 12px;
-    color: var(--cq-text);
-    margin-top: 4px;
-}
-
-.cq-history-preview {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    box-shadow: var(--cq-shadow-sm);
-}
-
-.cq-preview-header {
-    height: 48px;
-    background: var(--cq-surface-subtle);
-    border-bottom: 1px solid var(--cq-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-}
-
-.cq-preview-title {
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.cq-preview-author {
-    font-size: 12px;
-    color: var(--cq-text-muted);
-    margin-left: 8px;
-}
-
-.cq-diff-viewer {
-    margin: 0;
-    padding: 16px;
-    background: #0B0F19;
-    color: #E2E8F0;
-    font-family: var(--cq-font-mono);
-    font-size: 13px;
-    line-height: 1.6;
-    overflow-x: auto;
-    white-space: pre;
-    max-height: 520px;
-}
-
-.btn-cq-success {
-    background: var(--cq-success);
-    color: #fff;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.btn-cq-success:hover {
-    background: #15803D;
-    color: #fff;
-}
-
-/* ================= 7. VIEW 5: AI DEBUGGING COPILOT ================= */
-.cq-copilot-container {
-    padding: 24px;
-    max-width: 1000px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.cq-copilot-header {
-    margin-bottom: 20px;
-}
-
-.cq-copilot-badge {
-    background: var(--cq-primary-subtle);
-    color: var(--cq-primary);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
-}
-
-.cq-copilot-actions-bar {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-}
-
-.btn-cq-action-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 14px;
-    text-align: left;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    cursor: pointer;
-    box-shadow: var(--cq-shadow-sm);
-    transition: all 0.15s ease;
-}
-
-.btn-cq-action-card:hover {
-    border-color: var(--cq-primary);
-    transform: translateY(-1px);
-    box-shadow: var(--cq-shadow-md);
-}
-
-.btn-cq-action-card i {
-    font-size: 20px;
-    margin-top: 2px;
-}
-
-.cq-copilot-prompt-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 16px;
-    margin-bottom: 20px;
-    box-shadow: var(--cq-shadow-sm);
-}
-
-.cq-copilot-result-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    overflow: hidden;
-    box-shadow: var(--cq-shadow-md);
-}
-
-.cq-result-header {
-    height: 44px;
-    background: var(--cq-surface-subtle);
-    border-bottom: 1px solid var(--cq-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px;
-}
-
-.cq-result-body {
-    padding: 20px;
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--cq-text);
-}
-
-.btn-cq-success-sm {
-    background: var(--cq-success);
-    color: #fff;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.btn-cq-secondary-sm {
-    background: var(--cq-surface);
-    color: var(--cq-text);
-    border: 1px solid var(--cq-border);
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-/* ================= 8. VIEW 6: SESSION MEMORY & NOTES ================= */
-.cq-notes-container {
-    padding: 24px;
-    max-width: 1100px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.cq-notes-grid {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 20px;
-}
-
-.cq-notes-card, .cq-growth-card {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    padding: 20px;
-    box-shadow: var(--cq-shadow-sm);
-}
-
-.cq-checklist-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.cq-check-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    cursor: pointer;
-}
-
-.cq-growth-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-}
-
-.cq-growth-stat-box {
-    background: var(--cq-surface-subtle);
-    border: 1px solid var(--cq-border);
-    border-radius: 6px;
-    padding: 10px;
-    text-align: center;
-}
-
-.cq-stat-num {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--cq-primary);
-}
-
-.cq-stat-sub {
-    font-size: 11px;
-    color: var(--cq-text-muted);
-}
-
-.cq-achievement-pill {
-    background: var(--cq-warning-subtle);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    color: #92400E;
-    font-size: 12px;
-    padding: 8px 12px;
-    border-radius: 6px;
-}
-
-.cq-sync-note {
-    font-size: 11px;
-    color: var(--cq-text-muted);
-}
-
-.cq-divider {
-    border-color: var(--cq-border);
-}
-
-/* ================= 9. DOCKABLE HUDDLE SIDEBAR ================= */
-.cq-huddle-dock {
+/* ================= 4. RIGHT COLUMN (VIDEO CAM & CHAT) ================= */
+.cq-sidebar-column {
     width: 380px;
-    background: var(--cq-surface);
-    border-left: 1px solid var(--cq-border);
     display: flex;
     flex-direction: column;
+    padding: 10px 10px 10px 0;
+    gap: 10px;
     flex-shrink: 0;
-    transition: transform 0.25s ease, width 0.25s ease;
-    overflow: hidden;
 }
 
-.cq-huddle-dock.collapsed {
-    width: 0;
-    border-left: none;
-    transform: translateX(100%);
-}
-
+/* Video Stage Card */
 .cq-stage-card {
-    height: 290px;
-    border-bottom: 1px solid var(--cq-border);
+    height: 270px;
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
     display: flex;
     flex-direction: column;
     background: #090D16;
     position: relative;
+    overflow: hidden;
+    box-shadow: var(--cq-shadow-sm);
+    flex-shrink: 0;
 }
 
 .cq-stage-header {
-    height: 34px;
-    background: rgba(15, 23, 42, 0.8);
+    height: 32px;
+    background: rgba(15, 23, 42, 0.85);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 10px;
     color: #F8FAFC;
     z-index: 20;
 }
@@ -1213,7 +583,7 @@ body.cq-collab-body {
     position: absolute;
     top: 8px;
     left: 8px;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.75);
     color: #fff;
     font-size: 11px;
     padding: 3px 8px;
@@ -1255,10 +625,10 @@ body.cq-collab-body {
 
 .cq-video-tile.local {
     position: absolute;
-    bottom: 12px;
-    right: 12px;
-    width: 96px;
-    height: 72px;
+    bottom: 10px;
+    right: 10px;
+    width: 90px;
+    height: 68px;
     border-radius: 6px;
     overflow: hidden;
     border: 2px solid rgba(255, 255, 255, 0.4);
@@ -1286,22 +656,22 @@ body.cq-collab-body {
 }
 
 .cq-avatar-circle {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: #3B82F6;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .cq-avatar-circle.sm {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
+    width: 30px;
+    height: 30px;
+    font-size: 11px;
     margin-bottom: 0;
 }
 
@@ -1331,7 +701,7 @@ body.cq-collab-body {
 }
 
 .cq-media-controls-bar {
-    height: 46px;
+    height: 44px;
     background: rgba(15, 23, 42, 0.95);
     display: flex;
     align-items: center;
@@ -1345,14 +715,14 @@ body.cq-collab-body {
     background: #1E293B;
     border: 1px solid #334155;
     color: #F8FAFC;
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
     transition: all 0.15s ease;
 }
 
@@ -1367,7 +737,7 @@ body.cq-collab-body {
 
 .cq-emoji-popover {
     position: absolute;
-    bottom: 50px;
+    bottom: 48px;
     background: #1E293B;
     border: 1px solid #334155;
     padding: 6px;
@@ -1383,7 +753,7 @@ body.cq-collab-body {
     border: none;
     font-size: 18px;
     cursor: pointer;
-    padding: 4px;
+    padding: 3px;
     border-radius: 4px;
     transition: transform 0.1s ease;
 }
@@ -1392,23 +762,26 @@ body.cq-collab-body {
     transform: scale(1.2);
 }
 
-/* Chat Card in Sidebar */
+/* Chat Card in Right Column */
 .cq-chat-card {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    box-shadow: var(--cq-shadow-sm);
 }
 
 .cq-chat-header {
     height: 38px;
-    background: var(--cq-surface);
+    background: var(--cq-surface-subtle);
     border-bottom: 1px solid var(--cq-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 14px;
+    padding: 0 12px;
 }
 
 .cq-chat-title {
@@ -1428,10 +801,10 @@ body.cq-collab-body {
 .cq-chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 12px 14px;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
 .cq-chat-system-message {
@@ -1439,7 +812,7 @@ body.cq-collab-body {
     color: var(--cq-text-muted);
     font-size: 11px;
     text-align: center;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 6px;
     border: 1px dashed var(--cq-border);
 }
@@ -1472,7 +845,7 @@ body.cq-collab-body {
     color: var(--cq-text);
     font-size: 13px;
     line-height: 1.45;
-    padding: 8px 12px;
+    padding: 7px 10px;
     border-radius: 8px;
     word-break: break-word;
     border: 1px solid var(--cq-border);
@@ -1493,7 +866,7 @@ body.cq-collab-body {
 }
 
 .cq-snippet-header {
-    height: 26px;
+    height: 24px;
     background: #1E293B;
     display: flex;
     align-items: center;
@@ -1512,12 +885,13 @@ body.cq-collab-body {
 }
 
 .cq-snippet-code {
-    padding: 8px;
+    padding: 6px 8px;
     font-family: var(--cq-font-mono);
     font-size: 11px;
     white-space: pre-wrap;
-    max-height: 140px;
+    max-height: 120px;
     overflow-y: auto;
+    margin: 0;
 }
 
 .cq-chat-input-bar {
@@ -1555,7 +929,7 @@ body.cq-collab-body {
     padding: 6px 10px;
     border-radius: 6px;
     border-color: var(--cq-border);
-    max-height: 80px;
+    max-height: 72px;
 }
 
 .btn-cq-chat-send {
@@ -1585,43 +959,44 @@ body.cq-collab-body {
     box-shadow: var(--cq-shadow-md);
 }
 
-/* ================= 10. RESPONSIVE DESIGN (360px - 1440px) ================= */
-@media (max-width: 1100px) {
-    .cq-workspace-tabs .cq-tab-btn span {
-        display: none;
-    }
-    .cq-workspace-tabs .cq-tab-btn {
-        padding: 6px 8px;
-    }
-    .cq-huddle-dock {
-        width: 320px;
-    }
-    .cq-copilot-actions-bar {
-        grid-template-columns: 1fr 1fr;
-    }
+.cq-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cq-text);
 }
 
-@media (max-width: 900px) {
-    .cq-huddle-dock {
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 80;
-        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+.cq-input, .cq-textarea {
+    border: 1px solid var(--cq-border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--cq-text);
+    background: var(--cq-surface);
+}
+
+.cq-coauthor-note {
+    font-size: 12px;
+    color: var(--cq-text-muted);
+}
+
+/* ================= 5. RESPONSIVE BREAKPOINTS ================= */
+@media (max-width: 992px) {
+    .cq-main-layout {
+        flex-direction: column;
+        overflow-y: auto;
     }
-    .cq-publish-form-grid {
+    .cq-sidebar-column {
+        width: 100%;
+        padding: 0 10px 10px 10px;
+    }
+    .cq-io-panel {
+        height: auto;
         grid-template-columns: 1fr;
     }
-    .cq-notes-grid {
-        grid-template-columns: 1fr;
+    .cq-io-textarea {
+        height: 90px;
     }
-    .cq-history-grid {
-        grid-template-columns: 1fr;
-    }
-    .cq-presence-status .cq-timer-pill,
-    .cq-presence-status .cq-peer-count {
-        display: none;
+    .cq-console-body {
+        height: 120px;
     }
 }
 
@@ -1629,26 +1004,11 @@ body.cq-collab-body {
     .cq-navbar {
         padding: 0 8px;
     }
-    .cq-brand-meta {
+    .cq-room-pill {
         display: none;
     }
-    .cq-room-pill {
-        padding: 2px 6px;
-        font-size: 11px;
-    }
-    .cq-lab-grid, .cq-test-grid {
-        grid-template-columns: 1fr;
-    }
-    .cq-copilot-actions-bar {
-        grid-template-columns: 1fr;
-    }
-    .cq-editor-card {
-        margin: 6px;
-    }
-    .cq-lab-container, .cq-publish-container, .cq-history-container, .cq-copilot-container, .cq-notes-container {
-        padding: 12px;
-    }
-    .cq-huddle-dock {
-        width: 100%;
+    .cq-presence-status .cq-timer-pill,
+    .cq-presence-status .cq-peer-count {
+        display: none;
     }
 }
