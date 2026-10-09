@@ -1148,7 +1148,111 @@
     }
 
     // -------------------------------------------------------------
-    // 12. UTILITY & HELPER FUNCTIONS
+    // 12. LEAVE HUDDLE CONFIRMATION & SAFE TEARDOWN
+    // -------------------------------------------------------------
+    const leaveRoomBtn = document.getElementById("leaveRoomBtn");
+    const dockLeaveBtn = document.getElementById("dockLeaveBtn");
+    const leaveHuddleModal = document.getElementById("leaveHuddleModal");
+    const confirmLeaveBtn = document.getElementById("confirmLeaveBtn");
+
+    function promptLeaveHuddle(e) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        if (leaveHuddleModal && window.bootstrap) {
+            const modal = bootstrap.Modal.getOrCreateInstance(leaveHuddleModal);
+            modal.show();
+        } else {
+            const confirmed = window.confirm("Are you sure you want to leave the call? You will be returned to the dashboard.");
+            if (confirmed) {
+                performLeaveHuddle();
+            }
+        }
+    }
+
+    function performLeaveHuddle() {
+        // 1. Notify peers over WebSocket
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            try {
+                ws.send(JSON.stringify({
+                    type: "leave-room",
+                    roomId,
+                    user: currentUser
+                }));
+            } catch(e) {}
+            try { ws.close(); } catch(e) {}
+        }
+
+        // 2. Stop and release local camera and microphone
+        if (localStream) {
+            try {
+                localStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            } catch(e) {}
+            localStream = null;
+        }
+
+        // 3. Stop screen share tracks if active
+        if (screenStream) {
+            try {
+                screenStream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            } catch(e) {}
+            screenStream = null;
+        }
+
+        // 4. Close WebRTC peer connection
+        if (peerConnection) {
+            try {
+                peerConnection.close();
+            } catch(e) {}
+            peerConnection = null;
+        }
+
+        // 5. Clear media video elements
+        if (localVideo) localVideo.srcObject = null;
+        if (remoteVideo) remoteVideo.srcObject = null;
+        if (remoteAudio) remoteAudio.srcObject = null;
+
+        // 6. Stop call timer
+        if (callTimerInterval) {
+            clearInterval(callTimerInterval);
+            callTimerInterval = null;
+        }
+
+        // 7. Dismiss modal if visible
+        if (leaveHuddleModal && window.bootstrap) {
+            try {
+                const modal = bootstrap.Modal.getInstance(leaveHuddleModal);
+                if (modal) modal.hide();
+            } catch(e) {}
+        }
+
+        // 8. Immediately navigate to dashboard
+        window.location.replace("dashboard.html");
+    }
+
+    if (leaveRoomBtn) {
+        leaveRoomBtn.addEventListener("click", promptLeaveHuddle);
+    }
+
+    if (dockLeaveBtn) {
+        dockLeaveBtn.addEventListener("click", promptLeaveHuddle);
+    }
+
+    if (confirmLeaveBtn) {
+        confirmLeaveBtn.addEventListener("click", () => {
+            confirmLeaveBtn.disabled = true;
+            confirmLeaveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Leaving...`;
+            performLeaveHuddle();
+        });
+    }
+
+    // -------------------------------------------------------------
+    // 13. UTILITY & HELPER FUNCTIONS
     // -------------------------------------------------------------
     function updateConnectionStatus(status, text) {
         if (connStatusDot) {

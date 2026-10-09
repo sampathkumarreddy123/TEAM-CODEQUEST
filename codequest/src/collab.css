@@ -970,6 +970,20 @@ body.cq-collab-body {
     color: #FFFFFF !important;
 }
 
+.btn-cq-ctrl.btn-dock-leave {
+    background: rgba(224, 30, 90, 0.15);
+    border-color: rgba(224, 30, 90, 0.45);
+    color: #E01E5A;
+}
+
+.btn-cq-ctrl.btn-dock-leave:hover {
+    background: #E01E5A;
+    border-color: #E01E5A;
+    color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(224, 30, 90, 0.5);
+    transform: scale(1.06);
+}
+
 .cq-emoji-popover {
     position: absolute;
     bottom: 52px;
