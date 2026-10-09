@@ -1460,21 +1460,28 @@ app.post("/api/collab/publish-challenge", async (req, res) => {
 
         await challenge.save();
 
-        // Also publish as a community Question so it appears on the dashboard
-        const questionBody = `### 🏆 Published Coding Challenge: ${title.trim()}\n\n` +
-            `**Problem Statement:**\n${problemStatement.trim()}\n\n` +
-            (inputFormat ? `**Input Format:**\n${inputFormat.trim()}\n\n` : "") +
-            (outputFormat ? `**Output Format:**\n${outputFormat.trim()}\n\n` : "") +
-            (constraints ? `**Constraints:**\n${constraints.trim()}\n\n` : "") +
-            (sampleInput ? `**Sample Input:**\n\`\`\`\n${sampleInput.trim()}\n\`\`\`\n\n` : "") +
-            (sampleOutput ? `**Sample Output:**\n\`\`\`\n${sampleOutput.trim()}\n\`\`\`\n\n` : "") +
-            (explanation ? `**Explanation:**\n${explanation.trim()}\n\n` : "") +
-            `*Co-authored by @${author.username || "Developer"}${coAuthor ? ` and @${coAuthor}` : ""} in CodeQuest Live Huddle.*`;
+        // Also publish as a community Question so it appears on the dashboard in the standard format
+        const cleanTitle = title.trim();
+        const cleanDesc = (problemStatement || description || "").trim();
+        const cleanLang = (language || "javascript").trim().toLowerCase();
+        const cleanCode = (solutionCode || "").trim();
+
+        let questionBody = `${cleanTitle}\n\n`;
+        if (cleanDesc && cleanDesc.toLowerCase() !== cleanTitle.toLowerCase()) {
+            questionBody += `${cleanDesc}\n\n`;
+        }
+        if (cleanCode) {
+            questionBody += `\`\`\`${cleanLang}\n${cleanCode}\n\`\`\`\n\n`;
+        }
+        if (sampleInput && sampleInput.trim()) {
+            questionBody += `**Sample Input:**\n\`\`\`\n${sampleInput.trim()}\n\`\`\`\n\n`;
+        }
+        questionBody += `*Co-authored in CodeQuest Live Huddle by @${author.username || "Developer"}${coAuthor ? ` and @${coAuthor}` : ""}.*`;
 
         const question = new Question({
             userId: author._id,
             questionText: questionBody,
-            tags: ["challenge", language || "javascript", "algorithm", "pair-programming"]
+            tags: [cleanLang, "pair-programming", "challenge"]
         });
         await question.save();
 
@@ -1502,6 +1509,7 @@ app.post("/api/collab/publish-challenge", async (req, res) => {
             success: true,
             challengeId: challenge._id,
             questionId: question._id,
+            questionUrl: `/answers.html?id=${question._id}`,
             message: "Challenge published successfully!"
         });
     } catch (err) {

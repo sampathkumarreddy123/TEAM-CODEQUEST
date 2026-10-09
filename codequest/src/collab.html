@@ -23,7 +23,7 @@
     <!-- SLACK-STYLE HUDDLE TOP NAVIGATION BAR -->
     <header class="cq-navbar">
         <div class="cq-nav-left">
-            <a href="dashboard.html" class="cq-brand" title="Back to Dashboard">
+            <a href="dashboard.html" target="_blank" class="cq-brand" title="Open CodeQuest Dashboard in new tab (keeps Huddle active)">
                 <div class="cq-slack-huddle-icon">
                     <i class="fa-solid fa-headphones"></i>
                 </div>
@@ -38,6 +38,22 @@
                 <i class="fa-regular fa-copy ms-2" id="copyIcon"></i>
                 <span class="cq-tooltip" id="copiedTooltip">Copied to clipboard!</span>
             </button>
+
+            <!-- Quick Navigation to CodeQuest (Opens in New Tab so Huddle stays connected) -->
+            <div class="cq-nav-quick-links">
+                <a href="dashboard.html" target="_blank" class="cq-quick-nav-btn" title="Open Dashboard (New Tab)">
+                    <i class="fa-solid fa-house me-1"></i><span>Dashboard</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square ms-1 cq-ext-icon"></i>
+                </a>
+                <a href="dashboard.html#feed" target="_blank" class="cq-quick-nav-btn" title="Browse Questions (New Tab)">
+                    <i class="fa-solid fa-comments me-1"></i><span>Questions</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square ms-1 cq-ext-icon"></i>
+                </a>
+                <a href="profile.html" target="_blank" class="cq-quick-nav-btn" title="Open My Profile (New Tab)">
+                    <i class="fa-solid fa-user me-1"></i><span>Profile</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square ms-1 cq-ext-icon"></i>
+                </a>
+            </div>
         </div>
 
         <div class="cq-nav-center">

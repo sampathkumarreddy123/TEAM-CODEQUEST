@@ -293,7 +293,7 @@
                 break;
 
             case "challenge-published":
-                showToast(`🏆 Solution "${msg.title}" published collaboratively by @${msg.author}!`, "success");
+                showToast(`🏆 Solution "${escapeHtml(msg.title)}" published! <a href="/answers.html?id=${msg.questionId || ''}" target="_blank" class="text-white text-decoration-underline ms-1">View Post ↗</a>`, "success");
                 if (publishSolutionModal && window.bootstrap) {
                     const modal = bootstrap.Modal.getInstance(publishSolutionModal);
                     if (modal) modal.hide();
@@ -1050,7 +1050,8 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showToast("Solution published to CodeQuest successfully!", "success");
+                    const postUrl = data.questionUrl || `/answers.html?id=${data.questionId || ''}`;
+                    showToast(`Solution published to CodeQuest successfully! <a href="${postUrl}" target="_blank" class="text-white text-decoration-underline ms-1">View Post ↗</a>`, "success");
                     if (publishSolutionModal && window.bootstrap) {
                         const modal = bootstrap.Modal.getInstance(publishSolutionModal);
                         if (modal) modal.hide();
