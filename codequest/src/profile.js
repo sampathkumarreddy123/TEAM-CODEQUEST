@@ -138,12 +138,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (tabQuestionsCount) tabQuestionsCount.textContent = qCount;
         if (tabAnswersCount) tabAnswersCount.textContent = aCount;
 
+        const profileInHuddleBadge = document.getElementById("profileInHuddleBadge");
+        if (profileInHuddleBadge) {
+            profileInHuddleBadge.style.display = profile.inCall ? "inline-flex" : "none";
+        }
+
         // 1-on-1 Call Action Button (only visible when viewing another user's profile)
         const callWrap = document.getElementById("profileCallActionWrap");
         const callBtn = document.getElementById("btnCallProfileUser");
         if (callWrap && callBtn) {
             if (!isOwn) {
                 callWrap.style.display = "inline-flex";
+                if (profile.inCall) {
+                    callBtn.classList.add("btn-in-call");
+                    callBtn.innerHTML = `<i class="fa-solid fa-headset me-2"></i><span>In Huddle (Call)</span>`;
+                    callBtn.title = `${profile.username} is currently in a live 1-on-1 Huddle. Click to call.`;
+                } else {
+                    callBtn.classList.remove("btn-in-call");
+                    callBtn.innerHTML = `<i class="fa-solid fa-phone me-2"></i><span>Live 1-on-1 Call</span>`;
+                    callBtn.title = `Start Live 1-on-1 Call with this developer`;
+                }
                 callBtn.onclick = (e) => {
                     e.preventDefault();
                     if (window.CodeQuestPro && typeof window.CodeQuestPro.startCallWithUser === "function") {

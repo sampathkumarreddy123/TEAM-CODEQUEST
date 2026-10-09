@@ -2065,20 +2065,24 @@
                 }
                 const ctx = this.audioCtx;
                 const now = ctx.currentTime;
-                const playTone = (freq, start, duration) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = "sine";
-                    osc.frequency.setValueAtTime(freq, now + start);
-                    gain.gain.setValueAtTime(0.08, now + start);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(now + start);
-                    osc.stop(now + start + duration);
+                // Realistic dual-tone telephone ringing (440Hz + 480Hz)
+                const playDualRing = (f1, f2, start, dur) => {
+                    [f1, f2].forEach(freq => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = "sine";
+                        osc.frequency.setValueAtTime(freq, now + start);
+                        gain.gain.setValueAtTime(0.06, now + start);
+                        gain.gain.linearRampToValueAtTime(0.06, now + start + dur - 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(now + start);
+                        osc.stop(now + start + dur);
+                    });
                 };
-                playTone(659.25, 0.0, 0.35); // E5
-                playTone(880.00, 0.18, 0.55); // A5
+                playDualRing(440, 480, 0.0, 0.45);
+                playDualRing(440, 480, 0.65, 0.55);
             } catch (e) {}
         },
 
@@ -2250,12 +2254,14 @@
                 }, 1000);
 
             } catch (err) {
+                this.stopChimeLoop();
                 this.closeOutgoingModal();
                 showAppToast("❌ " + err.message);
             }
         },
 
         renderOutgoingCallModal({ targetUsername, targetAvatarUrl }) {
+            this.startChimeLoop();
             let modal = document.getElementById("codequestOutgoingCallModal");
             if (!modal) {
                 modal = document.createElement("div");
@@ -2294,6 +2300,7 @@
         },
 
         async cancelOutgoingCall() {
+            this.stopChimeLoop();
             if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
             const call = this.activeOutgoingCall;
             this.activeOutgoingCall = null;
@@ -2312,11 +2319,13 @@
         },
 
         closeOutgoingModal() {
+            this.stopChimeLoop();
             const modal = document.getElementById("codequestOutgoingCallModal");
             if (modal) modal.style.display = "none";
         },
 
         handleOutgoingAccepted(data) {
+            this.stopChimeLoop();
             if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
             const statusEl = document.getElementById("cqOutgoingStatus");
             if (statusEl) statusEl.innerHTML = `<span class="text-success fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Call Accepted! Connecting to Live Collab Room...</span>`;
@@ -2332,6 +2341,7 @@
         },
 
         handleOutgoingDeclined() {
+            this.stopChimeLoop();
             if (this.outgoingCountdown) clearInterval(this.outgoingCountdown);
             const statusEl = document.getElementById("cqOutgoingStatus");
             if (statusEl) statusEl.innerHTML = `<span class="text-danger fw-bold"><i class="fa-solid fa-circle-xmark me-1"></i> Call was declined. Developer is unavailable.</span>`;

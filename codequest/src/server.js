@@ -136,6 +136,29 @@ const challengeSchema = new mongoose.Schema({
 
 const Challenge = mongoose.model("Challenge", challengeSchema);
 
+// In-Memory Live Collab Rooms Tracking
+const collabRooms = new Map();
+
+function checkUserInLiveCall(userId, username) {
+    if (!userId && !username) return { inCall: false, callRoomId: null };
+    const uIdStr = userId ? String(userId) : "";
+    const uNameLower = username ? String(username).toLowerCase() : "";
+    for (const [rId, room] of collabRooms.entries()) {
+        if (room.peers && room.peers.size > 0) {
+            for (const peer of room.peers.values()) {
+                if (peer.user) {
+                    const pId = String(peer.user.id || peer.user._id || "");
+                    const pName = String(peer.user.username || "").toLowerCase();
+                    if ((uIdStr && pId === uIdStr) || (uNameLower && pName === uNameLower)) {
+                        return { inCall: true, callRoomId: rId };
+                    }
+                }
+            }
+        }
+    }
+    return { inCall: false, callRoomId: null };
+}
+
 // ----------------- Admin Helpers -----------------
 function checkIsAdmin(user) {
     if (!user) return false;
@@ -509,6 +532,7 @@ app.get("/profile", verifyToken, async (req, res) => {
             .lean();
 
         const gamification = computeUserGamification(req.user, questionsCount, answersCount, userQuestions, userAnswers);
+        const callStatus = checkUserInLiveCall(req.user._id, req.user.username);
 
         res.json({
             _id: req.user._id,
@@ -520,7 +544,9 @@ app.get("/profile", verifyToken, async (req, res) => {
             answersCount,
             questions: userQuestions,
             answers: userAnswers,
-            gamification
+            gamification,
+            inCall: callStatus.inCall,
+            callRoomId: callStatus.callRoomId
         });
     } catch (error) {
         console.error("❌ Error fetching own profile:", error);
@@ -540,6 +566,7 @@ app.get(["/api/user", "/api/me"], async (req, res) => {
             return res.status(401).json({ authenticated: false, loggedIn: false, error: "Not authenticated" });
         }
         const isAdmin = checkIsAdmin(user);
+        const callStatus = checkUserInLiveCall(user._id, user.username);
         res.json({
             authenticated: true,
             loggedIn: true,
@@ -553,7 +580,9 @@ app.get(["/api/user", "/api/me"], async (req, res) => {
             },
             username: user.username,
             avatarUrl: user.avatarUrl || "default-avatar.png",
-            isAdmin
+            isAdmin,
+            inCall: callStatus.inCall,
+            callRoomId: callStatus.callRoomId
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch user" });
@@ -563,6 +592,9 @@ app.get(["/api/user", "/api/me"], async (req, res) => {
 // Another user's profile with stats
 app.get("/users/:userId", async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+            return res.status(404).json({ error: "User not found" });
+        }
         const user = await User.findById(req.params.userId);
         if (!user) {
             return res.status(404).json({ error: "User not found" });
@@ -577,6 +609,7 @@ app.get("/users/:userId", async (req, res) => {
             .lean();
 
         const gamification = computeUserGamification(user, questionsCount, answersCount, userQuestions, userAnswers);
+        const callStatus = checkUserInLiveCall(user._id, user.username);
 
         res.json({
             _id: user._id,
@@ -588,7 +621,9 @@ app.get("/users/:userId", async (req, res) => {
             answersCount,
             questions: userQuestions,
             answers: userAnswers,
-            gamification
+            gamification,
+            inCall: callStatus.inCall,
+            callRoomId: callStatus.callRoomId
         });
     } catch (error) {
         console.error("❌ Error fetching user profile:", error);
@@ -1332,8 +1367,6 @@ app.get("/", (req, res) => {
 });
 
 // ----------------- Live Collab Debug Room REST Endpoints -----------------
-const collabRooms = new Map();
-
 function getOrCreateRoom(roomId, initialData = {}) {
     const cleanId = String(roomId || "").trim().toUpperCase();
     if (!collabRooms.has(cleanId)) {
@@ -3121,6 +3154,37 @@ wss.on("connection", async (ws, req) => {
                         }));
                     }
                 });
+                return;
+            }
+
+            // Explicit Leave Room Event
+            if (type === "leave-room") {
+                if (currentRoomId && currentPeerId && collabRooms.has(currentRoomId)) {
+                    const room = collabRooms.get(currentRoomId);
+                    room.peers.delete(currentPeerId);
+
+                    // Notify remaining peers
+                    room.peers.forEach((peer) => {
+                        if (peer.ws.readyState === WebSocket.OPEN) {
+                            peer.ws.send(JSON.stringify({
+                                type: "peer-left",
+                                peerId: currentPeerId,
+                                user: currentUser
+                            }));
+                        }
+                    });
+
+                    // If room is empty, clean it up after timeout
+                    if (room.peers.size === 0) {
+                        setTimeout(() => {
+                            if (collabRooms.has(currentRoomId) && collabRooms.get(currentRoomId).peers.size === 0) {
+                                collabRooms.delete(currentRoomId);
+                            }
+                        }, 30 * 60 * 1000);
+                    }
+                }
+                currentRoomId = null;
+                currentPeerId = null;
                 return;
             }
 

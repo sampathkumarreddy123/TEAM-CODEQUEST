@@ -295,6 +295,13 @@
 
             case "peer-joined":
                 remotePeerId = msg.peerId;
+                if (peerConnection) {
+                    try { peerConnection.close(); } catch(e){}
+                    peerConnection = null;
+                }
+                iceCandidatesQueue = [];
+                remoteMediaStream = null;
+                hidePartnerLeftModal();
                 updateRemoteUserUI(msg.user);
                 updatePeerCountDisplay();
                 showToast(`${msg.user ? msg.user.username : "Partner"} joined the Huddle`, "info");
@@ -303,8 +310,15 @@
             case "peer-left":
                 showToast(`${msg.user ? msg.user.username : "Partner"} left the Huddle`, "warning");
                 remotePeerId = null;
+                if (peerConnection) {
+                    try { peerConnection.close(); } catch(e){}
+                    peerConnection = null;
+                }
+                iceCandidatesQueue = [];
+                remoteMediaStream = null;
                 resetRemoteMedia();
                 updatePeerCountDisplay();
+                showPartnerLeftModal(msg.user);
                 break;
 
             case "room-full":
@@ -673,6 +687,7 @@
             });
             if (localVideo) {
                 localVideo.srcObject = localStream;
+                localVideo.play().catch(() => {});
             }
             if (localVideoPlaceholder) localVideoPlaceholder.style.display = "none";
             setupAudioActivityMonitor(localStream, localPeerTile, document.getElementById("localAudioWave"), document.getElementById("localSpeakerDot"));
@@ -686,11 +701,27 @@
                 console.warn("Microphone access warning:", aErr.message);
             }
         }
+
+        // Attach local tracks to active peer connection if already initialized
+        if (peerConnection && localStream) {
+            const senders = peerConnection.getSenders();
+            localStream.getTracks().forEach(track => {
+                const alreadyAdded = senders.some(s => s.track && s.track.id === track.id);
+                if (!alreadyAdded) {
+                    try {
+                        peerConnection.addTrack(track, localStream);
+                    } catch(e) {
+                        console.warn("Track addition warning:", e);
+                    }
+                }
+            });
+        }
     }
 
     function createWebRtcPeer(isInitiator) {
         if (peerConnection) {
             try { peerConnection.close(); } catch(e){}
+            peerConnection = null;
         }
 
         peerConnection = new RTCPeerConnection(rtcConfig);
@@ -698,7 +729,11 @@
         // Add local tracks to peer connection
         if (localStream) {
             localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
+                try {
+                    peerConnection.addTrack(track, localStream);
+                } catch(e) {
+                    console.warn("Error adding local track:", e);
+                }
             });
         }
 
@@ -706,11 +741,23 @@
         peerConnection.ontrack = (event) => {
             if (event.streams && event.streams[0]) {
                 remoteMediaStream = event.streams[0];
-                if (remoteVideo) remoteVideo.srcObject = remoteMediaStream;
-                if (remoteAudio) remoteAudio.srcObject = remoteMediaStream;
-                if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
-                setupAudioActivityMonitor(remoteMediaStream, remotePeerTile, document.getElementById("remoteAudioWave"), document.getElementById("remoteSpeakerDot"));
+            } else if (event.track) {
+                if (!remoteMediaStream) remoteMediaStream = new MediaStream();
+                remoteMediaStream.addTrack(event.track);
             }
+
+            if (remoteVideo) {
+                remoteVideo.srcObject = remoteMediaStream;
+                const p = remoteVideo.play();
+                if (p !== undefined) p.catch(e => console.warn("Remote video play prevented:", e));
+            }
+            if (remoteAudio) {
+                remoteAudio.srcObject = remoteMediaStream;
+                const ap = remoteAudio.play();
+                if (ap !== undefined) ap.catch(e => console.warn("Remote audio play prevented:", e));
+            }
+            if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
+            setupAudioActivityMonitor(remoteMediaStream, remotePeerTile, document.getElementById("remoteAudioWave"), document.getElementById("remoteSpeakerDot"));
         };
 
         // ICE candidate generation
@@ -742,36 +789,63 @@
 
     async function handleWebRtcSignal(msg) {
         const signal = msg.signal;
-        if (!peerConnection) {
-            createWebRtcPeer(false);
+        if (!signal) return;
+        if (msg.fromPeerId) {
+            remotePeerId = msg.fromPeerId;
         }
 
-        if (signal.desc) {
-            const desc = new RTCSessionDescription(signal.desc);
-            await peerConnection.setRemoteDescription(desc);
-            while (iceCandidatesQueue.length > 0) {
-                const c = iceCandidatesQueue.shift();
-                await peerConnection.addIceCandidate(c);
-            }
+        try {
+            if (signal.desc) {
+                if (signal.desc.type === "offer") {
+                    // Re-create peer connection as receiver to avoid invalid state
+                    if (peerConnection) {
+                        try { peerConnection.close(); } catch(e){}
+                        peerConnection = null;
+                    }
+                    createWebRtcPeer(false);
 
-            if (desc.type === "offer") {
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({
-                        type: "webrtc-signal",
-                        targetPeerId: msg.fromPeerId,
-                        signal: { desc: peerConnection.localDescription }
-                    }));
+                    const desc = new RTCSessionDescription(signal.desc);
+                    await peerConnection.setRemoteDescription(desc);
+
+                    while (iceCandidatesQueue.length > 0) {
+                        const c = iceCandidatesQueue.shift();
+                        try { await peerConnection.addIceCandidate(c); } catch(e){}
+                    }
+
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "webrtc-signal",
+                            targetPeerId: msg.fromPeerId || remotePeerId,
+                            signal: { desc: peerConnection.localDescription }
+                        }));
+                    }
+                } else if (signal.desc.type === "answer") {
+                    if (peerConnection) {
+                        const desc = new RTCSessionDescription(signal.desc);
+                        await peerConnection.setRemoteDescription(desc);
+                        while (iceCandidatesQueue.length > 0) {
+                            const c = iceCandidatesQueue.shift();
+                            try { await peerConnection.addIceCandidate(c); } catch(e){}
+                        }
+                    }
+                }
+            } else if (signal.candidate) {
+                const candidate = new RTCIceCandidate(signal.candidate);
+                if (peerConnection && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+                    try {
+                        await peerConnection.addIceCandidate(candidate);
+                    } catch(e) {
+                        console.warn("Error adding ICE candidate:", e);
+                    }
+                } else {
+                    iceCandidatesQueue.push(candidate);
                 }
             }
-        } else if (signal.candidate) {
-            const candidate = new RTCIceCandidate(signal.candidate);
-            if (peerConnection.remoteDescription) {
-                await peerConnection.addIceCandidate(candidate);
-            } else {
-                iceCandidatesQueue.push(candidate);
-            }
+        } catch (err) {
+            console.error("WebRTC Signal handling error:", err);
         }
     }
 
@@ -1248,6 +1322,41 @@
             confirmLeaveBtn.disabled = true;
             confirmLeaveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> Leaving...`;
             performLeaveHuddle();
+        });
+    }
+
+    // Partner Left Huddle Notification Modal Helpers
+    const partnerLeftModal = document.getElementById("partnerLeftModal");
+    const partnerLeftCopyLinkBtn = document.getElementById("partnerLeftCopyLinkBtn");
+
+    function showPartnerLeftModal(user) {
+        const partnerName = (user && user.username && !user.username.startsWith("Developer_"))
+            ? user.username
+            : (user && user.username ? user.username : "Your partner");
+        const nameEl = document.getElementById("partnerLeftUsername");
+        if (nameEl) nameEl.textContent = partnerName;
+        if (partnerLeftModal && window.bootstrap) {
+            const modal = bootstrap.Modal.getOrCreateInstance(partnerLeftModal);
+            modal.show();
+        }
+    }
+
+    function hidePartnerLeftModal() {
+        if (partnerLeftModal && window.bootstrap) {
+            const modal = bootstrap.Modal.getInstance(partnerLeftModal);
+            if (modal) modal.hide();
+        }
+    }
+
+    if (partnerLeftCopyLinkBtn) {
+        partnerLeftCopyLinkBtn.addEventListener("click", async () => {
+            const inviteUrl = window.location.href;
+            try {
+                await navigator.clipboard.writeText(inviteUrl);
+                showToast("Huddle invite link copied to clipboard! Share it with a teammate to join.", "success");
+            } catch(e) {
+                prompt("Copy this Huddle invite link:", inviteUrl);
+            }
         });
     }
 

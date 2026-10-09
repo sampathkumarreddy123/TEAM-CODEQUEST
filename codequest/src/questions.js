@@ -439,8 +439,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             }
 
-            // Navigate to Question Details
-            card.addEventListener("click", () => {
+            // Direct 1-on-1 Call Button Handler
+            const directCallBtn = card.querySelector(".btn-direct-call-user");
+            if (directCallBtn) {
+                directCallBtn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const targetUserId = directCallBtn.dataset.userId;
+                    const targetUsername = directCallBtn.dataset.username;
+                    const targetAvatarUrl = directCallBtn.dataset.avatar;
+                    if (window.CodeQuestPro && window.CodeQuestPro.LiveCallManager) {
+                        window.CodeQuestPro.LiveCallManager.startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl });
+                    }
+                });
+            }
+
+            // Navigate to Question Details (only when clicking the card itself, not buttons or links)
+            card.addEventListener("click", (e) => {
+                if (e.target.closest("button, a, input, textarea, .btn-direct-call-user, .btn-like, .btn-card-pin, .btn-card-lock, .btn-card-edit, .btn-card-del")) {
+                    return;
+                }
                 sessionStorage.setItem("selectedQuestionId", question._id);
                 sessionStorage.setItem("selectedQuestionText", question.questionText);
                 window.location.href = `messageDetails.html?questionId=${question._id}`;
