@@ -15,12 +15,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const questionCountBadge = document.getElementById("questionCountBadge");
     const tabButtons = document.querySelectorAll(".tab-btn");
 
-    const quickAskInput = document.getElementById("quickAskInput");
-    const quickAskBtn = document.getElementById("quickAskBtn");
-    const quickCodeBtn = document.getElementById("quickCodeBtn");
-    const quickTagBtn = document.getElementById("quickTagBtn");
-    const quickAskAvatar = document.getElementById("quickAskAvatar");
-
     const headerUserAvatar = document.getElementById("headerUserAvatar");
     const headerUsername = document.getElementById("headerUsername");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -813,96 +807,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Unified Composer Opener: Seamlessly opens rich composer with user text, code block, or tags
-    function openComposerModal(initialText = "", focusTarget = "text", insertCode = false) {
-        if (!currentUser) {
-            showAuthPrompt("Please sign in with GitHub to post a question.");
-            return;
-        }
-
-        if (modalQuestionText) {
-            let val = (initialText || "").trim();
-            if (insertCode) {
-                if (val) {
-                    val += "\n\n```javascript\n// Paste or write code here\n```\n";
-                } else {
-                    val = "```javascript\n// Paste or write code here\n```\n";
-                }
-            }
-            modalQuestionText.value = val;
-        }
-
-        if (modalQuestionTags && focusTarget !== "tags") {
-            modalQuestionTags.value = "";
-        }
-
-        if (modalErrorMsg) {
-            modalErrorMsg.style.display = "none";
-        }
-
-        if (askModalInstance) {
-            askModalInstance.show();
-            setTimeout(() => {
-                if (focusTarget === "tags" && modalQuestionTags) {
-                    modalQuestionTags.focus();
-                } else if (modalQuestionText) {
-                    modalQuestionText.focus();
-                    if (insertCode) {
-                        const pos = modalQuestionText.value.indexOf("// Paste or write code here");
-                        if (pos !== -1) {
-                            modalQuestionText.setSelectionRange(pos, pos + "// Paste or write code here".length);
-                        }
-                    } else {
-                        modalQuestionText.setSelectionRange(modalQuestionText.value.length, modalQuestionText.value.length);
-                    }
-                }
-            }, 300);
-        }
-
-        if (quickAskInput) {
-            quickAskInput.value = "";
-        }
-    }
-
-    // Feed Composer: "Ask Question" Button
-    if (quickAskBtn) {
-        quickAskBtn.addEventListener("click", () => {
-            const text = quickAskInput ? quickAskInput.value : "";
-            openComposerModal(text, "text");
-        });
-    }
-
-    // Feed Composer: "Code" Quick Chip
-    if (quickCodeBtn) {
-        quickCodeBtn.addEventListener("click", () => {
-            const text = quickAskInput ? quickAskInput.value : "";
-            openComposerModal(text, "text", true);
-        });
-    }
-
-    // Feed Composer: "Tags" Quick Chip
-    if (quickTagBtn) {
-        quickTagBtn.addEventListener("click", () => {
-            const text = quickAskInput ? quickAskInput.value : "";
-            openComposerModal(text, "tags");
-        });
-    }
-
-    // Feed Composer: Enter Key in input
-    if (quickAskInput) {
-        quickAskInput.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const text = quickAskInput.value;
-                openComposerModal(text, "text");
-            }
-        });
-    }
-
-    // Header: "Ask Question" Button
+    // Modal Ask Handler (Header "Ask Question" Button)
     if (openAskModalBtn) {
         openAskModalBtn.addEventListener("click", () => {
-            openComposerModal("", "text");
+            if (!currentUser) {
+                showAuthPrompt("Please sign in with GitHub to post a question.");
+                return;
+            }
+            if (modalQuestionText) modalQuestionText.value = "";
+            if (modalQuestionTags) modalQuestionTags.value = "";
+            if (modalErrorMsg) modalErrorMsg.style.display = "none";
+            if (askModalInstance) {
+                askModalInstance.show();
+                setTimeout(() => {
+                    if (modalQuestionText) modalQuestionText.focus();
+                }, 300);
+            }
         });
     }
 
