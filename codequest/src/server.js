@@ -528,6 +528,38 @@ app.get("/profile", verifyToken, async (req, res) => {
     }
 });
 
+// Current logged-in user profile (for collab huddle, chat, and frontend modules)
+app.get(["/api/user", "/api/me"], async (req, res) => {
+    try {
+        let user = null;
+        const token = req.cookies.token || req.headers["authorization"]?.replace("Bearer ", "");
+        if (token) {
+            user = await User.findOne({ token });
+        }
+        if (!user) {
+            return res.status(401).json({ authenticated: false, loggedIn: false, error: "Not authenticated" });
+        }
+        const isAdmin = checkIsAdmin(user);
+        res.json({
+            authenticated: true,
+            loggedIn: true,
+            user: {
+                _id: String(user._id),
+                id: String(user._id),
+                username: user.username,
+                avatarUrl: user.avatarUrl || "default-avatar.png",
+                isAdmin,
+                githubId: user.githubId
+            },
+            username: user.username,
+            avatarUrl: user.avatarUrl || "default-avatar.png",
+            isAdmin
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch user" });
+    }
+});
+
 // Another user's profile with stats
 app.get("/users/:userId", async (req, res) => {
     try {
@@ -2666,10 +2698,33 @@ const server = http.createServer(app);
 // Setup WebSocket Server for Real-Time Collab & WebRTC Signaling
 const wss = new WebSocketServer({ server });
 
-wss.on("connection", (ws, req) => {
+wss.on("connection", async (ws, req) => {
     let currentRoomId = null;
     let currentPeerId = null;
     let currentUser = null;
+
+    // Auto-authenticate peer from session cookie on HTTP upgrade
+    if (req && req.headers && req.headers.cookie) {
+        try {
+            const cookieMatch = req.headers.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+            if (cookieMatch && cookieMatch[1]) {
+                const token = decodeURIComponent(cookieMatch[1]);
+                const foundUser = await User.findOne({ token });
+                if (foundUser) {
+                    currentUser = {
+                        id: String(foundUser._id),
+                        _id: String(foundUser._id),
+                        username: foundUser.username,
+                        avatarUrl: foundUser.avatarUrl || "default-avatar.png",
+                        isAdmin: checkIsAdmin(foundUser),
+                        githubId: foundUser.githubId
+                    };
+                }
+            }
+        } catch (authErr) {
+            console.warn("WebSocket cookie auth warning:", authErr.message);
+        }
+    }
 
     ws.on("message", (raw) => {
         try {
@@ -2696,7 +2751,18 @@ wss.on("connection", (ws, req) => {
             if (type === "join-room") {
                 currentRoomId = String(roomId || "").trim().toUpperCase();
                 currentPeerId = data.peerId || `peer_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-                currentUser = data.user || { username: "Guest Developer", avatarUrl: "default-avatar.png" };
+
+                // Prefer authenticated user; if client sends real GitHub username, use it
+                if (data.user && data.user.username && !data.user.username.startsWith("Developer_")) {
+                    currentUser = {
+                        ...(currentUser || {}),
+                        ...data.user,
+                        username: data.user.username,
+                        avatarUrl: data.user.avatarUrl || (currentUser ? currentUser.avatarUrl : "default-avatar.png")
+                    };
+                } else if (!currentUser) {
+                    currentUser = data.user || { username: "Developer", avatarUrl: "default-avatar.png" };
+                }
 
                 const room = getOrCreateRoom(currentRoomId, {
                     questionId: data.questionId,
@@ -3008,11 +3074,18 @@ wss.on("connection", (ws, req) => {
 
             // In-room Chat message: stored in room chat history & broadcast with timestamp and id
             if (type === "chat-message") {
+                const senderName = (data.sender && !data.sender.startsWith("Developer_"))
+                    ? data.sender
+                    : (currentUser && currentUser.username ? currentUser.username : "Developer");
+                const senderAvatar = (data.avatarUrl && data.avatarUrl !== "default-avatar.png")
+                    ? data.avatarUrl
+                    : (currentUser && currentUser.avatarUrl ? currentUser.avatarUrl : "default-avatar.png");
+
                 const msgObj = {
                     id: "msg-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
                     fromPeerId: currentPeerId,
-                    sender: currentUser ? currentUser.username : "Partner",
-                    avatarUrl: currentUser ? currentUser.avatarUrl : "default-avatar.png",
+                    sender: senderName,
+                    avatarUrl: senderAvatar,
                     message: data.message || "",
                     codeSnippet: data.codeSnippet || null,
                     lang: data.lang || null,

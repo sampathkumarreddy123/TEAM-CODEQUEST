@@ -24,10 +24,34 @@
     const questionId = urlParams.get("questionId") || urlParams.get("id") || null;
 
     let currentUser = {
-        username: "Developer_" + Math.floor(Math.random() * 899 + 100),
+        username: "Developer",
         avatarUrl: "default-avatar.png",
         id: null
     };
+
+    // Immediate optimistic restore of GitHub user from localStorage and cookies
+    try {
+        const cached = localStorage.getItem("cq_user");
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.username && !parsed.username.startsWith("Developer_")) {
+                currentUser.username = parsed.username;
+                currentUser.avatarUrl = parsed.avatarUrl || "default-avatar.png";
+                currentUser.id = parsed._id || parsed.id || parsed.userId || null;
+            }
+        }
+        const cookieUserMatch = document.cookie.match(/(?:^|;\s*)username=([^;]+)/);
+        if (cookieUserMatch && cookieUserMatch[1]) {
+            const decoded = decodeURIComponent(cookieUserMatch[1]).trim();
+            if (decoded && !decoded.startsWith("Developer_")) {
+                currentUser.username = decoded;
+            }
+        }
+        const cookieAvatarMatch = document.cookie.match(/(?:^|;\s*)avatarUrl=([^;]+)/);
+        if (cookieAvatarMatch && cookieAvatarMatch[1]) {
+            currentUser.avatarUrl = decodeURIComponent(cookieAvatarMatch[1]).trim();
+        }
+    } catch (e) {}
 
     let ws = null;
     let myPeerId = null;
@@ -129,22 +153,34 @@
     async function initUser() {
         if (displayRoomId) displayRoomId.textContent = roomId;
 
+        // Apply immediately from cache or cookies to avoid any flicker
+        updateLocalUserIdentity();
+
         try {
-            const res = await fetch("/api/user", { credentials: "include" });
+            // First try primary authentication endpoint: /auth/status
+            const res = await fetch("/auth/status", { credentials: "include", cache: "no-cache" });
             if (res.ok) {
                 const data = await res.json();
-                if (data && (data.user || data.username)) {
-                    const u = data.user || data;
-                    currentUser.username = u.username || currentUser.username;
-                    currentUser.avatarUrl = u.avatarUrl || "default-avatar.png";
-                    currentUser.id = u._id || u.id;
-
-                    const localNameEl = document.getElementById("localUserName");
-                    if (localNameEl) localNameEl.textContent = `${currentUser.username} (You)`;
-                    const localInitialsEl = document.getElementById("localAvatarInitials");
-                    if (localInitialsEl) localInitialsEl.textContent = currentUser.username.charAt(0).toUpperCase();
-                    const localUserTagLabel = document.getElementById("localUserTagLabel");
-                    if (localUserTagLabel) localUserTagLabel.textContent = `${currentUser.username} (You)`;
+                if (data && data.loggedIn && data.username) {
+                    currentUser.username = data.username;
+                    currentUser.avatarUrl = data.avatarUrl || "default-avatar.png";
+                    currentUser.id = data.userId || (data.user && data.user._id) || null;
+                    localStorage.setItem("cq_user", JSON.stringify(currentUser));
+                    updateLocalUserIdentity();
+                }
+            } else {
+                // Secondary check: /api/user
+                const resUser = await fetch("/api/user", { credentials: "include" });
+                if (resUser.ok) {
+                    const dataUser = await resUser.json();
+                    const u = dataUser.user || dataUser;
+                    if (u && u.username) {
+                        currentUser.username = u.username;
+                        currentUser.avatarUrl = u.avatarUrl || "default-avatar.png";
+                        currentUser.id = u._id || u.id || null;
+                        localStorage.setItem("cq_user", JSON.stringify(currentUser));
+                        updateLocalUserIdentity();
+                    }
                 }
             }
         } catch (e) {
@@ -159,6 +195,22 @@
         await hydrateRoomState();
         // Initialize line numbers
         updateLineNumbers();
+    }
+
+    function updateLocalUserIdentity() {
+        const localNameEl = document.getElementById("localUserName");
+        if (localNameEl) localNameEl.textContent = `${currentUser.username} (You)`;
+        const localInitialsEl = document.getElementById("localAvatarInitials");
+        if (localInitialsEl) localInitialsEl.textContent = currentUser.username.charAt(0).toUpperCase();
+        const localUserTagLabel = document.getElementById("localUserTagLabel");
+        if (localUserTagLabel) localUserTagLabel.textContent = `${currentUser.username} (You)`;
+
+        if (currentUser.avatarUrl && currentUser.avatarUrl !== "default-avatar.png") {
+            const localCircle = document.getElementById("localAvatarCircle");
+            if (localCircle) {
+                localCircle.innerHTML = `<img src="${escapeHtml(currentUser.avatarUrl)}" alt="${escapeHtml(currentUser.username)}" style="width: 100%; height: 100%; border-radius: 10px; object-fit: cover;">`;
+            }
+        }
     }
 
     // -------------------------------------------------------------
@@ -732,12 +784,19 @@
     }
 
     function updateRemoteUserUI(user) {
-        const name = user ? user.username : "Partner";
+        const name = (user && user.username && !user.username.startsWith("Developer_")) ? user.username : (user ? user.username : "Partner");
         if (remoteUserName) remoteUserName.textContent = name;
         if (remoteUserTagLabel) remoteUserTagLabel.textContent = name;
         if (remotePlaceholderText) remotePlaceholderText.textContent = "In Huddle";
         const initials = document.getElementById("remoteAvatarInitials");
         if (initials) initials.textContent = name.charAt(0).toUpperCase();
+
+        if (user && user.avatarUrl && user.avatarUrl !== "default-avatar.png") {
+            const circle = document.getElementById("remoteAvatarCircle");
+            if (circle) {
+                circle.innerHTML = `<img src="${escapeHtml(user.avatarUrl)}" alt="${escapeHtml(name)}" style="width: 100%; height: 100%; border-radius: 10px; object-fit: cover;">`;
+            }
+        }
     }
 
     // -------------------------------------------------------------
@@ -925,7 +984,9 @@
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
                 type: "chat-message",
-                message: text
+                message: text,
+                sender: currentUser.username,
+                avatarUrl: currentUser.avatarUrl
             }));
         }
         chatMessageInput.value = "";
@@ -945,7 +1006,9 @@
                     type: "chat-message",
                     message: "Shared current solution code snippet:",
                     codeSnippet: code,
-                    lang
+                    lang,
+                    sender: currentUser.username,
+                    avatarUrl: currentUser.avatarUrl
                 }));
             }
             showToast("Editor code shared into chat!", "info");
@@ -958,9 +1021,15 @@
         const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
         const senderName = msg.sender || (isOutgoing ? currentUser.username : "Partner");
         const initial = senderName.charAt(0).toUpperCase();
+        const avatarUrl = msg.avatarUrl || (isOutgoing ? currentUser.avatarUrl : null);
 
         const item = document.createElement("div");
         item.className = `cq-chat-item ${isOutgoing ? 'outgoing' : ''}`;
+
+        let avatarHtml = `<span class="cq-avatar-initial">${escapeHtml(initial)}</span>`;
+        if (avatarUrl && avatarUrl !== "default-avatar.png" && !avatarUrl.includes("undefined")) {
+            avatarHtml = `<img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(senderName)}" class="cq-chat-avatar-img" onerror="this.onerror=null;this.parentElement.innerHTML='<span class=\\'cq-avatar-initial\\'>${escapeHtml(initial)}</span>';">`;
+        }
 
         let snippetHtml = "";
         if (msg.codeSnippet) {
@@ -976,10 +1045,13 @@
         }
 
         item.innerHTML = `
-            <div class="cq-chat-avatar">${escapeHtml(initial)}</div>
+            <div class="cq-chat-avatar">${avatarHtml}</div>
             <div class="cq-chat-content-wrap">
                 <div class="cq-chat-meta">
-                    <span class="cq-chat-sender">${escapeHtml(senderName)}</span>
+                    <span class="cq-chat-sender">
+                        ${escapeHtml(senderName)}
+                        ${isOutgoing ? '<span class="cq-chat-you-pill">You</span>' : ''}
+                    </span>
                     <span class="cq-chat-time">${timeStr}</span>
                 </div>
                 <div class="cq-chat-bubble">
