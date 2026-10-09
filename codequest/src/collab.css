@@ -1,45 +1,61 @@
 /* ==========================================================================
-   CODEQUEST LIVE COLLABORATIVE PLATFORM DESIGN SYSTEM
-   - Clean Light Theme (#F8FAFC, #FFFFFF, #0F172A, #2563EB)
-   - Layout:
-     * Left Column: Code Editor + Split Custom Input (stdin) & Output (stdout)
-     * Right Column: Video Cam Stage + Pair Chat Box
+   SLACK HUDDLE DESIGN SYSTEM FOR LIVE COLLABORATION (CODEQUEST)
+   - Inspired by Slack Huddle & Canvas Interface
+   - Palette:
+     * App Canvas: #1A1D21 (Slack Dark)
+     * Surface/Cards: #222529
+     * Surfaces Elevated: #2B2D31
+     * Borders: #2E3136
+     * Borders Hover: #383A40
+     * Slack Green (Run Code / Active): #007A5A (Hover: #006349)
+     * Slack Red (Leave / Muted): #E01E5A (Hover: #C6164D)
+     * Slack Aubergine / Brand: #4A154B
+     * Slack Cyan / Blue: #36C5F0 / #1264A3
+     * Speaker Ring: #2EB67D
    ========================================================================== */
 
 :root {
-    --cq-bg: #F8FAFC;
-    --cq-surface: #FFFFFF;
-    --cq-surface-subtle: #F1F5F9;
-    --cq-surface-hover: #E2E8F0;
-    --cq-border: #E2E8F0;
-    --cq-border-focus: #94A3B8;
+    --slack-bg: #1A1D21;
+    --slack-surface: #222529;
+    --slack-surface-elevated: #2B2D31;
+    --slack-surface-subtle: #1E2024;
+    --slack-surface-hover: #2F3237;
+    
+    --slack-border: #2E3136;
+    --slack-border-subtle: #383A40;
+    --slack-border-focus: #525660;
 
-    --cq-text: #0F172A;
-    --cq-text-muted: #64748B;
-    --cq-text-light: #94A3B8;
+    --slack-text: #FFFFFF;
+    --slack-text-secondary: #ABABAD;
+    --slack-text-muted: #7A7C80;
+    --slack-text-light: #55575C;
 
-    --cq-primary: #2563EB;
-    --cq-primary-hover: #1D4ED8;
-    --cq-primary-subtle: #EFF6FF;
+    --slack-green: #007A5A;
+    --slack-green-hover: #006349;
+    --slack-green-light: #2EB67D;
+    --slack-green-subtle: rgba(46, 182, 125, 0.15);
 
-    --cq-success: #16A34A;
-    --cq-success-subtle: #DCFCE7;
-    --cq-warning: #F59E0B;
-    --cq-warning-subtle: #FEF3C7;
-    --cq-danger: #DC2626;
-    --cq-danger-subtle: #FEE2E2;
+    --slack-red: #E01E5A;
+    --slack-red-hover: #C6164D;
+    --slack-red-subtle: rgba(224, 30, 90, 0.15);
 
-    --cq-editor-bg: #0F172A;
-    --cq-editor-surface: #1E293B;
-    --cq-editor-text: #F8FAFC;
+    --slack-aubergine: #4A154B;
+    --slack-aubergine-hover: #611F69;
 
-    --cq-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --cq-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --slack-blue: #1264A3;
+    --slack-blue-subtle: rgba(18, 100, 163, 0.15);
+    --slack-cyan: #36C5F0;
+    --slack-yellow: #ECB22E;
 
-    --cq-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --cq-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    --cq-radius: 8px;
-    --cq-radius-lg: 12px;
+    --slack-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --slack-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --slack-radius-sm: 4px;
+    --slack-radius: 8px;
+    --slack-radius-lg: 12px;
+    --slack-radius-pill: 9999px;
+
+    --slack-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 *, *::before, *::after {
@@ -47,9 +63,9 @@
 }
 
 body.cq-collab-body {
-    background-color: var(--cq-bg);
-    color: var(--cq-text);
-    font-family: var(--cq-font-sans);
+    background-color: var(--slack-bg);
+    color: var(--slack-text);
+    font-family: var(--slack-font-sans);
     margin: 0;
     padding: 0;
     height: 100vh;
@@ -60,11 +76,13 @@ body.cq-collab-body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ================= 1. TOP NAVIGATION BAR ================= */
+/* ==========================================================================
+   1. TOP NAVIGATION BAR (SLACK HUDDLE HEADER)
+   ========================================================================== */
 .cq-navbar {
-    height: 56px;
-    background: var(--cq-surface);
-    border-bottom: 1px solid var(--cq-border);
+    height: 52px;
+    background: var(--slack-surface);
+    border-bottom: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -84,40 +102,49 @@ body.cq-collab-body {
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    color: var(--cq-text);
+    color: var(--slack-text);
 }
 
-.cq-brand-logo {
-    height: 28px;
+.cq-slack-huddle-icon {
     width: 28px;
-    border-radius: 6px;
-    object-fit: contain;
+    height: 28px;
+    background: var(--slack-aubergine);
+    border-radius: var(--slack-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(74, 21, 75, 0.5);
 }
 
 .cq-brand-title {
     font-size: 15px;
     font-weight: 700;
     letter-spacing: -0.01em;
+    color: var(--slack-text);
 }
 
 .cq-brand-badge {
-    background: var(--cq-primary-subtle);
-    color: var(--cq-primary);
+    background: var(--slack-green-subtle);
+    color: var(--slack-green-light);
     font-size: 11px;
     font-weight: 600;
     padding: 2px 7px;
-    border-radius: 999px;
+    border-radius: var(--slack-radius-pill);
+    border: 1px solid rgba(46, 182, 125, 0.3);
 }
 
+/* Slack Room Pill */
 .cq-room-pill {
-    background: var(--cq-surface-subtle);
-    border: 1px solid var(--cq-border);
-    color: var(--cq-text);
+    background: var(--slack-surface-subtle);
+    border: 1px solid var(--slack-border);
+    color: var(--slack-text-secondary);
     padding: 4px 10px;
     border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
-    font-family: var(--cq-font-mono);
+    font-family: var(--slack-font-mono);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -126,8 +153,13 @@ body.cq-collab-body {
 }
 
 .cq-room-pill:hover {
-    background: var(--cq-surface-hover);
-    border-color: var(--cq-border-focus);
+    background: var(--slack-surface-hover);
+    color: var(--slack-text);
+    border-color: var(--slack-border-focus);
+}
+
+.cq-hash-icon {
+    color: var(--slack-text-muted);
 }
 
 .cq-tooltip {
@@ -135,22 +167,24 @@ body.cq-collab-body {
     bottom: -32px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--cq-text);
-    color: #fff;
+    background: #000000;
+    color: #FFFFFF;
     font-size: 11px;
-    padding: 3px 8px;
+    padding: 4px 8px;
     border-radius: 4px;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease;
     z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
 
 .cq-tooltip.show {
     opacity: 1;
 }
 
+/* Nav Center: Live Presence */
 .cq-nav-center {
     display: flex;
     align-items: center;
@@ -159,10 +193,10 @@ body.cq-collab-body {
 .cq-presence-status {
     display: flex;
     align-items: center;
-    background: var(--cq-surface-subtle);
-    border: 1px solid var(--cq-border);
-    padding: 5px 12px;
-    border-radius: 6px;
+    background: var(--slack-surface-subtle);
+    border: 1px solid var(--slack-border);
+    padding: 4px 12px;
+    border-radius: var(--slack-radius-pill);
     font-size: 12px;
     font-weight: 500;
 }
@@ -171,28 +205,36 @@ body.cq-collab-body {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--cq-text-light);
+    background: var(--slack-text-muted);
     margin-right: 6px;
 }
 
 .cq-status-dot.connected {
-    background: var(--cq-success);
-    box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
+    background: var(--slack-green-light);
+    box-shadow: 0 0 8px rgba(46, 182, 125, 0.7);
+    animation: huddlePulse 2s infinite ease-in-out;
+}
+
+@keyframes huddlePulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
 }
 
 .cq-timer-pill {
-    font-family: var(--cq-font-mono);
-    color: var(--cq-text-muted);
+    font-family: var(--slack-font-mono);
+    color: var(--slack-text);
+    font-weight: 600;
     font-size: 11px;
 }
 
 .cq-peer-count {
-    color: var(--cq-text-muted);
+    color: var(--slack-text-secondary);
     font-size: 11px;
-    border-left: 1px solid var(--cq-border);
-    padding-left: 6px;
+    border-left: 1px solid var(--slack-border);
+    padding-left: 8px;
 }
 
+/* Nav Right: Actions */
 .cq-nav-right {
     display: flex;
     align-items: center;
@@ -201,39 +243,50 @@ body.cq-collab-body {
 
 .cq-select-sm {
     font-size: 12px;
-    padding: 4px 24px 4px 10px;
+    padding: 5px 24px 5px 10px;
     border-radius: 6px;
-    border-color: var(--cq-border);
-    width: auto;
-    background-color: var(--cq-surface);
+    border: 1px solid var(--slack-border);
+    background-color: var(--slack-surface-subtle);
+    color: var(--slack-text);
     font-weight: 500;
 }
 
-/* Button Variants */
-.btn-cq-primary {
-    background: var(--cq-primary);
-    color: #fff;
+.cq-select-sm:focus {
+    border-color: var(--slack-border-focus);
+    background-color: var(--slack-surface);
+    color: var(--slack-text);
+    box-shadow: none;
+}
+
+/* Slack Button Styles */
+.btn-slack-run {
+    background: var(--slack-green);
+    color: #FFFFFF;
     border: none;
     padding: 6px 14px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background 0.15s ease, transform 0.05s ease;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
 }
 
-.btn-cq-primary:hover {
-    background: var(--cq-primary-hover);
-    color: #fff;
+.btn-slack-run:hover {
+    background: var(--slack-green-hover);
+    color: #FFFFFF;
 }
 
-.btn-cq-secondary {
-    background: var(--cq-surface);
-    color: var(--cq-text);
-    border: 1px solid var(--cq-border);
+.btn-slack-run:active {
+    transform: translateY(1px);
+}
+
+.btn-slack-secondary {
+    background: var(--slack-surface-elevated);
+    color: var(--slack-text);
+    border: 1px solid var(--slack-border);
     padding: 6px 12px;
     border-radius: 6px;
     font-size: 13px;
@@ -242,34 +295,20 @@ body.cq-collab-body {
     transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
 }
 
-.btn-cq-secondary:hover {
-    background: var(--cq-surface-subtle);
-    border-color: var(--cq-border-focus);
+.btn-slack-secondary:hover {
+    background: var(--slack-surface-hover);
+    border-color: var(--slack-border-focus);
+    color: #FFFFFF;
 }
 
-.btn-cq-ghost-xs {
-    background: transparent;
+.btn-slack-leave {
+    background: var(--slack-red);
+    color: #FFFFFF;
     border: none;
-    color: var(--cq-text-muted);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 11px;
-    cursor: pointer;
-}
-
-.btn-cq-ghost-xs:hover {
-    background: var(--cq-surface-subtle);
-    color: var(--cq-text);
-}
-
-.btn-cq-danger {
-    background: var(--cq-danger-subtle);
-    color: var(--cq-danger);
-    border: 1px solid rgba(220, 38, 38, 0.2);
-    padding: 6px 12px;
+    padding: 6px 14px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
@@ -277,24 +316,43 @@ body.cq-collab-body {
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    gap: 5px;
+    transition: background 0.15s ease;
+}
+
+.btn-slack-leave:hover {
+    background: var(--slack-red-hover);
+    color: #FFFFFF;
+}
+
+.btn-cq-ghost-xs {
+    background: transparent;
+    border: none;
+    color: var(--slack-text-secondary);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
     transition: all 0.15s ease;
 }
 
-.btn-cq-danger:hover {
-    background: var(--cq-danger);
-    color: #fff;
+.btn-cq-ghost-xs:hover {
+    background: var(--slack-surface-hover);
+    color: var(--slack-text);
 }
 
-/* ================= 2. MAIN LAYOUT (2-COLUMN SPLIT) ================= */
+/* ==========================================================================
+   2. MAIN LAYOUT (2-COLUMN FOCUSED SLACK WORKSPACE)
+   ========================================================================== */
 .cq-main-layout {
     display: flex;
     flex: 1;
     overflow: hidden;
     position: relative;
-    background: var(--cq-bg);
+    background: var(--slack-bg);
 }
 
-/* LEFT COLUMN: EDITOR + I/O */
+/* LEFT COLUMN: CODE EDITOR & I/O PANEL */
 .cq-editor-column {
     flex: 1;
     display: flex;
@@ -310,17 +368,17 @@ body.cq-collab-body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    box-shadow: var(--cq-shadow-sm);
+    background: var(--slack-surface);
+    border: 1px solid var(--slack-border);
+    border-radius: var(--slack-radius-lg);
+    box-shadow: var(--slack-shadow);
     min-height: 280px;
 }
 
 .cq-editor-topbar {
     height: 40px;
-    background: var(--cq-surface);
-    border-bottom: 1px solid var(--cq-border);
+    background: var(--slack-surface);
+    border-bottom: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -341,33 +399,48 @@ body.cq-collab-body {
 .cq-filename {
     font-size: 13px;
     font-weight: 600;
-    color: var(--cq-text);
+    color: var(--slack-text);
 }
 
 .cq-sync-indicator {
     font-size: 11px;
     font-weight: 600;
-    color: var(--cq-success);
-    background: var(--cq-success-subtle);
+    color: var(--slack-green-light);
+    background: var(--slack-green-subtle);
     padding: 2px 7px;
-    border-radius: 999px;
+    border-radius: var(--slack-radius-pill);
     display: inline-flex;
     align-items: center;
+    border: 1px solid rgba(46, 182, 125, 0.25);
 }
 
 .cq-partner-cursor-flag {
     font-size: 11px;
     font-weight: 600;
-    color: var(--cq-primary);
-    background: var(--cq-primary-subtle);
-    padding: 2px 7px;
-    border-radius: 999px;
+    color: var(--slack-cyan);
+    background: rgba(54, 197, 240, 0.15);
+    padding: 2px 8px;
+    border-radius: var(--slack-radius-pill);
+    border: 1px solid rgba(54, 197, 240, 0.3);
     animation: pulse 1.8s infinite;
 }
 
 @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    50% { opacity: 0.5; }
+}
+
+.cq-editor-shortcut-hint {
+    color: var(--slack-text-muted);
+}
+
+.cq-editor-shortcut-hint kbd {
+    background: var(--slack-surface-subtle);
+    border: 1px solid var(--slack-border);
+    color: var(--slack-text-secondary);
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
 }
 
 .cq-editor-workspace {
@@ -375,21 +448,21 @@ body.cq-collab-body {
     display: flex;
     overflow: hidden;
     position: relative;
-    background: var(--cq-editor-bg);
+    background: #141618;
 }
 
 .cq-line-numbers {
     width: 48px;
-    background: #090D16;
-    color: #475569;
-    font-family: var(--cq-font-mono);
+    background: #111315;
+    color: #4A4D53;
+    font-family: var(--slack-font-mono);
     font-size: 13px;
     line-height: 22px;
     padding: 12px 8px;
     text-align: right;
     user-select: none;
     overflow: hidden;
-    border-right: 1px solid #1E293B;
+    border-right: 1px solid #202327;
 }
 
 .cq-textarea-wrapper {
@@ -402,11 +475,11 @@ body.cq-collab-body {
 .cq-code-textarea {
     flex: 1;
     background: transparent;
-    color: var(--cq-editor-text);
+    color: #F8F8F8;
     border: none;
     outline: none;
     resize: none;
-    font-family: var(--cq-font-mono);
+    font-family: var(--slack-font-mono);
     font-size: 13px;
     line-height: 22px;
     padding: 12px 14px;
@@ -417,10 +490,10 @@ body.cq-collab-body {
 }
 
 .cq-code-textarea::placeholder {
-    color: #475569;
+    color: #45484F;
 }
 
-/* Collaborator Cursor Pin Overlay */
+/* Collaborator Cursor Flag */
 .cq-collaborator-cursor {
     position: absolute;
     pointer-events: none;
@@ -431,13 +504,13 @@ body.cq-collab-body {
 .cq-cursor-caret {
     width: 2px;
     height: 18px;
-    background: #3B82F6;
-    box-shadow: 0 0 6px #3B82F6;
+    background: var(--slack-cyan);
+    box-shadow: 0 0 6px var(--slack-cyan);
 }
 
 .cq-cursor-flag {
-    background: #3B82F6;
-    color: #FFFFFF;
+    background: var(--slack-cyan);
+    color: #000000;
     font-size: 10px;
     font-weight: 700;
     padding: 1px 5px;
@@ -448,29 +521,31 @@ body.cq-collab-body {
     white-space: nowrap;
 }
 
-/* ================= 3. SPLIT I/O PANEL (INPUT & OUTPUT) ================= */
+/* ==========================================================================
+   3. SPLIT I/O PANEL (CUSTOM INPUT & OUTPUT BOX)
+   ========================================================================== */
 .cq-io-panel {
-    height: 210px;
+    height: 200px;
     display: grid;
-    grid-template-columns: 1fr 1.2fr;
+    grid-template-columns: 1fr 1.25fr;
     gap: 10px;
     flex-shrink: 0;
 }
 
 .cq-io-box {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
+    background: var(--slack-surface);
+    border: 1px solid var(--slack-border);
+    border-radius: var(--slack-radius-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: var(--cq-shadow-sm);
+    box-shadow: var(--slack-shadow);
 }
 
 .cq-io-header {
     height: 34px;
-    background: var(--cq-surface-subtle);
-    border-bottom: 1px solid var(--cq-border);
+    background: var(--slack-surface-subtle);
+    border-bottom: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -480,45 +555,56 @@ body.cq-collab-body {
 }
 
 .cq-io-title {
-    color: var(--cq-text);
+    color: var(--slack-text-secondary);
 }
 
 .cq-io-textarea {
     flex: 1;
     border: none;
     resize: none;
-    font-family: var(--cq-font-mono);
+    font-family: var(--slack-font-mono);
     font-size: 12px;
     line-height: 1.5;
     padding: 8px 12px;
     outline: none;
-    background: var(--cq-surface);
-    color: var(--cq-text);
+    background: #141618;
+    color: #E2E8F0;
+}
+
+.cq-io-textarea:focus {
+    background: #141618;
+    color: #FFFFFF;
+    box-shadow: none;
+}
+
+.cq-io-textarea::placeholder {
+    color: #4A4D53;
 }
 
 .cq-exec-pill {
-    background: var(--cq-border);
-    color: var(--cq-text);
+    background: var(--slack-green-subtle);
+    color: var(--slack-green-light);
     font-size: 11px;
     padding: 1px 6px;
     border-radius: 4px;
-    font-family: var(--cq-font-mono);
+    font-family: var(--slack-font-mono);
+    border: 1px solid rgba(46, 182, 125, 0.3);
 }
 
 .cq-console-body {
     flex: 1;
     overflow-y: auto;
     padding: 8px 12px;
-    font-family: var(--cq-font-mono);
+    font-family: var(--slack-font-mono);
     font-size: 12px;
     line-height: 1.6;
-    background: #0B0F19;
+    background: #101214;
     color: #E2E8F0;
 }
 
 .cq-console-empty {
-    color: #64748B;
-    font-family: var(--cq-font-sans);
+    color: var(--slack-text-muted);
+    font-family: var(--slack-font-sans);
     font-size: 12px;
 }
 
@@ -528,13 +614,15 @@ body.cq-collab-body {
     word-break: break-all;
 }
 
-.cq-log-line.stdout { color: #38BDF8; }
+.cq-log-line.stdout { color: var(--slack-cyan); }
 .cq-log-line.stderr { color: #F87171; }
-.cq-log-line.system { color: #94A3B8; font-style: italic; }
+.cq-log-line.system { color: var(--slack-text-secondary); font-style: italic; }
 
-/* ================= 4. RIGHT COLUMN (VIDEO CAM & CHAT) ================= */
+/* ==========================================================================
+   4. RIGHT COLUMN (SLACK VIDEO CAM STAGE & PAIR CHAT)
+   ========================================================================== */
 .cq-sidebar-column {
-    width: 380px;
+    width: 390px;
     display: flex;
     flex-direction: column;
     padding: 10px 10px 10px 0;
@@ -545,50 +633,53 @@ body.cq-collab-body {
 /* Video Stage Card */
 .cq-stage-card {
     height: 270px;
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
+    border: 1px solid var(--slack-border);
+    border-radius: var(--slack-radius-lg);
     display: flex;
     flex-direction: column;
-    background: #090D16;
+    background: #111214;
     position: relative;
     overflow: hidden;
-    box-shadow: var(--cq-shadow-sm);
+    box-shadow: var(--slack-shadow);
     flex-shrink: 0;
 }
 
 .cq-stage-header {
     height: 32px;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(26, 29, 33, 0.9);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 10px;
-    color: #F8FAFC;
+    color: var(--slack-text);
     z-index: 20;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .cq-stage-title {
     font-size: 12px;
     font-weight: 600;
+    color: var(--slack-text-secondary);
 }
 
 .cq-stage-view {
     flex: 1;
     position: relative;
     overflow: hidden;
-    background: #000;
+    background: #0B0C0E;
 }
 
 .cq-screenshare-indicator {
     position: absolute;
     top: 8px;
     left: 8px;
-    background: rgba(0, 0, 0, 0.75);
-    color: #fff;
+    background: rgba(0, 0, 0, 0.85);
+    color: #FFFFFF;
     font-size: 11px;
     padding: 3px 8px;
     border-radius: 4px;
     z-index: 15;
+    border: 1px solid rgba(46, 182, 125, 0.4);
 }
 
 .cq-floating-reactions {
@@ -601,7 +692,7 @@ body.cq-collab-body {
 
 .cq-floating-emoji {
     position: absolute;
-    font-size: 26px;
+    font-size: 28px;
     animation: riseFade 2.2s forwards ease-out;
 }
 
@@ -611,10 +702,17 @@ body.cq-collab-body {
     100% { transform: translateY(-160px) scale(1); opacity: 0; }
 }
 
+/* Remote Video Tile */
 .cq-video-tile.remote {
     width: 100%;
     height: 100%;
     position: relative;
+    transition: box-shadow 0.25s ease;
+}
+
+/* Slack Glowing Active Speaker Ring */
+.cq-video-tile.remote.speaking {
+    box-shadow: inset 0 0 0 3px #2EB67D, 0 0 16px rgba(46, 182, 125, 0.5);
 }
 
 .cq-video-tile.remote video {
@@ -623,18 +721,24 @@ body.cq-collab-body {
     object-fit: cover;
 }
 
+/* Local Video Tile (PiP) */
 .cq-video-tile.local {
     position: absolute;
     bottom: 10px;
     right: 10px;
-    width: 90px;
-    height: 68px;
-    border-radius: 6px;
+    width: 96px;
+    height: 72px;
+    border-radius: 8px;
     overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
     z-index: 10;
-    background: #111;
+    background: #141618;
+    transition: box-shadow 0.25s ease;
+}
+
+.cq-video-tile.local.speaking {
+    box-shadow: 0 0 0 2px #2EB67D, 0 4px 12px rgba(0, 0, 0, 0.6);
 }
 
 .cq-video-tile.local video {
@@ -644,6 +748,7 @@ body.cq-collab-body {
     transform: scaleX(-1);
 }
 
+/* Fallback Avatar Placeholder (Slack Style) */
 .cq-avatar-placeholder {
     position: absolute;
     inset: 0;
@@ -651,100 +756,152 @@ body.cq-collab-body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #0F172A;
-    color: #F8FAFC;
+    background: #1A1D21;
+    color: #FFFFFF;
 }
 
 .cq-avatar-circle {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: #3B82F6;
+    width: 52px;
+    height: 52px;
+    border-radius: 10px;
+    background: var(--slack-aubergine);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     margin-bottom: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .cq-avatar-circle.sm {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     font-size: 11px;
     margin-bottom: 0;
 }
 
 .cq-tile-username {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
+    color: #FFFFFF;
 }
 
 .cq-tile-status {
     font-size: 11px;
-    color: #94A3B8;
+    color: var(--slack-text-muted);
+}
+
+/* Audio Wave Visualizer */
+.cq-audio-wave {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    height: 12px;
+    margin-top: 6px;
+}
+
+.cq-audio-bar {
+    width: 3px;
+    height: 100%;
+    background-color: var(--slack-green-light);
+    border-radius: 2px;
+    animation: wavePulse 0.7s ease-in-out infinite alternate;
+}
+
+.cq-audio-bar:nth-child(2) { animation-delay: 0.2s; }
+.cq-audio-bar:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes wavePulse {
+    0% { height: 3px; }
+    100% { height: 12px; }
 }
 
 .cq-tile-tag {
     position: absolute;
     bottom: 6px;
     left: 8px;
-    background: rgba(0, 0, 0, 0.6);
-    color: #fff;
-    font-size: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #FFFFFF;
+    font-size: 11px;
     font-weight: 600;
-    padding: 2px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
+    backdrop-filter: blur(4px);
 }
 
+.cq-speaker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--slack-text-muted);
+}
+
+.cq-speaker-dot.active {
+    background: var(--slack-green-light);
+    box-shadow: 0 0 6px var(--slack-green-light);
+}
+
+/* Slack Floating Media Controls Bar */
 .cq-media-controls-bar {
-    height: 44px;
-    background: rgba(15, 23, 42, 0.95);
+    height: 48px;
+    background: rgba(26, 29, 33, 0.95);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     position: relative;
-    border-top: 1px solid #1E293B;
 }
 
 .btn-cq-ctrl {
-    background: #1E293B;
-    border: 1px solid #334155;
-    color: #F8FAFC;
-    width: 32px;
-    height: 32px;
+    background: #2C3136;
+    border: 1px solid #383A40;
+    color: #F8F8F8;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     transition: all 0.15s ease;
 }
 
 .btn-cq-ctrl:hover {
-    background: #334155;
+    background: #3B4048;
+    color: #FFFFFF;
 }
 
 .btn-cq-ctrl.active-danger {
-    background: var(--cq-danger);
-    border-color: var(--cq-danger);
+    background: var(--slack-red) !important;
+    border-color: var(--slack-red) !important;
+    color: #FFFFFF !important;
+}
+
+.btn-cq-ctrl.active-success {
+    background: var(--slack-green) !important;
+    border-color: var(--slack-green) !important;
+    color: #FFFFFF !important;
 }
 
 .cq-emoji-popover {
     position: absolute;
-    bottom: 48px;
-    background: #1E293B;
-    border: 1px solid #334155;
+    bottom: 52px;
+    background: var(--slack-surface-elevated);
+    border: 1px solid var(--slack-border);
     padding: 6px;
-    border-radius: 8px;
+    border-radius: var(--slack-radius-pill);
     display: flex;
     gap: 6px;
-    box-shadow: var(--cq-shadow-md);
+    box-shadow: var(--slack-shadow);
     z-index: 40;
 }
 
@@ -753,31 +910,33 @@ body.cq-collab-body {
     border: none;
     font-size: 18px;
     cursor: pointer;
-    padding: 3px;
+    padding: 3px 6px;
     border-radius: 4px;
     transition: transform 0.1s ease;
 }
 
 .cq-emoji-btn:hover {
-    transform: scale(1.2);
+    transform: scale(1.25);
 }
 
-/* Chat Card in Right Column */
+/* ==========================================================================
+   5. SLACK PAIR CHAT BOX
+   ========================================================================== */
 .cq-chat-card {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius);
-    box-shadow: var(--cq-shadow-sm);
+    background: var(--slack-surface);
+    border: 1px solid var(--slack-border);
+    border-radius: var(--slack-radius-lg);
+    box-shadow: var(--slack-shadow);
 }
 
 .cq-chat-header {
     height: 38px;
-    background: var(--cq-surface-subtle);
-    border-bottom: 1px solid var(--cq-border);
+    background: var(--slack-surface-subtle);
+    border-bottom: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -787,15 +946,23 @@ body.cq-collab-body {
 .cq-chat-title {
     font-size: 13px;
     font-weight: 700;
+    color: var(--slack-text);
 }
 
 .cq-chat-badge {
     font-size: 10px;
     font-weight: 600;
-    color: var(--cq-success);
-    background: var(--cq-success-subtle);
-    padding: 1px 6px;
-    border-radius: 999px;
+    color: var(--slack-green-light);
+    background: var(--slack-green-subtle);
+    padding: 1px 7px;
+    border-radius: var(--slack-radius-pill);
+    border: 1px solid rgba(46, 182, 125, 0.3);
+}
+
+.cq-pulse-mini {
+    font-size: 6px;
+    color: var(--slack-green-light);
+    animation: pulse 1.5s infinite;
 }
 
 .cq-chat-messages {
@@ -805,210 +972,269 @@ body.cq-collab-body {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    background: var(--slack-surface);
 }
 
 .cq-chat-system-message {
-    background: var(--cq-surface-subtle);
-    color: var(--cq-text-muted);
+    background: var(--slack-surface-subtle);
+    color: var(--slack-text-secondary);
     font-size: 11px;
     text-align: center;
-    padding: 5px 8px;
+    padding: 6px 10px;
     border-radius: 6px;
-    border: 1px dashed var(--cq-border);
+    border: 1px dashed var(--slack-border);
 }
 
 .cq-chat-item {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    gap: 8px;
+}
+
+.cq-chat-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: var(--slack-aubergine);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.cq-chat-item.outgoing .cq-chat-avatar {
+    background: var(--slack-blue);
+}
+
+.cq-chat-content-wrap {
+    flex: 1;
+    min-width: 0;
 }
 
 .cq-chat-meta {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 6px;
-    font-size: 11px;
+    margin-bottom: 2px;
 }
 
 .cq-chat-sender {
     font-weight: 700;
-    color: var(--cq-text);
+    font-size: 12px;
+    color: var(--slack-text);
 }
 
 .cq-chat-time {
-    color: var(--cq-text-muted);
+    color: var(--slack-text-muted);
     font-size: 10px;
 }
 
 .cq-chat-bubble {
-    background: var(--cq-surface-subtle);
-    color: var(--cq-text);
+    color: #D1D2D3;
     font-size: 13px;
     line-height: 1.45;
-    padding: 7px 10px;
-    border-radius: 8px;
     word-break: break-word;
-    border: 1px solid var(--cq-border);
 }
 
-.cq-chat-item.outgoing .cq-chat-bubble {
-    background: var(--cq-primary-subtle);
-    border-color: rgba(37, 99, 235, 0.2);
-}
-
+/* Slack Formatted Code Snippet Block */
 .cq-chat-snippet {
-    background: #0B0F19;
-    color: #E2E8F0;
+    margin-top: 6px;
+    background: #141618;
+    border: 1px solid var(--slack-border);
     border-radius: 6px;
     overflow: hidden;
-    margin-top: 4px;
-    border: 1px solid #1E293B;
 }
 
 .cq-snippet-header {
-    height: 24px;
-    background: #1E293B;
+    height: 26px;
+    background: #1C1E22;
+    border-bottom: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 8px;
     font-size: 10px;
-    color: #94A3B8;
+    color: var(--slack-text-secondary);
+    font-family: var(--slack-font-mono);
 }
 
 .cq-snippet-copy {
     background: transparent;
     border: none;
-    color: #38BDF8;
+    color: var(--slack-cyan);
     font-size: 10px;
     cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.cq-snippet-copy:hover {
+    background: rgba(54, 197, 240, 0.15);
 }
 
 .cq-snippet-code {
-    padding: 6px 8px;
-    font-family: var(--cq-font-mono);
+    margin: 0;
+    padding: 8px 10px;
+    font-family: var(--slack-font-mono);
     font-size: 11px;
+    color: #E2E8F0;
     white-space: pre-wrap;
     max-height: 120px;
     overflow-y: auto;
-    margin: 0;
 }
 
+/* Slack Message Composer */
 .cq-chat-input-bar {
-    border-top: 1px solid var(--cq-border);
-    padding: 8px;
-    background: var(--cq-surface);
+    padding: 8px 10px;
+    background: var(--slack-surface-subtle);
+    border-top: 1px solid var(--slack-border);
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 6px;
 }
 
 .btn-cq-chat-tool {
-    background: var(--cq-surface-subtle);
-    border: 1px solid var(--cq-border);
-    color: var(--cq-text-muted);
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
+    background: transparent;
+    border: none;
+    color: var(--slack-text-secondary);
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-size: 12px;
-    flex-shrink: 0;
+    transition: all 0.15s ease;
 }
 
 .btn-cq-chat-tool:hover {
-    background: var(--cq-surface-hover);
-    color: var(--cq-text);
+    background: var(--slack-surface-hover);
+    color: var(--slack-text);
 }
 
 .cq-chat-textarea {
-    resize: none;
+    flex: 1;
+    background: #141618;
+    border: 1px solid var(--slack-border);
+    border-radius: 6px;
+    color: #FFFFFF;
     font-size: 12px;
     padding: 6px 10px;
-    border-radius: 6px;
-    border-color: var(--cq-border);
-    max-height: 72px;
+    resize: none;
+    outline: none;
+    font-family: var(--slack-font-sans);
+}
+
+.cq-chat-textarea:focus {
+    background: #141618;
+    border-color: var(--slack-border-focus);
+    color: #FFFFFF;
+    box-shadow: none;
+}
+
+.cq-chat-textarea::placeholder {
+    color: var(--slack-text-muted);
 }
 
 .btn-cq-chat-send {
-    background: var(--cq-primary);
-    color: #fff;
+    background: var(--slack-green);
     border: none;
-    width: 32px;
-    height: 32px;
+    color: #FFFFFF;
+    width: 30px;
+    height: 30px;
     border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-size: 12px;
-    flex-shrink: 0;
+    transition: background 0.15s ease;
 }
 
 .btn-cq-chat-send:hover {
-    background: var(--cq-primary-hover);
+    background: var(--slack-green-hover);
 }
 
-/* Modals */
+/* ==========================================================================
+   6. SLACK MODAL STYLING
+   ========================================================================== */
 .cq-modal-content {
-    background: var(--cq-surface);
-    border: 1px solid var(--cq-border);
-    border-radius: var(--cq-radius-lg);
-    box-shadow: var(--cq-shadow-md);
+    background: var(--slack-surface-elevated);
+    border: 1px solid var(--slack-border);
+    border-radius: var(--slack-radius-lg);
+    color: var(--slack-text);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.cq-modal-content .modal-header {
+    border-bottom: 1px solid var(--slack-border);
+    padding: 14px 18px;
+}
+
+.cq-modal-content .modal-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.cq-modal-content .modal-footer {
+    border-top: 1px solid var(--slack-border);
+    padding: 12px 18px;
+}
+
+.cq-modal-content .btn-close {
+    filter: invert(1);
+    opacity: 0.7;
+}
+
+.cq-modal-content .btn-close:hover {
+    opacity: 1;
 }
 
 .cq-label {
     font-size: 12px;
     font-weight: 600;
-    color: var(--cq-text);
+    color: var(--slack-text-secondary);
 }
 
 .cq-input, .cq-textarea {
-    border: 1px solid var(--cq-border);
+    background: #141618;
+    border: 1px solid var(--slack-border);
+    color: #FFFFFF;
     border-radius: 6px;
     font-size: 13px;
-    color: var(--cq-text);
-    background: var(--cq-surface);
+}
+
+.cq-input:focus, .cq-textarea:focus {
+    background: #141618;
+    border-color: var(--slack-border-focus);
+    color: #FFFFFF;
+    box-shadow: none;
 }
 
 .cq-coauthor-note {
-    font-size: 12px;
-    color: var(--cq-text-muted);
+    font-size: 11px;
+    color: var(--slack-text-muted);
+    margin-top: 8px;
 }
 
-/* ================= 5. RESPONSIVE BREAKPOINTS ================= */
-@media (max-width: 992px) {
-    .cq-main-layout {
-        flex-direction: column;
-        overflow-y: auto;
-    }
-    .cq-sidebar-column {
-        width: 100%;
-        padding: 0 10px 10px 10px;
-    }
-    .cq-io-panel {
-        height: auto;
-        grid-template-columns: 1fr;
-    }
-    .cq-io-textarea {
-        height: 90px;
-    }
-    .cq-console-body {
-        height: 120px;
-    }
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
 
-@media (max-width: 600px) {
-    .cq-navbar {
-        padding: 0 8px;
-    }
-    .cq-room-pill {
-        display: none;
-    }
-    .cq-presence-status .cq-timer-pill,
-    .cq-presence-status .cq-peer-count {
-        display: none;
-    }
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #383A40;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4F5259;
 }

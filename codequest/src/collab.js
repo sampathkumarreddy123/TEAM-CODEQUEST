@@ -301,11 +301,20 @@
                 break;
 
             case "peer-status":
-                if (msg.peerId === remotePeerId) {
+                if (msg.peerId === remotePeerId || !remotePeerId) {
                     if (msg.isMuted !== undefined) {
-                        remoteAudioStatusIcon.innerHTML = msg.isMuted ?
-                            `<i class="fa-solid fa-microphone-slash text-danger"></i>` :
-                            `<i class="fa-solid fa-microphone text-success"></i>`;
+                        if (remoteAudioStatusIcon) {
+                            remoteAudioStatusIcon.innerHTML = msg.isMuted ?
+                                `<i class="fa-solid fa-microphone-slash text-danger"></i>` :
+                                `<i class="fa-solid fa-microphone text-success"></i>`;
+                        }
+                        if (msg.isMuted && remotePeerTile) {
+                            remotePeerTile.classList.remove("speaking");
+                            const wave = document.getElementById("remoteAudioWave");
+                            if (wave) wave.style.display = "none";
+                            const dot = document.getElementById("remoteSpeakerDot");
+                            if (dot) dot.classList.remove("active");
+                        }
                     }
                     if (msg.isVideoOff !== undefined) {
                         if (remoteVideoPlaceholder) {
@@ -607,11 +616,13 @@
                 localVideo.srcObject = localStream;
             }
             if (localVideoPlaceholder) localVideoPlaceholder.style.display = "none";
+            setupAudioActivityMonitor(localStream, localPeerTile, null, document.getElementById("localSpeakerDot"));
         } catch (err) {
             console.warn("Camera/mic access warning:", err.message);
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 if (localVideoPlaceholder) localVideoPlaceholder.style.display = "flex";
+                setupAudioActivityMonitor(localStream, localPeerTile, null, document.getElementById("localSpeakerDot"));
             } catch (aErr) {
                 console.warn("Microphone access warning:", aErr.message);
             }
@@ -639,6 +650,7 @@
                 if (remoteVideo) remoteVideo.srcObject = remoteMediaStream;
                 if (remoteAudio) remoteAudio.srcObject = remoteMediaStream;
                 if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "none";
+                setupAudioActivityMonitor(remoteMediaStream, remotePeerTile, document.getElementById("remoteAudioWave"), document.getElementById("remoteSpeakerDot"));
             }
         };
 
@@ -721,6 +733,48 @@
         if (initials) initials.textContent = name.charAt(0).toUpperCase();
     }
 
+    // -------------------------------------------------------------
+    // SLACK REAL-TIME AUDIO ACTIVITY & SPEAKING ANALYZER
+    // -------------------------------------------------------------
+    function setupAudioActivityMonitor(stream, tileElem, waveElem, dotElem) {
+        if (!stream || !stream.getAudioTracks().length) return null;
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return null;
+            const ctx = new AudioCtx();
+            const source = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+            source.connect(analyser);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            let isSpeaking = false;
+
+            const checkVolume = () => {
+                if (ctx.state === "suspended") ctx.resume().catch(() => {});
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) sum += dataArray[i];
+                const avg = sum / bufferLength;
+
+                const speakingNow = avg > 12;
+                if (speakingNow !== isSpeaking) {
+                    isSpeaking = speakingNow;
+                    if (tileElem) tileElem.classList.toggle("speaking", isSpeaking);
+                    if (waveElem) waveElem.style.display = isSpeaking ? "inline-flex" : "none";
+                    if (dotElem) dotElem.classList.toggle("active", isSpeaking);
+                }
+                requestAnimationFrame(checkVolume);
+            };
+            requestAnimationFrame(checkVolume);
+            return { ctx, analyser };
+        } catch (e) {
+            console.warn("Audio analyzer note:", e);
+            return null;
+        }
+    }
+
     // Media Controls: Mic, Camera, Screen Share
     if (toggleMicBtn) {
         toggleMicBtn.addEventListener("click", () => {
@@ -732,6 +786,11 @@
             toggleMicBtn.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash"></i>` : `<i class="fa-solid fa-microphone"></i>`;
             if (localAudioStatusIcon) {
                 localAudioStatusIcon.innerHTML = isMicMuted ? `<i class="fa-solid fa-microphone-slash text-danger"></i>` : `<i class="fa-solid fa-microphone text-success"></i>`;
+            }
+            if (isMicMuted && localPeerTile) {
+                localPeerTile.classList.remove("speaking");
+                const dot = document.getElementById("localSpeakerDot");
+                if (dot) dot.classList.remove("active");
             }
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: "peer-status", isMuted: isMicMuted }));
@@ -890,6 +949,8 @@
         if (!chatMessagesContainer) return;
         const isOutgoing = msg.fromPeerId === myPeerId || (msg.sender && currentUser.username && msg.sender.toLowerCase() === currentUser.username.toLowerCase());
         const timeStr = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+        const senderName = msg.sender || (isOutgoing ? currentUser.username : "Partner");
+        const initial = senderName.charAt(0).toUpperCase();
 
         const item = document.createElement("div");
         item.className = `cq-chat-item ${isOutgoing ? 'outgoing' : ''}`;
@@ -908,13 +969,16 @@
         }
 
         item.innerHTML = `
-            <div class="cq-chat-meta">
-                <span class="cq-chat-sender">${escapeHtml(msg.sender || "Partner")}</span>
-                <span class="cq-chat-time">${timeStr}</span>
-            </div>
-            <div class="cq-chat-bubble">
-                ${escapeHtml(msg.message)}
-                ${snippetHtml}
+            <div class="cq-chat-avatar">${escapeHtml(initial)}</div>
+            <div class="cq-chat-content-wrap">
+                <div class="cq-chat-meta">
+                    <span class="cq-chat-sender">${escapeHtml(senderName)}</span>
+                    <span class="cq-chat-time">${timeStr}</span>
+                </div>
+                <div class="cq-chat-bubble">
+                    ${escapeHtml(msg.message)}
+                    ${snippetHtml}
+                </div>
             </div>
         `;
         chatMessagesContainer.appendChild(item);
@@ -1018,8 +1082,25 @@
     function updatePeerCountDisplay() {
         if (!activePeersCounter) return;
         const count = remotePeerId ? 2 : 1;
-        activePeersCounter.textContent = `${count} in call`;
+        activePeersCounter.textContent = `${count} in huddle`;
     }
+
+    // Keyboard Shortcuts: 'M' for Mute, 'V' for Video, 'S' for Screen Share
+    window.addEventListener("keydown", (e) => {
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag === "textarea" || activeTag === "input" || activeTag === "select") return;
+
+        if (e.key === "m" || e.key === "M") {
+            e.preventDefault();
+            if (toggleMicBtn) toggleMicBtn.click();
+        } else if (e.key === "v" || e.key === "V") {
+            e.preventDefault();
+            if (toggleCamBtn) toggleCamBtn.click();
+        } else if (e.key === "s" || e.key === "S") {
+            e.preventDefault();
+            if (toggleScreenBtn) toggleScreenBtn.click();
+        }
+    });
 
     function startCallTimer() {
         if (callTimerInterval) clearInterval(callTimerInterval);

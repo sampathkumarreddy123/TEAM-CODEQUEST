@@ -20,18 +20,20 @@
 </head>
 <body class="cq-collab-body">
 
-    <!-- TOP NAVIGATION BAR -->
+    <!-- SLACK-STYLE HUDDLE TOP NAVIGATION BAR -->
     <header class="cq-navbar">
         <div class="cq-nav-left">
             <a href="dashboard.html" class="cq-brand" title="Back to Dashboard">
-                <img src="assets/codequest_logo.png" alt="Logo" class="cq-brand-logo" onerror="this.src='assets/logo.png'">
+                <div class="cq-slack-huddle-icon">
+                    <i class="fa-solid fa-headphones"></i>
+                </div>
                 <span class="cq-brand-title">CodeQuest</span>
                 <span class="cq-brand-badge">Huddle</span>
             </a>
 
-            <!-- Room Identifier Pill with 1-Click Copy -->
+            <!-- Slack Channel / Room Pill with 1-Click Copy -->
             <button class="cq-room-pill" id="copyInviteLinkBtn" title="Click to copy invite link">
-                <i class="fa-solid fa-link text-muted me-1"></i>
+                <i class="fa-solid fa-hashtag cq-hash-icon me-1"></i>
                 <span class="cq-room-id" id="displayRoomId">CQ-ROOM</span>
                 <i class="fa-regular fa-copy ms-2" id="copyIcon"></i>
                 <span class="cq-tooltip" id="copiedTooltip">Copied to clipboard!</span>
@@ -39,12 +41,12 @@
         </div>
 
         <div class="cq-nav-center">
-            <!-- Connection & Participant Status -->
+            <!-- Slack Live Presence & Call Timer -->
             <div class="cq-presence-status" id="connectionStatusPill">
                 <span class="cq-status-dot connected" id="connStatusDot"></span>
                 <span class="cq-status-text" id="connStatusText">In Huddle</span>
                 <span class="cq-timer-pill ms-2" id="huddleTimerBadge">00:00</span>
-                <span class="cq-peer-count ms-2" id="activePeersCounter">1 in call</span>
+                <span class="cq-peer-count ms-2" id="activePeersCounter">1 in huddle</span>
             </div>
         </div>
 
@@ -60,18 +62,18 @@
                 <option value="rust">Rust</option>
             </select>
 
-            <!-- Run Code Trigger -->
-            <button id="runCollabCodeBtn" class="btn btn-cq-primary" title="Execute code in sandbox with custom input">
+            <!-- Slack Green Run Code Trigger -->
+            <button id="runCollabCodeBtn" class="btn btn-slack-run" title="Execute code in sandbox with custom input">
                 <i class="fa-solid fa-play me-1"></i><span>Run Code</span>
             </button>
 
             <!-- Publish Solution Button -->
-            <button id="publishSolutionBtn" class="btn btn-cq-secondary" title="Publish collaborative solution to CodeQuest">
+            <button id="publishSolutionBtn" class="btn btn-slack-secondary" title="Publish collaborative solution to CodeQuest">
                 <i class="fa-solid fa-cloud-arrow-up me-1"></i><span>Publish</span>
             </button>
 
-            <!-- Leave Huddle Button -->
-            <a href="dashboard.html" class="btn btn-cq-danger" id="leaveRoomBtn" title="Leave Huddle">
+            <!-- Slack Red Leave Huddle Button -->
+            <a href="dashboard.html" class="btn btn-slack-leave" id="leaveRoomBtn" title="Leave Huddle">
                 <i class="fa-solid fa-phone-slash me-1"></i><span>Leave</span>
             </a>
         </div>
@@ -174,18 +176,24 @@
                     <!-- Floating Emoji Layer -->
                     <div class="cq-floating-reactions" id="huddleFloatingReactions"></div>
 
-                    <!-- Remote Peer Video Tile -->
+                    <!-- Remote Peer Video Tile with Slack Speaking Ring -->
                     <div class="cq-video-tile remote" id="remotePeerTile">
                         <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
-                        <!-- Fallback Avatar placeholder when camera is off -->
+                        <!-- Fallback Slack Avatar placeholder when camera is off -->
                         <div class="cq-avatar-placeholder" id="remoteVideoPlaceholder">
                             <div class="cq-avatar-circle" id="remoteAvatarCircle">
                                 <span id="remoteAvatarInitials">P</span>
                             </div>
                             <div class="cq-tile-username" id="remoteUserName">Partner</div>
-                            <div class="cq-tile-status" id="remotePlaceholderText">Waiting for partner...</div>
+                            <div class="cq-tile-status" id="remotePlaceholderText">Waiting for partner to join...</div>
+                            <div class="cq-audio-wave" id="remoteAudioWave" style="display: none;">
+                                <span class="cq-audio-bar"></span>
+                                <span class="cq-audio-bar"></span>
+                                <span class="cq-audio-bar"></span>
+                            </div>
                         </div>
-                        <div class="cq-tile-tag">
+                        <div class="cq-tile-tag" id="remoteTileTag">
+                            <span class="cq-speaker-dot" id="remoteSpeakerDot"></span>
                             <span id="remoteUserTagLabel">Partner</span>
                             <span id="remoteAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
@@ -199,7 +207,8 @@
                                 <span id="localAvatarInitials">You</span>
                             </div>
                         </div>
-                        <div class="cq-tile-tag">
+                        <div class="cq-tile-tag" id="localTileTag">
+                            <span class="cq-speaker-dot" id="localSpeakerDot"></span>
                             <span>You</span>
                             <span id="localAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
@@ -207,55 +216,55 @@
 
                 </div>
 
-                <!-- Video Controls Bar (Mic, Cam, Screen, Reaction) -->
+                <!-- Slack Floating Media Controls Dock (Mic, Cam, Screen, Reaction) -->
                 <div class="cq-media-controls-bar">
-                    <button id="toggleMicBtn" class="btn btn-cq-ctrl" title="Mute / Unmute" aria-label="Toggle Mic">
-                        <i class="fa-solid fa-microphone"></i>
+                    <button id="toggleMicBtn" class="btn btn-cq-ctrl" title="Mute / Unmute Mic (M)" aria-label="Toggle Mic">
+                        <i class="fa-solid fa-microphone" id="micBtnIcon"></i>
                     </button>
-                    <button id="toggleCamBtn" class="btn btn-cq-ctrl" title="Start / Stop Camera" aria-label="Toggle Camera">
-                        <i class="fa-solid fa-video"></i>
+                    <button id="toggleCamBtn" class="btn btn-cq-ctrl" title="Start / Stop Camera (V)" aria-label="Toggle Camera">
+                        <i class="fa-solid fa-video" id="camBtnIcon"></i>
                     </button>
-                    <button id="toggleScreenBtn" class="btn btn-cq-ctrl" title="Share Screen" aria-label="Share Screen">
-                        <i class="fa-solid fa-display"></i>
+                    <button id="toggleScreenBtn" class="btn btn-cq-ctrl" title="Share Screen (S)" aria-label="Share Screen">
+                        <i class="fa-solid fa-display" id="screenBtnIcon"></i>
                     </button>
                     <button id="toggleReactionBtn" class="btn btn-cq-ctrl" title="Send Emoji Reaction" aria-label="Emoji Reaction">
                         <i class="fa-regular fa-face-smile"></i>
                     </button>
-                    <!-- Emoji Picker Popover -->
+                    <!-- Slack Emoji Picker Popover -->
                     <div class="cq-emoji-popover" id="huddleReactionPopover" style="display: none;">
-                        <button class="cq-emoji-btn" data-emoji="👍">👍</button>
-                        <button class="cq-emoji-btn" data-emoji="🔥">🔥</button>
-                        <button class="cq-emoji-btn" data-emoji="💡">💡</button>
-                        <button class="cq-emoji-btn" data-emoji="🚀">🚀</button>
-                        <button class="cq-emoji-btn" data-emoji="👏">👏</button>
-                        <button class="cq-emoji-btn" data-emoji="❤️">❤️</button>
+                        <button class="cq-emoji-btn" data-emoji="👏" title="Applause">👏</button>
+                        <button class="cq-emoji-btn" data-emoji="🔥" title="Fire">🔥</button>
+                        <button class="cq-emoji-btn" data-emoji="🚀" title="Rocket">🚀</button>
+                        <button class="cq-emoji-btn" data-emoji="❤️" title="Love">❤️</button>
+                        <button class="cq-emoji-btn" data-emoji="💡" title="Idea">💡</button>
+                        <button class="cq-emoji-btn" data-emoji="😂" title="Joy">😂</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. PAIR CHAT BOX -->
+            <!-- 2. SLACK PAIR CHAT BOX -->
             <div class="cq-chat-card" id="huddleChatPanel">
                 <div class="cq-chat-header">
                     <div class="d-flex align-items-center gap-2">
-                        <i class="fa-regular fa-comments text-primary"></i>
-                        <span class="cq-chat-title">Pair Chat</span>
+                        <i class="fa-solid fa-hashtag text-muted"></i>
+                        <span class="cq-chat-title">pair-chat</span>
                     </div>
-                    <span class="cq-chat-badge">Real-time</span>
+                    <span class="cq-chat-badge"><i class="fa-solid fa-circle cq-pulse-mini me-1"></i>Live</span>
                 </div>
 
                 <!-- Message stream -->
                 <div class="cq-chat-messages" id="chatMessagesContainer">
                     <div class="cq-chat-system-message">
-                        Huddle chat initialized. Messages and code snippets sent here are shared live with your partner.
+                        <i class="fa-solid fa-headphones text-primary me-1"></i>Huddle chat initialized. Messages and code snippets sent here are shared live with your partner.
                     </div>
                 </div>
 
-                <!-- Message Input Form -->
+                <!-- Slack-Style Message Input Form -->
                 <form id="chatInputForm" class="cq-chat-input-bar">
                     <button type="button" id="insertEditorCodeBtn" class="btn btn-cq-chat-tool" title="Share current editor code snippet into chat">
                         <i class="fa-solid fa-code"></i>
                     </button>
-                    <textarea id="chatMessageInput" class="form-control cq-chat-textarea" rows="1" placeholder="Type a message or code snippet... (Enter to send, Shift+Enter for newline)"></textarea>
+                    <textarea id="chatMessageInput" class="form-control cq-chat-textarea" rows="1" placeholder="Message #huddle... (Enter to send, Shift+Enter for newline)"></textarea>
                     <button type="submit" class="btn btn-cq-chat-send" title="Send message" aria-label="Send">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
