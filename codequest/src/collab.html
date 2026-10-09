@@ -168,13 +168,20 @@
         <aside class="collab-side-dock" id="paneCollabMedia">
             
             <!-- Video Call Grid -->
-            <div class="video-conference-card">
+            <div class="video-conference-card" id="videoConferenceCard">
                 <div class="video-card-header">
-                    <span class="card-title-text"><i class="fa-solid fa-video me-1 text-danger"></i>Face-to-Face Live</span>
-                    <span class="webrtc-badge" id="webrtcStatusBadge">Ready</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="card-title-text"><i class="fa-solid fa-video me-1 text-danger"></i>Face-to-Face Live</span>
+                        <span class="webrtc-badge" id="webrtcStatusBadge">Ready</span>
+                    </div>
+                    <div class="video-header-actions">
+                        <button id="toggleVideoLayoutBtn" class="btn-video-expand" title="Expand / Maximize Video View" type="button">
+                            <i class="fa-solid fa-expand me-1" id="expandVideoIcon"></i><span id="expandVideoText">Expand</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="video-grid-container">
+                <div class="video-grid-container" id="videoGridContainer">
                     <!-- Remote Peer Video (Large Primary) -->
                     <div class="video-box remote-video-box" id="remoteVideoContainer">
                         <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
@@ -186,26 +193,23 @@
                                 <i class="fa-solid fa-user-astronaut"></i>
                             </div>
                             <div class="placeholder-text" id="remotePlaceholderText">Waiting for partner to join...</div>
-                            <button id="invitePartnerBtn" class="btn-invite-partner">
-                                <i class="fa-solid fa-link me-1"></i>Copy Invite Link
-                            </button>
                         </div>
-                        <div class="video-user-tag">
+                        <div class="video-user-tag" id="remoteUserTag">
                             <span id="remoteUserName"><i class="fa-solid fa-user me-1"></i>Partner</span>
                             <span id="remoteAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
 
                     <!-- Local User Video (Picture-in-Picture Tile) -->
-                    <div class="video-box local-video-box" id="localVideoContainer">
+                    <div class="video-box local-video-box" id="localVideoContainer" title="Click to swap video view">
                         <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
                         <div class="video-placeholder" id="localVideoPlaceholder" style="display: none;">
                             <div class="placeholder-avatar-sm">
                                 <i class="fa-solid fa-user"></i>
                             </div>
                         </div>
-                        <div class="video-user-tag">
-                            <span>You</span>
+                        <div class="video-user-tag" id="localUserTag">
+                            <span id="localUserNameTag">You</span>
                             <span id="localAudioStatusIcon" class="ms-1"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
@@ -219,8 +223,11 @@
                     <button id="toggleCamBtn" class="btn-call-ctrl is-active" title="Turn Camera On/Off" aria-label="Toggle Camera">
                         <i class="fa-solid fa-video"></i>
                     </button>
-                    <button id="toggleScreenBtn" class="btn-call-ctrl d-none d-md-flex" title="Share Screen" aria-label="Share Screen">
+                    <button id="toggleScreenBtn" class="btn-call-ctrl" title="Share Screen" aria-label="Share Screen">
                         <i class="fa-solid fa-display"></i>
+                    </button>
+                    <button id="swapVideoBtn" class="btn-call-ctrl" title="Swap Main & PIP Cameras" aria-label="Swap Cameras">
+                        <i class="fa-solid fa-repeat"></i>
                     </button>
                 </div>
             </div>
@@ -229,13 +236,6 @@
             <div class="collab-chat-card">
                 <div class="chat-card-header">
                     <span><i class="fa-solid fa-comments me-1 text-primary"></i>Pair Chat & Notes</span>
-                </div>
-
-                <!-- Quick Action Chips -->
-                <div class="quick-snippets-bar">
-                    <button class="btn-quick-chip" data-msg="💡 Check line 10 — verify variable names!">"Check line 10"</button>
-                    <button class="btn-quick-chip" data-msg="🚀 Let's run the code and check console output.">"Run & Test"</button>
-                    <button class="btn-quick-chip" data-msg="🎉 Bug solved! Ready to publish.">"Solved! 🎉"</button>
                 </div>
 
                 <div class="chat-messages-container" id="chatMessagesContainer">

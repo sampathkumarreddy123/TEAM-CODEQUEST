@@ -2000,6 +2000,8 @@
                             this.handleOutgoingDeclined(data);
                         } else if (data.type === "call-cancelled") {
                             this.handleIncomingCancelled(data);
+                        } else if (data.type === "call-busy-waiting") {
+                            showAppToast(`📞 @${data.caller || "Someone"} tried to call you (Line Busy).`);
                         }
                     } catch (e) {}
                 };

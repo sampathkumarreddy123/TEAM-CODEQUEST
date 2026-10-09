@@ -403,6 +403,10 @@
                     peerConnection = null;
                 }
                 break;
+
+            case "call-busy-waiting":
+                showToast(`📞 @${data.caller || "Someone"} tried to call you, but you're in this 1-on-1 call.`);
+                break;
         }
     }
 
@@ -946,6 +950,59 @@
         isScreenSharing = false;
         toggleScreenBtn.classList.remove("is-active");
         showToast("Screen sharing stopped");
+    }
+
+    // Video Layout & Camera Feed Swapping
+    const toggleVideoLayoutBtn = document.getElementById("toggleVideoLayoutBtn");
+    const videoConferenceCard = document.getElementById("videoConferenceCard");
+    const expandVideoIcon = document.getElementById("expandVideoIcon");
+    const expandVideoText = document.getElementById("expandVideoText");
+    const collabWorkspace = document.querySelector(".collab-workspace");
+    const swapVideoBtn = document.getElementById("swapVideoBtn");
+    const localVideoContainer = document.getElementById("localVideoContainer");
+    let isVideoSwapped = false;
+
+    if (toggleVideoLayoutBtn && videoConferenceCard) {
+        toggleVideoLayoutBtn.addEventListener("click", () => {
+            const isExpanded = videoConferenceCard.classList.toggle("is-expanded");
+            if (collabWorkspace) {
+                collabWorkspace.classList.toggle("video-focus", isExpanded);
+            }
+            if (expandVideoIcon) {
+                expandVideoIcon.className = isExpanded ? "fa-solid fa-compress me-1" : "fa-solid fa-expand me-1";
+            }
+            if (expandVideoText) {
+                expandVideoText.textContent = isExpanded ? "Compact" : "Expand";
+            }
+            showToast(isExpanded ? "🔍 Maximize Video (Focus Call Mode)" : "💻 Compact Video (Editor Mode)");
+        });
+    }
+
+    function toggleSwapVideos() {
+        isVideoSwapped = !isVideoSwapped;
+        if (isVideoSwapped) {
+            remoteVideo.srcObject = localStream;
+            localVideo.srcObject = remoteMediaStream;
+            showToast("🔄 Swapped camera feeds (You are in main view)");
+        } else {
+            remoteVideo.srcObject = remoteMediaStream;
+            localVideo.srcObject = localStream;
+            showToast("🔄 Reset camera feeds (Partner in main view)");
+        }
+    }
+
+    if (swapVideoBtn) {
+        swapVideoBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleSwapVideos();
+        });
+    }
+
+    if (localVideoContainer) {
+        localVideoContainer.addEventListener("click", (e) => {
+            e.stopPropagation();
+            toggleSwapVideos();
+        });
     }
 
     // -------------------------------------------------------------

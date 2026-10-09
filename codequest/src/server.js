@@ -1758,6 +1758,73 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
             return res.status(400).json({ error: "You cannot call yourself. Open in another browser or invite a partner." });
         }
 
+        // Check if recipient (or caller) is already in an active 1-on-1 call
+        const targetIdStr = String(target._id);
+        const targetNameLower = String(target.username).toLowerCase();
+        let targetInCall = false;
+        let activeRoomFound = null;
+
+        // 1. Check live collab rooms for 2+ members
+        for (const [rId, room] of collabRooms.entries()) {
+            if (room.peers && room.peers.size >= 2) {
+                for (const peer of room.peers.values()) {
+                    if (peer.user) {
+                        const pId = String(peer.user.id || peer.user._id || "");
+                        const pName = String(peer.user.username || "").toLowerCase();
+                        if ((pId && pId === targetIdStr) || (pName && pName === targetNameLower)) {
+                            targetInCall = true;
+                            activeRoomFound = room;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (targetInCall) break;
+        }
+
+        // 2. Also check activeCalls map for ongoing accepted calls
+        if (!targetInCall) {
+            const now = Date.now();
+            for (const call of activeCalls.values()) {
+                if (call.status === "accepted" && (now - call.createdAt < 7200000)) {
+                    const isTarget = (call.target && (String(call.target.id) === targetIdStr || String(call.target.username).toLowerCase() === targetNameLower)) ||
+                                     (call.caller && (String(call.caller.id) === targetIdStr || String(call.caller.username).toLowerCase() === targetNameLower));
+                    if (isTarget) {
+                        targetInCall = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (targetInCall) {
+            const busyAlert = {
+                type: "call-busy-waiting",
+                caller: req.user.username,
+                callerAvatar: req.user.avatarUrl || "default-avatar.png",
+                message: `@${req.user.username} tried to call you (User Busy in 1-on-1 call).`,
+                timestamp: Date.now()
+            };
+
+            // Notify recipient's socket if connected
+            notifyUserSocket(targetIdStr, busyAlert);
+            notifyUserSocket(target.username, busyAlert);
+
+            // Broadcast into their live collab room so both users in call see the alert
+            if (activeRoomFound && activeRoomFound.peers) {
+                activeRoomFound.peers.forEach((peer) => {
+                    if (peer.ws.readyState === WebSocket.OPEN) {
+                        peer.ws.send(JSON.stringify(busyAlert));
+                    }
+                });
+            }
+
+            return res.status(409).json({
+                error: `@${target.username} is currently in another 1-on-1 call. Line busy!`,
+                busy: true
+            });
+        }
+
         const roomId = "CALL-" + Math.floor(100000 + Math.random() * 900000);
         const callId = "call_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7);
 
