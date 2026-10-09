@@ -3,282 +3,607 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Live Pair Debug Huddle | CodeQuest</title>
+    <title>CodeQuest Huddle | Premium Collaborative Workspace</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="assets/logo.png">
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Base styles and feature styles -->
+    <!-- Platform & Collab CSS -->
     <link rel="stylesheet" href="codequest-features.css">
-    <link rel="stylesheet" href="collab.css?v=2.6.0">
+    <link rel="stylesheet" href="collab.css?v=3.0.0">
 </head>
-<body class="collab-body">
+<body class="cq-collab-body">
 
-    <!-- Top Slack-Style Navigation Header -->
-    <header class="collab-navbar">
-        <div class="collab-nav-left">
-            <a href="dashboard.html" class="collab-brand" title="Back to Dashboard">
-                <img src="assets/codequest_logo.png" alt="Logo" class="brand-logo" onerror="this.src='assets/logo.png'">
-                <span class="brand-text">CodeQuest</span>
+    <!-- TOP NAVIGATION BAR -->
+    <header class="cq-navbar">
+        <div class="cq-nav-left">
+            <a href="dashboard.html" class="cq-brand" title="Back to Dashboard">
+                <img src="assets/codequest_logo.png" alt="Logo" class="cq-brand-logo" onerror="this.src='assets/logo.png'">
+                <div class="cq-brand-meta">
+                    <span class="cq-brand-title">CodeQuest</span>
+                    <span class="cq-brand-badge">Huddle</span>
+                </div>
             </a>
-            <div class="slack-channel-pill" id="copyInviteLinkBtn" title="Click to copy invite link">
-                <i class="fa-solid fa-hashtag text-secondary me-1"></i>
-                <span class="room-pill-id" id="displayRoomId">huddle-room</span>
-                <i class="fa-regular fa-copy copy-icon ms-2" id="copyIcon"></i>
-                <span class="copied-tooltip" id="copiedTooltip">Copied!</span>
-            </div>
+
+            <!-- Room Identifier Pill with 1-Click Copy -->
+            <button class="cq-room-pill" id="copyInviteLinkBtn" title="Click to copy invite link">
+                <i class="fa-solid fa-link text-muted me-1"></i>
+                <span class="cq-room-id" id="displayRoomId">CQ-ROOM</span>
+                <i class="fa-regular fa-copy ms-2" id="copyIcon"></i>
+                <span class="cq-tooltip" id="copiedTooltip">Copied to clipboard!</span>
+            </button>
         </div>
 
-        <div class="collab-nav-center">
-            <div class="huddle-status-pill" id="connectionStatusPill">
-                <span class="huddle-status-dot" id="connStatusDot"></span>
-                <span id="connStatusText">In Huddle</span>
-                <span class="huddle-timer-badge ms-2" id="huddleTimerBadge">00:00</span>
-                <span class="huddle-peer-count ms-2" id="activePeersCounter">1 in huddle</span>
-            </div>
-        </div>
+        <!-- Center: Primary Workspace Tab Navigation -->
+        <nav class="cq-workspace-tabs" id="workspaceTabsNav" aria-label="Workspace Views">
+            <button class="cq-tab-btn active" data-tab="editor" id="tabBtnEditor">
+                <i class="fa-solid fa-code me-1"></i><span>Editor</span>
+            </button>
+            <button class="cq-tab-btn" data-tab="testlab" id="tabBtnTestLab">
+                <i class="fa-solid fa-flask-vial me-1"></i><span>Test Lab</span>
+                <span class="cq-tab-badge" id="testCasesCounterBadge">2</span>
+            </button>
+            <button class="cq-tab-btn" data-tab="publish" id="tabBtnPublish">
+                <i class="fa-solid fa-cloud-arrow-up me-1"></i><span>Publish</span>
+                <span class="cq-draft-dot" id="publishDraftStatusDot" title="Draft active"></span>
+            </button>
+            <button class="cq-tab-btn" data-tab="history" id="tabBtnHistory">
+                <i class="fa-solid fa-clock-rotate-left me-1"></i><span>History</span>
+            </button>
+            <button class="cq-tab-btn" data-tab="copilot" id="tabBtnCopilot">
+                <i class="fa-solid fa-robot me-1"></i><span>AI Copilot</span>
+            </button>
+            <button class="cq-tab-btn" data-tab="notes" id="tabBtnNotes">
+                <i class="fa-solid fa-bookmark me-1"></i><span>Memory</span>
+            </button>
+        </nav>
 
-        <div class="collab-nav-right">
-            <!-- Run Code Button -->
-            <button id="runCollabCodeBtn" class="btn btn-slack-action btn-slack-run" title="Run code in shared sandbox">
+        <!-- Right: Actions & Huddle Controls -->
+        <div class="cq-nav-right">
+            <!-- Connection & Participant Status -->
+            <div class="cq-presence-status" id="connectionStatusPill">
+                <span class="cq-status-dot connected" id="connStatusDot"></span>
+                <span class="cq-status-text" id="connStatusText">In Huddle</span>
+                <span class="cq-timer-pill ms-2" id="huddleTimerBadge">00:00</span>
+                <span class="cq-peer-count ms-2" id="activePeersCounter">1 in call</span>
+            </div>
+
+            <!-- Run Code Trigger -->
+            <button id="runCollabCodeBtn" class="btn btn-cq-primary" title="Execute code in sandbox">
                 <i class="fa-solid fa-play me-1"></i><span>Run</span>
             </button>
 
-            <!-- Publish Solution Button (Opens on Both Systems) -->
-            <button id="publishSolutionBtn" class="btn btn-slack-action btn-slack-publish" title="Publish collaborative solution (Opens on both screens)">
-                <i class="fa-solid fa-cloud-arrow-up me-1"></i><span class="d-none d-sm-inline">Publish</span>
+            <!-- Toggle Video Stage -->
+            <button id="toggleHuddleDockBtn" class="btn btn-cq-ghost active" title="Toggle Huddle Video Panel" aria-label="Toggle Video">
+                <i class="fa-solid fa-video"></i>
+            </button>
+
+            <!-- Toggle Chat Drawer -->
+            <button id="toggleChatDrawerBtn" class="btn btn-cq-ghost" title="Toggle Huddle Chat" aria-label="Toggle Chat">
+                <i class="fa-regular fa-comment-dots"></i>
+                <span class="cq-unread-bubble" id="chatUnreadBadge" style="display: none;">0</span>
             </button>
 
             <!-- Leave Huddle Button -->
-            <a href="dashboard.html" class="btn btn-slack-action btn-slack-leave" id="leaveRoomBtn" title="Leave Huddle">
+            <a href="dashboard.html" class="btn btn-cq-danger" id="leaveRoomBtn" title="Leave Huddle">
                 <i class="fa-solid fa-phone-slash me-1"></i><span>Leave</span>
             </a>
         </div>
     </header>
 
-    <!-- Mobile View Mode Switcher -->
-    <nav class="mobile-view-tabs-bar d-lg-none" aria-label="Mobile View Switcher">
-        <button class="mobile-view-btn active" data-view="editor" id="mTabEditor">
-            <i class="fa-solid fa-code me-1"></i>Code & Console
-        </button>
-        <button class="mobile-view-btn" data-view="media" id="mTabMedia">
-            <i class="fa-solid fa-video me-1"></i>Huddle & Chat
-            <span class="mobile-unread-dot" id="mobileUnreadDot" style="display: none;"></span>
-        </button>
-    </nav>
-
-    <!-- Main Workspace Grid -->
-    <main class="collab-workspace">
+    <!-- MAIN COLLABORATIVE WORKSPACE -->
+    <main class="cq-main-layout">
         
-        <!-- Left Pane: Code Editor & Console Drawer -->
-        <section class="collab-editor-pane" id="paneCollabEditor">
+        <!-- WORKSPACE CONTENT CONTAINER -->
+        <div class="cq-content-area" id="mainWorkspaceContent">
             
-            <!-- Editor Sub-Header -->
-            <div class="editor-header-bar">
-                <div class="editor-file-tab">
-                    <i class="fa-brands fa-js text-warning me-2" id="fileTabIcon"></i>
-                    <span id="fileTabName" class="file-name">solution.js</span>
-                    <span class="sync-badge" id="syncIndicator"><i class="fa-solid fa-check me-1"></i>Synced</span>
-                </div>
-                
-                <div class="editor-actions">
-                    <div class="lang-selector-wrap">
-                        <select id="editorLangSelect" class="slack-select-lang" aria-label="Programming Language">
-                            <option value="javascript">JavaScript</option>
-                            <option value="python">Python</option>
-                            <option value="cpp">C / C++</option>
-                            <option value="java">Java</option>
-                            <option value="html">HTML</option>
-                            <option value="css">CSS</option>
-                            <option value="json">JSON</option>
-                        </select>
+            <!-- ================= VIEW 1: CODE EDITOR ================= -->
+            <section class="cq-view-pane active" id="viewPaneEditor">
+                <div class="cq-editor-card">
+                    <!-- Editor Action Bar -->
+                    <div class="cq-editor-topbar">
+                        <div class="cq-editor-tab-meta">
+                            <i class="fa-brands fa-js cq-lang-icon" id="fileTabIcon"></i>
+                            <span class="cq-filename" id="fileTabName">solution.js</span>
+                            <span class="cq-sync-indicator synced" id="syncIndicator">
+                                <i class="fa-solid fa-check me-1"></i><span>Synced</span>
+                            </span>
+                            <span class="cq-partner-cursor-flag" id="partnerCursorFlag" style="display: none;">
+                                <i class="fa-solid fa-user-pen me-1"></i><span id="partnerCursorName">Partner</span> is typing
+                            </span>
+                        </div>
+                        <div class="cq-editor-tools">
+                            <select id="editorLangSelect" class="form-select cq-select-sm" aria-label="Programming Language">
+                                <option value="javascript">JavaScript (Node)</option>
+                                <option value="python">Python 3</option>
+                                <option value="cpp">C++ (GCC)</option>
+                                <option value="java">Java 21</option>
+                                <option value="go">Go</option>
+                                <option value="rust">Rust</option>
+                            </select>
+                            <button class="btn btn-cq-ghost-sm" id="createCheckpointQuickBtn" title="Save Time-Travel Checkpoint">
+                                <i class="fa-solid fa-bookmark me-1"></i>Checkpoint
+                            </button>
+                            <button class="btn btn-cq-ghost-sm" id="sendCodeToTestLabBtn" title="Test this code in Smart Test Lab">
+                                <i class="fa-solid fa-flask-vial me-1"></i>Test in Lab
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Code Editor Area -->
-            <div class="code-editor-wrapper">
-                <div class="editor-line-numbers" id="editorLineNumbers">1</div>
-                <textarea id="collabCodeInput" class="collab-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Type or paste code here to pair-debug in real-time..."></textarea>
-            </div>
-
-            <!-- Bottom Console Drawer -->
-            <div class="collab-console-drawer">
-                <div class="console-drawer-header">
-                    <div class="console-title">
-                        <i class="fa-solid fa-terminal me-2 text-secondary"></i>Console Output
+                    <!-- Code Area (Monaco/Ace Styled Native Editor) -->
+                    <div class="cq-editor-workspace">
+                        <div class="cq-line-numbers" id="editorLineNumbers">1</div>
+                        <div class="cq-textarea-wrapper">
+                            <textarea id="collabCodeInput" class="cq-code-textarea" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Write or paste your collaborative solution here..."></textarea>
+                            <!-- Visual Floating Collaborator Cursor Overlay -->
+                            <div class="cq-collaborator-cursor" id="collaboratorCursorElem" style="display: none;">
+                                <div class="cq-cursor-flag" id="collaboratorCursorBadge">@Partner</div>
+                                <div class="cq-cursor-caret"></div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="console-actions">
-                        <span id="collabExecTime" class="exec-time-pill" style="display: none;"></span>
-                        <button id="clearConsoleBtn" class="btn-console-clear" title="Clear console">
-                            <i class="fa-solid fa-trash-can me-1"></i>Clear
-                        </button>
-                    </div>
-                </div>
 
-                <div class="console-drawer-body">
-                    <div class="console-logs-list" id="consoleLogsList">
-                        <div class="console-empty-state">
-                            <i class="fa-solid fa-circle-play text-muted me-1"></i> Ready. Click <b>Run</b> to execute code.
+                    <!-- Adjustable Console Drawer -->
+                    <div class="cq-console-drawer" id="cqConsoleDrawer">
+                        <div class="cq-console-header">
+                            <div class="cq-console-title">
+                                <i class="fa-solid fa-terminal text-muted me-2"></i>Console Output
+                            </div>
+                            <div class="cq-console-actions">
+                                <span class="cq-exec-pill" id="collabExecTime" style="display: none;">0.00s</span>
+                                <button class="btn btn-cq-ghost-xs" id="clearConsoleBtn" title="Clear console">
+                                    <i class="fa-solid fa-trash-can me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cq-console-body" id="consoleLogsList">
+                            <div class="cq-console-empty">
+                                <i class="fa-solid fa-play text-muted me-2"></i>Sandbox ready. Click <b>Run</b> or press <b>Ctrl+Enter</b> to execute code.
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-        </section>
+            <!-- ================= VIEW 2: SMART TEST LAB ================= -->
+            <section class="cq-view-pane" id="viewPaneTestLab">
+                <div class="cq-lab-container">
+                    <div class="cq-lab-header">
+                        <div class="cq-lab-info">
+                            <h2 class="cq-pane-heading"><i class="fa-solid fa-flask-vial text-primary me-2"></i>Smart Test Lab</h2>
+                            <p class="cq-pane-sub">Verify boundary conditions, standard input, and expected outputs against the shared code.</p>
+                        </div>
+                        <div class="cq-lab-actions">
+                            <button class="btn btn-cq-secondary" id="importAiTestsBtn">
+                                <i class="fa-solid fa-robot me-1"></i>Generate AI Cases
+                            </button>
+                            <button class="btn btn-cq-secondary" id="addNewTestCaseBtn">
+                                <i class="fa-solid fa-plus me-1"></i>Add Test Case
+                            </button>
+                            <button class="btn btn-cq-primary" id="runAllTestsBtn">
+                                <i class="fa-solid fa-vial-circle-check me-1"></i>Run All Cases
+                            </button>
+                        </div>
+                    </div>
 
-        <!-- Right Pane: Slack Huddle Face-to-Face & Chat -->
-        <aside class="collab-side-dock" id="paneCollabMedia">
+                    <!-- Test Lab Summary Banner -->
+                    <div class="cq-lab-summary-bar" id="labSummaryBar">
+                        <div class="cq-lab-stat">
+                            <span class="cq-stat-label">Total Cases:</span>
+                            <span class="cq-stat-val" id="labTotalCount">2</span>
+                        </div>
+                        <div class="cq-lab-stat">
+                            <span class="cq-stat-label">Passed:</span>
+                            <span class="cq-stat-val text-success" id="labPassedCount">0</span>
+                        </div>
+                        <div class="cq-lab-stat">
+                            <span class="cq-stat-label">Failed:</span>
+                            <span class="cq-stat-val text-danger" id="labFailedCount">0</span>
+                        </div>
+                        <div class="cq-lab-stat">
+                            <span class="cq-stat-label">Execution Time:</span>
+                            <span class="cq-stat-val" id="labExecTimeVal">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Test Cases List -->
+                    <div class="cq-test-cases-list" id="testCasesList">
+                        <!-- Populated dynamically by collab.js -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 3: SHARED PUBLISHING WORKSPACE ================= -->
+            <section class="cq-view-pane" id="viewPanePublish">
+                <div class="cq-publish-container">
+                    <div class="cq-publish-header">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h2 class="cq-pane-heading mb-0"><i class="fa-solid fa-cloud-arrow-up text-primary me-2"></i>Shared Publishing Workspace</h2>
+                                <span class="cq-badge-draft" id="publishDraftStatusBadge">Shared Draft</span>
+                            </div>
+                            <p class="cq-pane-sub">Collaborate on the problem statement, formats, constraints, and verified solution code in real-time.</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-cq-secondary" id="importEditorCodeToDraftBtn" title="Copy code currently in Editor into this draft">
+                                <i class="fa-solid fa-file-import me-1"></i>Import from Editor
+                            </button>
+                            <button class="btn btn-cq-primary" id="publishChallengeSubmitBtn">
+                                <i class="fa-solid fa-paper-plane me-1"></i>Publish Challenge
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="cq-publish-form-grid">
+                        <!-- Left Column: Problem Metadata -->
+                        <div class="cq-publish-col">
+                            <div class="cq-form-card">
+                                <h3 class="cq-form-section-title"><i class="fa-solid fa-heading me-2 text-muted"></i>Title & Problem Overview</h3>
+                                <div class="mb-3">
+                                    <label for="publishTitleInput" class="form-label cq-label">Challenge Title <span class="text-danger">*</span></label>
+                                    <input type="text" id="publishTitleInput" class="form-control cq-input" placeholder="e.g. Optimized Two-Sum with O(N) Space Complexity">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="publishDescInput" class="form-label cq-label">Short Description / Subtitle</label>
+                                    <input type="text" id="publishDescInput" class="form-control cq-input" placeholder="Brief summary for challenge cards...">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="publishStatementInput" class="form-label cq-label">Problem Statement <span class="text-danger">*</span></label>
+                                    <textarea id="publishStatementInput" class="form-control cq-textarea" rows="6" placeholder="Provide a detailed, clear problem statement including objectives and background..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="cq-form-card">
+                                <h3 class="cq-form-section-title"><i class="fa-solid fa-list-check me-2 text-muted"></i>Input, Output & Constraints</h3>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-6">
+                                        <label for="publishInputFormat" class="form-label cq-label">Input Format</label>
+                                        <textarea id="publishInputFormat" class="form-control cq-textarea" rows="3" placeholder="First line contains N..."></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="publishOutputFormat" class="form-label cq-label">Output Format</label>
+                                        <textarea id="publishOutputFormat" class="form-control cq-textarea" rows="3" placeholder="Print the single integer result..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="publishConstraints" class="form-label cq-label">Constraints</label>
+                                    <input type="text" id="publishConstraints" class="form-control cq-input" placeholder="e.g. 1 <= N <= 10^5, -10^9 <= A[i] <= 10^9">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Sample I/O, Solution Code & Test Cases -->
+                        <div class="cq-publish-col">
+                            <div class="cq-form-card">
+                                <h3 class="cq-form-section-title"><i class="fa-solid fa-code-compare me-2 text-muted"></i>Sample Input, Output & Explanation</h3>
+                                <div class="row g-2 mb-3">
+                                    <div class="col-md-6">
+                                        <label for="publishSampleInput" class="form-label cq-label">Sample Input</label>
+                                        <textarea id="publishSampleInput" class="form-control cq-textarea font-monospace" rows="3" placeholder="4\n2 7 11 15\n9"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="publishSampleOutput" class="form-label cq-label">Sample Output</label>
+                                        <textarea id="publishSampleOutput" class="form-control cq-textarea font-monospace" rows="3" placeholder="0 1"></textarea>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="publishExplanation" class="form-label cq-label">Explanation</label>
+                                    <textarea id="publishExplanation" class="form-control cq-textarea" rows="2" placeholder="Because nums[0] + nums[1] == 9, we return [0, 1]..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="cq-form-card">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h3 class="cq-form-section-title mb-0"><i class="fa-solid fa-code me-2 text-muted"></i>Final Solution Code <span class="text-danger">*</span></h3>
+                                    <select id="publishLangSelect" class="form-select cq-select-xs">
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="python">Python</option>
+                                        <option value="cpp">C++</option>
+                                        <option value="java">Java</option>
+                                    </select>
+                                </div>
+                                <textarea id="publishSolutionCode" class="form-control cq-textarea font-monospace" rows="8" placeholder="// Click 'Import from Editor' or type solution code here..."></textarea>
+                                <div class="cq-coauthor-note mt-2" id="publishCoAuthorNote">
+                                    <i class="fa-solid fa-user-group me-1 text-primary"></i>Co-authored by both active developers in this session.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 4: TIME-TRAVEL HISTORY ================= -->
+            <section class="cq-view-pane" id="viewPaneHistory">
+                <div class="cq-history-container">
+                    <div class="cq-history-header">
+                        <div>
+                            <h2 class="cq-pane-heading"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Time-Travel Code History</h2>
+                            <p class="cq-pane-sub">View checkpoints, inspect diffs, and safely restore any previous version.</p>
+                        </div>
+                        <button class="btn btn-cq-primary" id="createManualCheckpointBtn">
+                            <i class="fa-solid fa-plus me-1"></i>Create New Checkpoint
+                        </button>
+                    </div>
+
+                    <div class="cq-history-grid">
+                        <!-- Checkpoint List -->
+                        <div class="cq-history-sidebar">
+                            <h3 class="cq-section-label">Checkpoints Timeline</h3>
+                            <div class="cq-checkpoint-timeline" id="checkpointTimelineList">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Diff / Code Preview -->
+                        <div class="cq-history-preview">
+                            <div class="cq-preview-header">
+                                <div>
+                                    <span class="cq-preview-title" id="selectedCheckpointTitle">Select a checkpoint to view</span>
+                                    <span class="cq-preview-author" id="selectedCheckpointAuthor"></span>
+                                </div>
+                                <button class="btn btn-cq-success" id="restoreSelectedCheckpointBtn" disabled>
+                                    <i class="fa-solid fa-rotate-left me-1"></i>Restore Version
+                                </button>
+                            </div>
+                            <div class="cq-preview-body">
+                                <pre class="cq-diff-viewer" id="checkpointCodeDiffViewer">// Select a checkpoint from the timeline to inspect code content...</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 5: AI DEBUGGING COPILOT ================= -->
+            <section class="cq-view-pane" id="viewPaneCopilot">
+                <div class="cq-copilot-container">
+                    <div class="cq-copilot-header">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h2 class="cq-pane-heading mb-0"><i class="fa-solid fa-robot text-primary me-2"></i>AI Debugging Copilot</h2>
+                                <span class="cq-copilot-badge" id="aiProviderBadge">Configuring...</span>
+                            </div>
+                            <p class="cq-pane-sub">Pair-programming AI assistant for error diagnosis, line-by-line inspection, and test case generation.</p>
+                        </div>
+                    </div>
+
+                    <!-- Quick Copilot Actions Bar -->
+                    <div class="cq-copilot-actions-bar">
+                        <button class="btn btn-cq-action-card" id="aiActionExplainError">
+                            <i class="fa-solid fa-bug-slash text-danger"></i>
+                            <div>
+                                <div class="fw-semibold">Explain Error</div>
+                                <div class="small text-muted">Diagnose console/compiler exceptions</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-cq-action-card" id="aiActionReviewBugs">
+                            <i class="fa-solid fa-magnifying-glass-chart text-warning"></i>
+                            <div>
+                                <div class="fw-semibold">Review Code for Bugs</div>
+                                <div class="small text-muted">Boundary limits, infinite loops & leaks</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-cq-action-card" id="aiActionSuggestFix">
+                            <i class="fa-solid fa-wand-magic-sparkles text-primary"></i>
+                            <div>
+                                <div class="fw-semibold">Suggest Fix & Diff</div>
+                                <div class="small text-muted">Review proposed replacement code</div>
+                            </div>
+                        </button>
+                        <button class="btn btn-cq-action-card" id="aiActionGenerateTests">
+                            <i class="fa-solid fa-flask-vial text-success"></i>
+                            <div>
+                                <div class="fw-semibold">Generate Test Cases</div>
+                                <div class="small text-muted">Edge cases with 1-click Lab import</div>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Custom Prompt Input -->
+                    <div class="cq-copilot-prompt-card">
+                        <label for="aiCustomPromptInput" class="form-label cq-label">Custom Question or Request:</label>
+                        <div class="input-group">
+                            <input type="text" id="aiCustomPromptInput" class="form-control cq-input" placeholder="e.g. Optimize this for memory or explain how line 12 works...">
+                            <button class="btn btn-cq-primary" id="aiSendCustomPromptBtn">
+                                <i class="fa-solid fa-paper-plane me-1"></i>Ask Copilot
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Copilot Response & Results Card -->
+                    <div class="cq-copilot-result-card" id="copilotResultCard" style="display: none;">
+                        <div class="cq-result-header">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa-solid fa-comment-dots text-primary"></i>
+                                <span class="fw-semibold" id="copilotResponseTitle">Copilot Analysis</span>
+                            </div>
+                            <div class="cq-result-tools" id="copilotResultTools" style="display: none;">
+                                <button class="btn btn-cq-success-sm" id="copilotApplyFixBtn">
+                                    <i class="fa-solid fa-code-commit me-1"></i>Apply Fix to Editor
+                                </button>
+                                <button class="btn btn-cq-secondary-sm" id="copilotImportTestsBtn" style="display: none;">
+                                    <i class="fa-solid fa-flask me-1"></i>Add to Test Lab
+                                </button>
+                            </div>
+                        </div>
+                        <div class="cq-result-body" id="copilotResponseBody">
+                            <!-- Dynamic markdown / text / code block output -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================= VIEW 6: SESSION MEMORY & NOTES ================= -->
+            <section class="cq-view-pane" id="viewPaneNotes">
+                <div class="cq-notes-container">
+                    <div class="cq-notes-header">
+                        <div>
+                            <h2 class="cq-pane-heading"><i class="fa-solid fa-bookmark text-primary me-2"></i>Session Memory & Developer Growth</h2>
+                            <p class="cq-pane-sub">Preserve key technical decisions, shared pair objectives, and track session growth milestones.</p>
+                        </div>
+                    </div>
+
+                    <div class="cq-notes-grid">
+                        <!-- Left: Shared Notes & Objectives -->
+                        <div class="cq-notes-card">
+                            <h3 class="cq-section-label"><i class="fa-solid fa-pen-to-square me-2 text-muted"></i>Shared Pair Notes</h3>
+                            <textarea id="sessionNotesTextarea" class="form-control cq-textarea font-monospace" rows="12" placeholder="# Session Notes&#10;&#10;- Pair Goal: Solve problem under O(N log N)&#10;- Key decisions: Use Hash Map for two-pass lookup&#10;- Unresolved bugs: Check empty array condition"></textarea>
+                            <span class="cq-sync-note mt-2 d-block"><i class="fa-solid fa-rotate me-1"></i>Notes are synchronized live between both participants.</span>
+                        </div>
+
+                        <!-- Right: Checklist & Developer Growth Metrics -->
+                        <div class="cq-growth-card">
+                            <h3 class="cq-section-label"><i class="fa-solid fa-list-check me-2 text-muted"></i>Session Objectives</h3>
+                            <div class="cq-checklist-group" id="sessionObjectivesList">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div class="input-group mt-3">
+                                <input type="text" id="newObjectiveInput" class="form-control cq-input" placeholder="Add session goal...">
+                                <button class="btn btn-cq-secondary" id="addObjectiveBtn">Add</button>
+                            </div>
+
+                            <hr class="cq-divider my-4">
+
+                            <h3 class="cq-section-label"><i class="fa-solid fa-chart-line me-2 text-muted"></i>Developer Growth Summary</h3>
+                            <div class="cq-growth-stats">
+                                <div class="cq-growth-stat-box">
+                                    <div class="cq-stat-num" id="growthXpEarned">+120</div>
+                                    <div class="cq-stat-sub">Session XP</div>
+                                </div>
+                                <div class="cq-growth-stat-box">
+                                    <div class="cq-stat-num" id="growthTestsPassed">2/2</div>
+                                    <div class="cq-stat-sub">Tests Passed</div>
+                                </div>
+                                <div class="cq-growth-stat-box">
+                                    <div class="cq-stat-num" id="growthCheckpoints">1</div>
+                                    <div class="cq-stat-sub">Checkpoints</div>
+                                </div>
+                            </div>
+                            <div class="cq-achievement-pill mt-3">
+                                <i class="fa-solid fa-medal text-warning me-2"></i>
+                                <span><b>Active Milestone:</b> Pair Debug Champion (+50 XP)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- ================= DOCKABLE HUDDLE SIDEBAR (VIDEO & CHAT) ================= -->
+        <aside class="cq-huddle-dock" id="huddleDockPane">
             
-            <!-- Hidden Dedicated Audio Element for Clean WebRTC Voice Stream -->
+            <!-- Hidden Audio Element for WebRTC Voice -->
             <audio id="remoteAudio" autoplay playsinline></audio>
 
-            <!-- Huddle Video Stage -->
-            <div class="huddle-stage-container" id="huddleStageContainer">
-                
-                <div class="huddle-stage" id="huddleStage">
-                    
-                    <!-- Screen Share Indicator Banner -->
-                    <div class="screen-share-active-pill" id="screenShareActivePill" style="display: none;">
-                        <i class="fa-solid fa-display me-1 text-success"></i>
-                        <span id="screenShareUserText">Partner is sharing screen</span>
-                    </div>
-
-                    <!-- Fullscreen Stage Toggle Button (Upper Right) -->
-                    <button id="stageFullscreenBtn" class="btn-stage-fullscreen" title="Full Screen (Double-click stage also works)">
+            <!-- Video Stage Container -->
+            <div class="cq-stage-card" id="huddleStageContainer">
+                <div class="cq-stage-header">
+                    <span class="cq-stage-title"><i class="fa-solid fa-users-viewfinder me-2 text-primary"></i>Huddle Video</span>
+                    <button class="btn btn-cq-ghost-xs" id="stageFullscreenBtn" title="Toggle Fullscreen Video">
                         <i class="fa-solid fa-expand" id="stageFullscreenIcon"></i>
                     </button>
+                </div>
 
-                    <!-- Floating Emoji Burst Layer -->
-                    <div class="huddle-floating-reactions" id="huddleFloatingReactions"></div>
-
-                    <!-- Speaking While Muted Alert -->
-                    <div class="speaking-muted-alert" id="speakingMutedAlert" style="display: none;">
-                        <i class="fa-solid fa-microphone-slash me-1"></i>You are muted. Click mic to speak.
+                <div class="cq-stage-view" id="huddleStage">
+                    
+                    <!-- Screen Share Indicator -->
+                    <div class="cq-screenshare-indicator" id="screenShareActivePill" style="display: none;">
+                        <i class="fa-solid fa-display me-1 text-success"></i>
+                        <span id="screenShareUserText">Screen share active</span>
                     </div>
+
+                    <!-- Floating Emoji Layer -->
+                    <div class="cq-floating-reactions" id="huddleFloatingReactions"></div>
 
                     <!-- Remote Peer Tile -->
-                    <div class="huddle-tile remote-tile" id="remotePeerTile">
+                    <div class="cq-video-tile remote" id="remotePeerTile">
                         <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
-                        
-                        <!-- Fallback Avatar Card when Camera is Off or Connecting -->
-                        <div class="huddle-avatar-card" id="remoteVideoPlaceholder">
-                            <div class="huddle-avatar-circle" id="remoteAvatarCircle">
+                        <!-- Avatar placeholder when camera off -->
+                        <div class="cq-avatar-placeholder" id="remoteVideoPlaceholder">
+                            <div class="cq-avatar-circle" id="remoteAvatarCircle">
                                 <span id="remoteAvatarInitials">P</span>
                             </div>
-                            <div class="huddle-tile-name" id="remoteUserName">Partner</div>
-                            <div class="huddle-tile-sub" id="remotePlaceholderText">Waiting for partner to join...</div>
+                            <div class="cq-tile-username" id="remoteUserName">Partner</div>
+                            <div class="cq-tile-status" id="remotePlaceholderText">Connecting...</div>
                         </div>
-
-                        <!-- Tile Bottom Info Tag -->
-                        <div class="huddle-tile-tag">
-                            <span class="user-label" id="remoteUserTagLabel">Partner</span>
-                            <span class="mic-status" id="remoteAudioStatusIcon">
-                                <i class="fa-solid fa-microphone text-success"></i>
-                            </span>
+                        <div class="cq-tile-tag">
+                            <span id="remoteUserTagLabel">Partner</span>
+                            <span id="remoteAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
 
-                    <!-- Local User Tile (Picture-in-Picture / Floating) -->
-                    <div class="huddle-tile local-tile" id="localPeerTile">
+                    <!-- Local Peer Tile (PiP) -->
+                    <div class="cq-video-tile local" id="localPeerTile">
                         <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
-                        
-                        <!-- Fallback Avatar Card when Camera is Off -->
-                        <div class="huddle-avatar-card" id="localVideoPlaceholder" style="display: none;">
-                            <div class="huddle-avatar-circle sm">
+                        <div class="cq-avatar-placeholder sm" id="localVideoPlaceholder" style="display: none;">
+                            <div class="cq-avatar-circle sm">
                                 <span id="localAvatarInitials">You</span>
                             </div>
-                            <div class="huddle-tile-name" id="localUserNameTag">You</div>
                         </div>
-
-                        <!-- Tile Bottom Info Tag -->
-                        <div class="huddle-tile-tag">
-                            <span class="user-label">You</span>
-                            <span class="mic-status" id="localAudioStatusIcon">
-                                <i class="fa-solid fa-microphone text-success"></i>
-                            </span>
+                        <div class="cq-tile-tag">
+                            <span>You</span>
+                            <span id="localAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
 
                 </div>
 
-                <!-- Slack Floating Control Bar (Pill Toolbar) -->
-                <div class="huddle-controls-wrapper">
-                    
-                    <!-- Emoji Reaction Popover -->
-                    <div class="huddle-reaction-popover" id="huddleReactionPopover" style="display: none;">
-                        <button class="btn-reaction-emoji" data-emoji="👍" title="Thumbs Up">👍</button>
-                        <button class="btn-reaction-emoji" data-emoji="🔥" title="Fire">🔥</button>
-                        <button class="btn-reaction-emoji" data-emoji="💡" title="Idea">💡</button>
-                        <button class="btn-reaction-emoji" data-emoji="🚀" title="Rocket">🚀</button>
-                        <button class="btn-reaction-emoji" data-emoji="👏" title="Applause">👏</button>
-                        <button class="btn-reaction-emoji" data-emoji="❤️" title="Love">❤️</button>
-                    </div>
-
-                    <div class="huddle-controls-pill" id="huddleControlsPill">
-                        <!-- Mic Toggle -->
-                        <button id="toggleMicBtn" class="btn-huddle-ctrl" title="Mute / Unmute" aria-label="Toggle Microphone">
-                            <i class="fa-solid fa-microphone"></i>
-                        </button>
-
-                        <!-- Camera Toggle -->
-                        <button id="toggleCamBtn" class="btn-huddle-ctrl" title="Start / Stop Video" aria-label="Toggle Camera">
-                            <i class="fa-solid fa-video"></i>
-                        </button>
-
-                        <!-- Screen Share -->
-                        <button id="toggleScreenBtn" class="btn-huddle-ctrl" title="Share Screen" aria-label="Share Screen">
-                            <i class="fa-solid fa-display"></i>
-                        </button>
-
-                        <!-- Reaction Picker Toggle -->
-                        <button id="toggleReactionBtn" class="btn-huddle-ctrl" title="Send Reaction Emoji" aria-label="Send Reaction">
-                            <i class="fa-regular fa-face-smile"></i>
-                        </button>
-
-                        <!-- Full Screen Toggle -->
-                        <button id="ctrlFullscreenBtn" class="btn-huddle-ctrl" title="Toggle Fullscreen Video" aria-label="Toggle Fullscreen">
-                            <i class="fa-solid fa-expand" id="ctrlFullscreenIcon"></i>
-                        </button>
-
-                        <!-- Toggle In-Huddle Chat -->
-                        <button id="toggleChatBtn" class="btn-huddle-ctrl" title="In-Huddle Chat" aria-label="Toggle Chat">
-                            <i class="fa-regular fa-comment-dots"></i>
-                            <span class="chat-unread-badge" id="chatUnreadBadge" style="display: none;">0</span>
-                        </button>
-
-                        <!-- Leave / Hangup Button -->
-                        <button id="hangupBtn" class="btn-huddle-ctrl btn-huddle-hangup" title="Leave Huddle" aria-label="Leave Huddle">
-                            <i class="fa-solid fa-phone-slash"></i>
-                        </button>
+                <!-- Floating Video & Mic Controls Bar -->
+                <div class="cq-media-controls-bar">
+                    <button id="toggleMicBtn" class="btn btn-cq-ctrl" title="Mute / Unmute" aria-label="Toggle Mic">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <button id="toggleCamBtn" class="btn btn-cq-ctrl" title="Start / Stop Camera" aria-label="Toggle Camera">
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+                    <button id="toggleScreenBtn" class="btn btn-cq-ctrl" title="Share Screen" aria-label="Share Screen">
+                        <i class="fa-solid fa-display"></i>
+                    </button>
+                    <button id="toggleReactionBtn" class="btn btn-cq-ctrl" title="Reaction" aria-label="Emoji Reaction">
+                        <i class="fa-regular fa-face-smile"></i>
+                    </button>
+                    <!-- Emoji Picker Popover -->
+                    <div class="cq-emoji-popover" id="huddleReactionPopover" style="display: none;">
+                        <button class="cq-emoji-btn" data-emoji="👍">👍</button>
+                        <button class="cq-emoji-btn" data-emoji="🔥">🔥</button>
+                        <button class="cq-emoji-btn" data-emoji="💡">💡</button>
+                        <button class="cq-emoji-btn" data-emoji="🚀">🚀</button>
+                        <button class="cq-emoji-btn" data-emoji="👏">👏</button>
+                        <button class="cq-emoji-btn" data-emoji="❤️">❤️</button>
                     </div>
                 </div>
-
             </div>
 
-            <!-- In-Huddle Pair Chat Card -->
-            <div class="huddle-chat-panel" id="huddleChatPanel">
-                <div class="chat-header">
-                    <span><i class="fa-regular fa-comments me-2 text-secondary"></i>Huddle Chat</span>
-                    <button id="closeChatBtn" class="btn-close-chat" title="Minimize Chat">
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </button>
+            <!-- Fixed Chat Card -->
+            <div class="cq-chat-card" id="huddleChatPanel">
+                <div class="cq-chat-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fa-regular fa-comments text-primary"></i>
+                        <span class="cq-chat-title">Pair Chat</span>
+                    </div>
+                    <span class="cq-chat-badge">Real-time</span>
                 </div>
 
-                <div class="chat-messages-container" id="chatMessagesContainer">
-                    <div class="chat-system-message">
-                        Huddle connected. Chat messages and code snippets sent here are shared in real time.
+                <!-- Message stream -->
+                <div class="cq-chat-messages" id="chatMessagesContainer">
+                    <div class="cq-chat-system-message">
+                        Huddle room initialized. Messages and code snippets sent here are shared instantly with your partner.
                     </div>
                 </div>
 
-                <form id="chatInputForm" class="chat-input-form">
-                    <button type="button" id="insertEditorCodeBtn" class="btn-chat-tool" title="Share current code from editor into chat">
+                <!-- Message Input Form -->
+                <form id="chatInputForm" class="cq-chat-input-bar">
+                    <button type="button" id="insertEditorCodeBtn" class="btn btn-cq-chat-tool" title="Share current editor code into chat">
                         <i class="fa-solid fa-code"></i>
                     </button>
-                    <input type="text" id="chatMessageInput" class="chat-input-field" placeholder="Send message (or code snippet)..." autocomplete="off">
-                    <button type="submit" class="btn-chat-send" title="Send" aria-label="Send Message">
+                    <textarea id="chatMessageInput" class="form-control cq-chat-textarea" rows="1" placeholder="Type a message or code snippet... (Enter to send, Shift+Enter for newline)"></textarea>
+                    <button type="submit" class="btn btn-cq-chat-send" title="Send message" aria-label="Send">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
                 </form>
@@ -288,96 +613,62 @@
 
     </main>
 
-    <!-- Professional Publish / Export Modal (Opens on Both Systems) -->
-    <div class="modal fade" id="exportAnswerModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content collab-modal-content">
+    <!-- DIFF & RESTORE CONFIRMATION MODAL -->
+    <div class="modal fade" id="restoreConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cq-modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="fa-solid fa-cloud-arrow-up text-secondary me-2"></i>Publish Collaborative Code</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="modalCloseBtn"></button>
+                    <h5 class="modal-title"><i class="fa-solid fa-rotate-left text-warning me-2"></i>Confirm Version Restoration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    
-                    <!-- Mode Selector Nav Pills -->
-                    <ul class="nav nav-pills publish-nav-pills mb-3" id="publishModeTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="tabModeAnswer" data-bs-toggle="pill" data-bs-target="#modeAnswerContent" type="button" role="tab">
-                                <i class="fa-solid fa-reply me-1"></i> Post as Answer
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tabModeQuestion" data-bs-toggle="pill" data-bs-target="#modeQuestionContent" type="button" role="tab">
-                                <i class="fa-solid fa-circle-question me-1"></i> Ask as Question
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="tabModeVault" data-bs-toggle="pill" data-bs-target="#modeVaultContent" type="button" role="tab">
-                                <i class="fa-solid fa-bookmark me-1"></i> Save to Code Vault
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content">
-                        <!-- MODE 1: Post as Answer -->
-                        <div class="tab-pane fade show active" id="modeAnswerContent" role="tabpanel">
-                            <div class="target-question-card mb-3 p-3 rounded" id="targetQuestionCard">
-                                <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Target Question:</label>
-                                <div id="selectedQuestionDisplay" class="fw-semibold text-light">Loading question...</div>
-                                
-                                <div id="selectQuestionContainer" style="display: none;" class="mt-2">
-                                    <label for="chooseQuestionSelect" class="form-label small text-muted">Select an existing question to answer:</label>
-                                    <select id="chooseQuestionSelect" class="form-select collab-modal-input">
-                                        <option value="">-- Select Question --</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="exportNotesInput" class="form-label text-light small fw-semibold">Explanation Notes (Optional):</label>
-                                <textarea id="exportNotesInput" class="form-control collab-modal-input" rows="2" placeholder="Briefly explain the solution..."></textarea>
-                            </div>
-                        </div>
-
-                        <!-- MODE 2: Ask as New Question -->
-                        <div class="tab-pane fade" id="modeQuestionContent" role="tabpanel">
-                            <div class="mb-3">
-                                <label for="newQuestionTitleInput" class="form-label text-light small fw-semibold">Question Title / Topic:</label>
-                                <input type="text" id="newQuestionTitleInput" class="form-control collab-modal-input" placeholder="e.g., How to handle async WebRTC peer connection properly?">
-                            </div>
-                            <div class="mb-3">
-                                <label for="newQuestionTagsInput" class="form-label text-light small fw-semibold">Tags (comma-separated):</label>
-                                <input type="text" id="newQuestionTagsInput" class="form-control collab-modal-input" placeholder="javascript, webrtc, debugging">
-                            </div>
-                            <div class="mb-3">
-                                <label for="newQuestionDescInput" class="form-label text-light small fw-semibold">Description:</label>
-                                <textarea id="newQuestionDescInput" class="form-control collab-modal-input" rows="2" placeholder="Describe the problem you need help with..."></textarea>
-                            </div>
-                        </div>
-
-                        <!-- MODE 3: Save to Vault -->
-                        <div class="tab-pane fade" id="modeVaultContent" role="tabpanel">
-                            <div class="p-3 text-center rounded border border-secondary mb-3" style="background: rgba(255,255,255,0.02);">
-                                <i class="fa-solid fa-box-archive text-secondary fs-3 mb-2"></i>
-                                <h6 class="text-light fw-semibold">Save to Personal Code Vault</h6>
-                                <p class="text-secondary small mb-0">Bookmark this solution for your personal reference.</p>
-                            </div>
-                        </div>
+                    <p class="mb-2">Are you sure you want to restore this checkpoint to the active editor?</p>
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="fa-solid fa-shield-halved me-1"></i>Your current code will be automatically saved as a safety checkpoint first.
                     </div>
-
-                    <!-- Code Snippet Box (Synced between both developers) -->
-                    <div class="mb-3">
-                        <label for="exportCodePreview" class="form-label text-light small fw-semibold mb-1">
-                            <i class="fa-solid fa-code me-1 text-secondary"></i>Code Snippet to Publish:
-                        </label>
-                        <textarea id="exportCodePreview" class="form-control collab-modal-input font-monospace" rows="5" placeholder="// Code snippet..."></textarea>
-                    </div>
-
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-collab-modal-cancel" data-bs-dismiss="modal" id="modalCancelBtn">Cancel</button>
-                    <button type="button" id="confirmPublishBtn" class="btn btn-collab-modal-publish">
-                        <i class="fa-solid fa-check me-1"></i><span id="confirmPublishBtnText">Post as Answer</span>
+                    <button type="button" class="btn btn-cq-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-cq-primary" id="confirmRestoreActionBtn">Restore Checkpoint</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI PROPOSED FIX DIFF REVIEW MODAL -->
+    <div class="modal fade" id="aiDiffReviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content cq-modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>Review Proposed AI Fix</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2">Review the AI proposed code fix before applying it to the shared collaborative editor:</p>
+                    <pre class="cq-diff-viewer" id="aiDiffReviewCode" style="max-height: 380px; overflow-y: auto;"></pre>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-cq-secondary" data-bs-dismiss="modal">Discard</button>
+                    <button type="button" class="btn btn-cq-primary" id="confirmApplyAiFixBtn">
+                        <i class="fa-solid fa-check me-1"></i>Apply to Editor
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ROOM FULL / THIRD PERSON MODAL -->
+    <div class="modal fade" id="roomFullModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content cq-modal-content text-center p-4">
+                <div class="mb-3">
+                    <i class="fa-solid fa-door-closed text-warning display-4"></i>
+                </div>
+                <h4 class="fw-bold mb-2">Huddle Room is Full</h4>
+                <p class="text-muted mb-3" id="roomFullMessageText">This 1-on-1 pair session already has 2 connected developers. To prevent interference, only 2 developers can collaborate simultaneously.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="dashboard.html" class="btn btn-cq-secondary">Back to Dashboard</a>
+                    <button class="btn btn-cq-primary" id="createNewRoomFromFullBtn">Create New Room</button>
                 </div>
             </div>
         </div>
@@ -385,9 +676,9 @@
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- CodeQuest Features (for Sandbox Runner & Toast API) -->
-    <script src="codequest-features.js?v=2.3.0"></script>
+    <!-- CodeQuest Features (Toast API & Global Calling) -->
+    <script src="codequest-features.js?v=3.0.0"></script>
     <!-- Collab Engine Script -->
-    <script src="collab.js?v=2.6.0"></script>
+    <script src="collab.js?v=3.0.0"></script>
 </body>
 </html>

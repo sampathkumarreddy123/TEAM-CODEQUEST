@@ -1,41 +1,55 @@
-/* =============================================================
-   CODEQUEST LIVE COLLAB DEBUG HUDDLE (SLACK HUDDLE DESIGN)
-   - Slate & Charcoal Matte Aesthetic (No screaming bright colors)
-   - Resilient Face-to-Face WebRTC Video & Audio Stage
-   - Fullscreen Video & Screen Sharing Mode
-   - Real-Time Synchronized Code Editor & Console Drawer
-   - Slack-Style Floating Pill Control Bar & Emoji Reactions
-   - Robust Chat Panel with Code Snippets & Auto-Scroll
-   ============================================================= */
+/* ==========================================================================
+   CODEQUEST PREMIUM COLLABORATIVE PLATFORM DESIGN SYSTEM
+   - Predominantly Light Theme: Clean White & Soft Neutral Surfaces
+   - Palette: #F8FAFC (BG), #FFFFFF (Surface), #0F172A (Text), #2563EB (Primary)
+   - Fonts: Inter for UI & JetBrains Mono for Code
+   - Full Responsive Layout (Desktop, Tablet, Mobile 360px+)
+   ========================================================================== */
 
 :root {
-    --slack-bg: #1a1d21;
-    --slack-surface: #222529;
-    --slack-surface-hover: #2c3136;
-    --slack-surface-active: #32373d;
-    --slack-border: #2e3338;
-    --slack-border-subtle: #24282c;
-    --slack-text: #f8f9fa;
-    --slack-text-muted: #9b9d9f;
-    --slack-text-subtle: #6c7075;
-    --slack-emerald: #2eb67d;
-    --slack-emerald-bg: rgba(46, 182, 125, 0.12);
-    --slack-danger: #e01e5a;
-    --slack-danger-bg: rgba(224, 30, 90, 0.15);
-    --slack-aubergine: #4a154b;
-    --slack-indigo: #6160e6;
-    --slack-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --slack-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --cq-bg: #F8FAFC;
+    --cq-surface: #FFFFFF;
+    --cq-surface-subtle: #F1F5F9;
+    --cq-surface-hover: #E2E8F0;
+    --cq-border: #E2E8F0;
+    --cq-border-focus: #94A3B8;
+
+    --cq-text: #0F172A;
+    --cq-text-muted: #64748B;
+    --cq-text-light: #94A3B8;
+
+    --cq-primary: #2563EB;
+    --cq-primary-hover: #1D4ED8;
+    --cq-primary-subtle: #EFF6FF;
+
+    --cq-success: #16A34A;
+    --cq-success-subtle: #DCFCE7;
+    --cq-warning: #F59E0B;
+    --cq-warning-subtle: #FEF3C7;
+    --cq-danger: #DC2626;
+    --cq-danger-subtle: #FEE2E2;
+
+    --cq-editor-bg: #0F172A;
+    --cq-editor-surface: #1E293B;
+    --cq-editor-text: #F8FAFC;
+
+    --cq-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --cq-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    --cq-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --cq-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --cq-radius: 8px;
+    --cq-radius-lg: 12px;
 }
 
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
-body.collab-body {
-    background-color: var(--slack-bg);
-    color: var(--slack-text);
-    font-family: var(--slack-font);
+body.cq-collab-body {
+    background-color: var(--cq-bg);
+    color: var(--cq-text);
+    font-family: var(--cq-font-sans);
     margin: 0;
     padding: 0;
     height: 100vh;
@@ -46,11 +60,11 @@ body.collab-body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ---------------- 1. Top Slack Navigation Header ---------------- */
-.collab-navbar {
-    height: 52px;
-    background: var(--slack-surface);
-    border-bottom: 1px solid var(--slack-border);
+/* ================= 1. TOP NAVIGATION BAR ================= */
+.cq-navbar {
+    height: 58px;
+    background: var(--cq-surface);
+    border-bottom: 1px solid var(--cq-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -59,249 +73,360 @@ body.collab-body {
     z-index: 100;
 }
 
-.collab-nav-left {
+.cq-nav-left {
     display: flex;
     align-items: center;
-    gap: 12px;
-    min-width: 0;
+    gap: 14px;
 }
 
-.collab-brand {
+.cq-brand {
     display: flex;
     align-items: center;
     gap: 8px;
     text-decoration: none;
-    color: var(--slack-text);
-    font-weight: 700;
-    font-size: 0.95rem;
-    letter-spacing: -0.2px;
-    flex-shrink: 0;
+    color: var(--cq-text);
 }
 
-.collab-brand .brand-logo {
-    width: 24px;
-    height: 24px;
+.cq-brand-logo {
+    height: 28px;
+    width: 28px;
     border-radius: 6px;
     object-fit: contain;
 }
 
-.slack-channel-pill {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--slack-border);
-    padding: 4px 12px;
-    border-radius: 20px;
+.cq-brand-meta {
     display: flex;
     align-items: center;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--slack-text);
+    gap: 6px;
+}
+
+.cq-brand-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.cq-brand-badge {
+    background: var(--cq-primary-subtle);
+    color: var(--cq-primary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+
+.cq-room-pill {
+    background: var(--cq-surface-subtle);
+    border: 1px solid var(--cq-border);
+    color: var(--cq-text);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--cq-font-mono);
     cursor: pointer;
+    display: flex;
+    align-items: center;
     position: relative;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    user-select: none;
+    transition: all 0.15s ease;
 }
 
-.slack-channel-pill:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #3e444a;
+.cq-room-pill:hover {
+    background: var(--cq-surface-hover);
+    border-color: var(--cq-border-focus);
 }
 
-.slack-channel-pill .copy-icon {
-    font-size: 0.75rem;
-    color: var(--slack-text-muted);
-}
-
-.copied-tooltip {
+.cq-tooltip {
     position: absolute;
-    bottom: -28px;
+    bottom: -32px;
     left: 50%;
     transform: translateX(-50%);
-    background: #000;
+    background: var(--cq-text);
     color: #fff;
-    padding: 2px 8px;
+    font-size: 11px;
+    padding: 3px 8px;
     border-radius: 4px;
-    font-size: 0.7rem;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease;
     white-space: nowrap;
-    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1000;
 }
 
-.copied-tooltip.show {
+.cq-tooltip.show {
     opacity: 1;
 }
 
-.collab-nav-center {
+/* Center Workspace Tabs Navigation */
+.cq-workspace-tabs {
     display: flex;
     align-items: center;
+    gap: 4px;
+    background: var(--cq-surface-subtle);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--cq-border);
 }
 
-.huddle-status-pill {
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--slack-border);
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.78rem;
+.cq-tab-btn {
+    border: none;
+    background: transparent;
+    color: var(--cq-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.cq-tab-btn:hover {
+    color: var(--cq-text);
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.cq-tab-btn.active {
+    background: var(--cq-surface);
+    color: var(--cq-primary);
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-tab-badge {
+    background: var(--cq-border);
+    color: var(--cq-text);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 999px;
+    margin-left: 2px;
+}
+
+.cq-draft-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cq-warning);
+    display: inline-block;
+    margin-left: 2px;
+}
+
+/* Right Nav Controls */
+.cq-nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cq-presence-status {
+    display: flex;
+    align-items: center;
+    background: var(--cq-surface-subtle);
+    border: 1px solid var(--cq-border);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
-    display: flex;
-    align-items: center;
-    color: var(--slack-text-muted);
 }
 
-.huddle-status-dot {
+.cq-status-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: var(--slack-emerald);
-    margin-right: 8px;
-    box-shadow: 0 0 6px rgba(46, 182, 125, 0.5);
+    background: var(--cq-text-light);
+    margin-right: 6px;
 }
 
-.huddle-timer-badge {
-    color: #cbd5e1;
-    font-family: var(--slack-mono);
-    font-size: 0.74rem;
-    background: rgba(255, 255, 255, 0.06);
-    padding: 1px 6px;
-    border-radius: 4px;
+.cq-status-dot.connected {
+    background: var(--cq-success);
+    box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
 }
 
-.huddle-peer-count {
-    color: var(--slack-text-subtle);
-    font-size: 0.74rem;
-    border-left: 1px solid var(--slack-border);
-    padding-left: 8px;
+.cq-timer-pill {
+    font-family: var(--cq-font-mono);
+    color: var(--cq-text-muted);
+    font-size: 11px;
 }
 
-.collab-nav-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+.cq-peer-count {
+    color: var(--cq-text-muted);
+    font-size: 11px;
+    border-left: 1px solid var(--cq-border);
+    padding-left: 6px;
 }
 
-.btn-slack-action {
+/* Button Variants */
+.btn-cq-primary {
+    background: var(--cq-primary);
+    color: #fff;
+    border: none;
     padding: 6px 14px;
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 13px;
     font-weight: 600;
-    border: 1px solid var(--slack-border);
     cursor: pointer;
+    transition: background 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-cq-primary:hover {
+    background: var(--cq-primary-hover);
+    color: #fff;
+}
+
+.btn-cq-secondary {
+    background: var(--cq-surface);
+    color: var(--cq-text);
+    border: 1px solid var(--cq-border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-cq-secondary:hover {
+    background: var(--cq-surface-subtle);
+    border-color: var(--cq-border-focus);
+}
+
+.btn-cq-ghost {
+    background: transparent;
+    color: var(--cq-text-muted);
+    border: 1px solid transparent;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+}
+
+.btn-cq-ghost:hover, .btn-cq-ghost.active {
+    background: var(--cq-surface-subtle);
+    color: var(--cq-text);
+    border-color: var(--cq-border);
+}
+
+.btn-cq-ghost-sm {
+    background: transparent;
+    color: var(--cq-text-muted);
+    border: 1px solid var(--cq-border);
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cq-ghost-sm:hover {
+    background: var(--cq-surface-subtle);
+    color: var(--cq-text);
+}
+
+.btn-cq-ghost-xs {
+    background: transparent;
+    border: none;
+    color: var(--cq-text-muted);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.btn-cq-ghost-xs:hover {
+    background: var(--cq-surface-subtle);
+    color: var(--cq-text);
+}
+
+.btn-cq-danger {
+    background: var(--cq-danger-subtle);
+    color: var(--cq-danger);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
     transition: all 0.15s ease;
-    text-decoration: none;
-    line-height: 1.3;
 }
 
-.btn-slack-run {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--slack-text);
+.btn-cq-danger:hover {
+    background: var(--cq-danger);
+    color: #fff;
 }
 
-.btn-slack-run:hover {
-    background: rgba(46, 182, 125, 0.15);
-    border-color: var(--slack-emerald);
-    color: var(--slack-emerald);
+.cq-unread-bubble {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--cq-danger);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 999px;
 }
 
-.btn-slack-publish {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--slack-text);
-}
-
-.btn-slack-publish:hover {
-    background: rgba(97, 96, 230, 0.15);
-    border-color: var(--slack-indigo);
-    color: #a5b4fc;
-}
-
-.btn-slack-leave {
-    background: var(--slack-danger-bg);
-    border-color: rgba(224, 30, 90, 0.4);
-    color: #f87171;
-}
-
-.btn-slack-leave:hover {
-    background: var(--slack-danger);
-    border-color: var(--slack-danger);
-    color: #ffffff;
-}
-
-/* Mobile View Tabs Bar */
-.mobile-view-tabs-bar {
+/* ================= 2. MAIN WORKSPACE LAYOUT ================= */
+.cq-main-layout {
     display: flex;
-    background: var(--slack-surface);
-    border-bottom: 1px solid var(--slack-border);
-    flex-shrink: 0;
-}
-
-.mobile-view-btn {
     flex: 1;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    color: var(--slack-text-muted);
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    position: relative;
-    border-bottom: 2px solid transparent;
-}
-
-.mobile-view-btn.active {
-    color: var(--slack-text);
-    border-bottom-color: var(--slack-emerald);
-}
-
-.mobile-unread-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--slack-danger);
-    border-radius: 50%;
-    margin-left: 4px;
-}
-
-/* ---------------- 2. Main Workspace Layout ---------------- */
-.collab-workspace {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 440px;
     overflow: hidden;
     position: relative;
-    background: var(--slack-bg);
 }
 
-@media (max-width: 991px) {
-    .collab-workspace {
-        grid-template-columns: 1fr;
-    }
-    .collab-side-dock {
-        display: none;
-    }
-    .collab-side-dock.mobile-visible {
-        display: flex;
-    }
-    .collab-editor-pane.mobile-hidden {
-        display: none;
-    }
-}
-
-/* ---------------- 3. Left Pane: Code Editor ---------------- */
-.collab-editor-pane {
+.cq-content-area {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    border-right: 1px solid var(--slack-border);
     overflow: hidden;
-    background: #14171a;
+    position: relative;
+    background: var(--cq-bg);
 }
 
-.editor-header-bar {
-    height: 40px;
-    background: var(--slack-surface);
-    border-bottom: 1px solid var(--slack-border);
+.cq-view-pane {
+    display: none;
+    flex: 1;
+    height: 100%;
+    overflow-y: auto;
+    position: relative;
+}
+
+.cq-view-pane.active {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ================= 3. VIEW 1: CODE EDITOR ================= */
+.cq-editor-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: 12px;
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-editor-topbar {
+    height: 42px;
+    background: var(--cq-surface);
+    border-bottom: 1px solid var(--cq-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -309,928 +434,1221 @@ body.collab-body {
     flex-shrink: 0;
 }
 
-.editor-file-tab {
-    display: flex;
-    align-items: center;
-    font-size: 0.82rem;
-    color: var(--slack-text);
-    font-weight: 500;
-}
-
-.sync-badge {
-    margin-left: 12px;
-    font-size: 0.7rem;
-    color: var(--slack-text-muted);
-    display: inline-flex;
-    align-items: center;
-}
-
-.editor-actions {
+.cq-editor-tab-meta {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.slack-select-lang {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--slack-border);
-    color: var(--slack-text);
-    font-size: 0.76rem;
+.cq-lang-icon {
+    color: var(--cq-warning);
+    font-size: 16px;
+}
+
+.cq-filename {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cq-text);
+}
+
+.cq-sync-indicator {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cq-success);
+    background: var(--cq-success-subtle);
+    padding: 2px 7px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cq-partner-cursor-flag {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cq-primary);
+    background: var(--cq-primary-subtle);
+    padding: 2px 7px;
+    border-radius: 999px;
+    animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.cq-editor-tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cq-select-sm {
+    font-size: 12px;
+    padding: 3px 24px 3px 8px;
+    border-radius: 6px;
+    border-color: var(--cq-border);
+    width: auto;
+    background-color: var(--cq-surface);
     font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 4px;
-    outline: none;
-    cursor: pointer;
 }
 
-.slack-select-lang option {
-    background: var(--slack-surface);
-    color: var(--slack-text);
-}
-
-.code-editor-wrapper {
+.cq-editor-workspace {
     flex: 1;
     display: flex;
-    position: relative;
     overflow: hidden;
-    background: #14171a;
+    position: relative;
+    background: var(--cq-editor-bg);
 }
 
-.editor-line-numbers {
-    width: 44px;
-    padding: 12px 6px;
-    background: #101214;
-    color: #4b5157;
-    font-family: var(--slack-mono);
-    font-size: 0.82rem;
-    line-height: 1.5;
+.cq-line-numbers {
+    width: 48px;
+    background: #090D16;
+    color: #475569;
+    font-family: var(--cq-font-mono);
+    font-size: 13px;
+    line-height: 22px;
+    padding: 12px 8px;
     text-align: right;
     user-select: none;
-    border-right: 1px solid var(--slack-border);
-    box-sizing: border-box;
+    overflow: hidden;
+    border-right: 1px solid #1E293B;
 }
 
-.collab-textarea {
+.cq-textarea-wrapper {
     flex: 1;
-    height: 100%;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+}
+
+.cq-code-textarea {
+    flex: 1;
     background: transparent;
-    color: #e2e8f0;
+    color: var(--cq-editor-text);
     border: none;
     outline: none;
     resize: none;
+    font-family: var(--cq-font-mono);
+    font-size: 13px;
+    line-height: 22px;
     padding: 12px 14px;
-    font-family: var(--slack-mono);
-    font-size: 0.86rem;
-    line-height: 1.5;
     tab-size: 4;
     white-space: pre;
-    overflow: auto;
-    box-sizing: border-box;
-}
-
-/* ---------------- 4. Bottom Console Drawer ---------------- */
-.collab-console-drawer {
-    height: 170px;
-    background: #101214;
-    border-top: 1px solid var(--slack-border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-}
-
-.console-drawer-header {
-    height: 32px;
-    background: var(--slack-surface);
-    border-bottom: 1px solid var(--slack-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 14px;
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--slack-text-muted);
-}
-
-.console-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.exec-time-pill {
-    font-size: 0.7rem;
-    color: var(--slack-emerald);
-}
-
-.btn-console-clear {
-    background: transparent;
-    border: none;
-    color: var(--slack-text-muted);
-    font-size: 0.72rem;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.15s ease;
-}
-
-.btn-console-clear:hover {
-    color: var(--slack-text);
-}
-
-.console-drawer-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 14px;
-    font-family: var(--slack-mono);
-    font-size: 0.8rem;
-    line-height: 1.45;
-}
-
-.console-empty-state {
-    color: var(--slack-text-subtle);
-    font-size: 0.78rem;
-    padding: 6px 0;
-}
-
-.console-log-row {
-    padding: 2px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    word-break: break-all;
-}
-
-.console-log-row.log-error {
-    color: #f87171;
-}
-
-.console-log-row.log-warn {
-    color: #fbbf24;
-}
-
-.console-log-row.log-info {
-    color: #93c5fd;
-}
-
-/* ---------------- 5. Right Dock: Slack Huddle Stage ---------------- */
-.collab-side-dock {
-    background: var(--slack-bg);
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    overflow: hidden;
-}
-
-.huddle-stage-container {
-    background: var(--slack-surface);
-    border-bottom: 1px solid var(--slack-border);
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.huddle-stage {
-    position: relative;
-    width: 100%;
-    height: 310px;
-    background: #14171a;
-    border-radius: 12px;
-    overflow: hidden;
-    border: 1px solid var(--slack-border);
-    transition: all 0.25s ease;
-}
-
-@media (max-width: 576px) {
-    .huddle-stage {
-        height: 230px;
-    }
-}
-
-/* Fullscreen Mode for Huddle Stage */
-.huddle-stage.is-stage-fullscreen,
-.huddle-stage:fullscreen {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    z-index: 999999 !important;
-    border-radius: 0 !important;
-    border: none !important;
-    background: #0a0c0e !important;
-}
-
-.huddle-stage.is-stage-fullscreen .huddle-tile.local-tile,
-.huddle-stage:fullscreen .huddle-tile.local-tile {
-    width: 220px !important;
-    height: 155px !important;
-    bottom: 24px !important;
-    right: 24px !important;
-}
-
-.huddle-stage.is-stage-fullscreen .btn-stage-fullscreen,
-.huddle-stage:fullscreen .btn-stage-fullscreen {
-    top: 20px;
-    right: 20px;
-}
-
-/* Fullscreen Button */
-.btn-stage-fullscreen {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: rgba(18, 20, 23, 0.75);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #e2e8f0;
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 25;
-    transition: all 0.15s ease;
-}
-
-.btn-stage-fullscreen:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    transform: scale(1.05);
-}
-
-/* Screen Sharing Active Banner */
-.screen-share-active-pill {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    background: rgba(18, 20, 23, 0.85);
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(46, 182, 125, 0.4);
-    color: #f8fafc;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    z-index: 25;
-    display: flex;
-    align-items: center;
-    pointer-events: none;
-}
-
-/* Speaking While Muted Alert */
-.speaking-muted-alert {
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(224, 30, 90, 0.92);
-    color: #ffffff;
-    padding: 4px 14px;
-    border-radius: 20px;
-    font-size: 0.74rem;
-    font-weight: 600;
-    z-index: 30;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    animation: fadeInSlide 0.25s ease;
-}
-
-@keyframes fadeInSlide {
-    from { opacity: 0; transform: translate(-50%, -8px); }
-    to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* Floating Reactions */
-.huddle-floating-reactions {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 20;
-    overflow: hidden;
-}
-
-.floating-reaction-item {
-    position: absolute;
-    bottom: 20px;
-    font-size: 2rem;
-    animation: floatReaction 2.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-}
-
-@keyframes floatReaction {
-    0% {
-        opacity: 0;
-        transform: translateY(0) scale(0.6);
-    }
-    15% {
-        opacity: 1;
-        transform: translateY(-20px) scale(1.2);
-    }
-    80% {
-        opacity: 0.9;
-        transform: translateY(-160px) scale(1.1);
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-220px) scale(0.9);
-    }
-}
-
-/* Participant Tiles */
-.huddle-tile {
-    position: relative;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #181b1f;
-    transition: box-shadow 0.2s ease;
-}
-
-.huddle-tile.is-speaking {
-    box-shadow: 0 0 0 2px var(--slack-emerald) !important;
-}
-
-/* Remote Tile (Main) */
-.huddle-tile.remote-tile {
-    width: 100%;
-    height: 100%;
-}
-
-.huddle-tile.remote-tile video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-}
-
-/* Local Tile (Picture-in-Picture) */
-.huddle-tile.local-tile {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 120px;
-    height: 85px;
-    border: 1px solid #3e444a;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
-    z-index: 10;
-    cursor: pointer;
-}
-
-.huddle-tile.local-tile video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transform: scaleX(-1);
-}
-
-/* Fallback Avatar Card when Video is Off */
-.huddle-avatar-card {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #181b1f;
-    padding: 12px;
-    text-align: center;
-}
-
-.huddle-avatar-circle {
-    width: 64px;
-    height: 64px;
-    border-radius: 50%;
-    background: #2e3338;
-    color: #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 8px;
-    border: 1px solid #454c53;
-}
-
-.huddle-avatar-circle.sm {
-    width: 32px;
-    height: 32px;
-    font-size: 0.75rem;
-    margin-bottom: 2px;
-}
-
-.huddle-tile-name {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: var(--slack-text);
-}
-
-.huddle-tile-sub {
-    font-size: 0.7rem;
-    color: var(--slack-text-muted);
-    margin-top: 2px;
-}
-
-/* Tile Bottom Info Tag */
-.huddle-tile-tag {
-    position: absolute;
-    bottom: 8px;
-    left: 8px;
-    background: rgba(18, 20, 23, 0.8);
-    backdrop-filter: blur(4px);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 500;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    z-index: 5;
-    pointer-events: none;
-}
-
-/* ---------------- 6. Slack Floating Controls Pill ---------------- */
-.huddle-controls-wrapper {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.huddle-reaction-popover {
-    position: absolute;
-    bottom: 50px;
-    background: #1e2227;
-    border: 1px solid var(--slack-border);
-    padding: 4px 8px;
-    border-radius: 24px;
-    display: flex;
-    gap: 6px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
-    z-index: 40;
-    animation: fadeInSlideUp 0.18s ease;
-}
-
-@keyframes fadeInSlideUp {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.btn-reaction-emoji {
-    background: transparent;
-    border: none;
-    font-size: 1.15rem;
-    padding: 3px 6px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-}
-
-.btn-reaction-emoji:hover {
-    transform: scale(1.25);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.huddle-controls-pill {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: rgba(26, 29, 33, 0.95);
-    border: 1px solid var(--slack-border);
-    padding: 6px 14px;
-    border-radius: 30px;
-    width: fit-content;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.btn-huddle-ctrl {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1px solid transparent;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--slack-text);
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.15s ease;
-}
-
-.btn-huddle-ctrl:hover {
-    background: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-}
-
-.btn-huddle-ctrl.is-muted,
-.btn-huddle-ctrl.is-video-off {
-    background: var(--slack-danger-bg);
-    border-color: rgba(224, 30, 90, 0.4);
-    color: #f87171;
-}
-
-.btn-huddle-ctrl.is-active-share {
-    background: var(--slack-emerald-bg);
-    border-color: rgba(46, 182, 125, 0.4);
-    color: var(--slack-emerald);
-}
-
-.chat-unread-badge {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    background: var(--slack-danger);
-    color: #ffffff;
-    font-size: 0.62rem;
-    font-weight: 700;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--slack-surface);
-}
-
-.btn-huddle-hangup {
-    background: var(--slack-danger);
-    color: #ffffff;
-}
-
-.btn-huddle-hangup:hover {
-    background: #b91c1c;
-    color: #ffffff;
-}
-
-/* ---------------- 7. In-Huddle Pair Chat Panel ---------------- */
-.huddle-chat-panel {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--slack-bg);
-}
-
-.huddle-chat-panel.is-collapsed {
-    display: none !important;
-}
-
-.chat-header {
-    height: 36px;
-    padding: 0 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--slack-border);
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: var(--slack-text-muted);
-    flex-shrink: 0;
-}
-
-.btn-close-chat {
-    background: transparent;
-    border: none;
-    color: var(--slack-text-muted);
-    font-size: 0.75rem;
-    cursor: pointer;
-}
-
-.chat-messages-container {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 10px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.chat-system-message {
-    font-size: 0.72rem;
-    color: var(--slack-text-subtle);
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed var(--slack-border);
-    border-radius: 6px;
-    padding: 5px 10px;
-    text-align: center;
-}
-
-.chat-message-bubble {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-width: 90%;
-}
-
-.chat-message-bubble.me {
-    align-self: flex-end;
-    align-items: flex-end;
-}
-
-.chat-message-bubble.partner {
-    align-self: flex-start;
-    align-items: flex-start;
-}
-
-.chat-bubble-author {
-    font-size: 0.68rem;
-    color: var(--slack-text-muted);
-    font-weight: 500;
-}
-
-.chat-bubble-body {
-    background: var(--slack-surface);
-    border: 1px solid var(--slack-border);
-    color: var(--slack-text);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.8rem;
-    line-height: 1.4;
-    word-break: break-word;
-}
-
-.chat-bubble-body pre {
-    background: #111417;
-    border: 1px solid #2d3339;
-    border-radius: 4px;
-    padding: 6px 8px;
-    margin: 4px 0 0 0;
-    font-family: var(--slack-mono);
-    font-size: 0.75rem;
-    color: #e2e8f0;
+    overflow-wrap: normal;
     overflow-x: auto;
 }
 
-.chat-message-bubble.me .chat-bubble-body {
-    background: #2a2035;
-    border-color: #453258;
+.cq-code-textarea::placeholder {
+    color: #475569;
 }
 
-.chat-input-form {
-    padding: 8px 12px;
-    background: var(--slack-surface);
-    border-top: 1px solid var(--slack-border);
+/* Collaborator Cursor Pin Overlay */
+.cq-collaborator-cursor {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    transition: all 0.08s ease;
+}
+
+.cq-cursor-caret {
+    width: 2px;
+    height: 18px;
+    background: #3B82F6;
+    box-shadow: 0 0 6px #3B82F6;
+}
+
+.cq-cursor-flag {
+    background: #3B82F6;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    position: absolute;
+    top: -16px;
+    left: 0;
+    white-space: nowrap;
+}
+
+/* Console Drawer */
+.cq-console-drawer {
+    height: 180px;
+    min-height: 100px;
+    max-height: 380px;
+    border-top: 1px solid var(--cq-border);
     display: flex;
-    gap: 6px;
-    align-items: center;
-    flex-shrink: 0;
+    flex-direction: column;
+    background: var(--cq-surface);
 }
 
-.btn-chat-tool {
-    background: transparent;
-    border: 1px solid var(--slack-border);
-    color: var(--slack-text-muted);
-    border-radius: 6px;
-    width: 30px;
-    height: 30px;
+.cq-console-header {
+    height: 34px;
+    background: var(--cq-surface-subtle);
+    border-bottom: 1px solid var(--cq-border);
     display: flex;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.75rem;
-    transition: all 0.15s ease;
+    justify-content: space-between;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.btn-chat-tool:hover {
-    color: var(--slack-text);
-    background: rgba(255, 255, 255, 0.06);
-    border-color: #4b535d;
+.cq-exec-pill {
+    background: var(--cq-border);
+    color: var(--cq-text);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: var(--cq-font-mono);
+    margin-right: 8px;
 }
 
-.chat-input-field {
+.cq-console-body {
     flex: 1;
-    background: #14171a;
-    border: 1px solid var(--slack-border);
-    border-radius: 6px;
-    color: var(--slack-text);
-    font-size: 0.8rem;
-    padding: 6px 10px;
-    outline: none;
+    overflow-y: auto;
+    padding: 10px 14px;
+    font-family: var(--cq-font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    background: #0B0F19;
+    color: #E2E8F0;
+}
+
+.cq-console-empty {
+    color: #64748B;
+    font-family: var(--cq-font-sans);
+    font-size: 13px;
+}
+
+.cq-log-line {
+    padding: 2px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.cq-log-line.stdout { color: #38BDF8; }
+.cq-log-line.stderr { color: #F87171; }
+.cq-log-line.system { color: #94A3B8; font-style: italic; }
+
+/* ================= 4. VIEW 2: SMART TEST LAB ================= */
+.cq-lab-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cq-lab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.cq-pane-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--cq-text);
+    margin-bottom: 4px;
+}
+
+.cq-pane-sub {
+    font-size: 13px;
+    color: var(--cq-text-muted);
+    margin: 0;
+}
+
+.cq-lab-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cq-lab-summary-bar {
+    display: flex;
+    gap: 24px;
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    padding: 12px 18px;
+    border-radius: var(--cq-radius);
+    margin-bottom: 20px;
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-lab-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.cq-stat-label {
+    color: var(--cq-text-muted);
+}
+
+.cq-stat-val {
+    font-weight: 700;
+    font-family: var(--cq-font-mono);
+}
+
+.cq-test-cases-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.cq-test-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 16px;
+    box-shadow: var(--cq-shadow-sm);
     transition: border-color 0.15s ease;
 }
 
-.chat-input-field:focus {
-    border-color: #4b535d;
+.cq-test-card:hover {
+    border-color: var(--cq-border-focus);
 }
 
-.btn-chat-send {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--slack-border);
-    color: var(--slack-text);
+.cq-test-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.cq-test-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: uppercase;
+}
+
+.cq-test-badge.pending { background: var(--cq-surface-subtle); color: var(--cq-text-muted); }
+.cq-test-badge.passed { background: var(--cq-success-subtle); color: var(--cq-success); }
+.cq-test-badge.failed { background: var(--cq-danger-subtle); color: var(--cq-danger); }
+
+.cq-test-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+}
+
+.cq-test-box-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cq-text-muted);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.cq-test-box-content {
+    background: var(--cq-surface-subtle);
+    border: 1px solid var(--cq-border);
     border-radius: 6px;
-    width: 30px;
-    height: 30px;
+    padding: 8px;
+    font-family: var(--cq-font-mono);
+    font-size: 12px;
+    height: 72px;
+    overflow-y: auto;
+    white-space: pre;
+}
+
+/* ================= 5. VIEW 3: SHARED PUBLISHING WORKSPACE ================= */
+.cq-publish-container {
+    padding: 24px;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cq-publish-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.cq-badge-draft {
+    background: var(--cq-warning-subtle);
+    color: var(--cq-warning);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.cq-publish-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.cq-form-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 20px;
+    box-shadow: var(--cq-shadow-sm);
+    margin-bottom: 20px;
+}
+
+.cq-form-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--cq-text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.cq-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cq-text);
+    margin-bottom: 4px;
+}
+
+.cq-input, .cq-textarea {
+    border: 1px solid var(--cq-border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--cq-text);
+    background: var(--cq-surface);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cq-input:focus, .cq-textarea:focus {
+    border-color: var(--cq-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    outline: none;
+}
+
+.cq-select-xs {
+    font-size: 11px;
+    padding: 2px 20px 2px 6px;
+    border-radius: 4px;
+    width: auto;
+    border-color: var(--cq-border);
+}
+
+.cq-coauthor-note {
+    font-size: 12px;
+    color: var(--cq-text-muted);
+}
+
+/* ================= 6. VIEW 4: TIME-TRAVEL HISTORY ================= */
+.cq-history-container {
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cq-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.cq-history-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+}
+
+.cq-section-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cq-text);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 12px;
+}
+
+.cq-checkpoint-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 580px;
+    overflow-y: auto;
+}
+
+.cq-checkpoint-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.cq-checkpoint-card:hover {
+    border-color: var(--cq-primary);
+    background: var(--cq-surface-subtle);
+}
+
+.cq-checkpoint-card.active {
+    border-color: var(--cq-primary);
+    background: var(--cq-primary-subtle);
+}
+
+.cq-checkpoint-time {
+    font-size: 11px;
+    color: var(--cq-text-muted);
+}
+
+.cq-checkpoint-author {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cq-text);
+}
+
+.cq-checkpoint-note {
+    font-size: 12px;
+    color: var(--cq-text);
+    margin-top: 4px;
+}
+
+.cq-history-preview {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-preview-header {
+    height: 48px;
+    background: var(--cq-surface-subtle);
+    border-bottom: 1px solid var(--cq-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.cq-preview-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cq-preview-author {
+    font-size: 12px;
+    color: var(--cq-text-muted);
+    margin-left: 8px;
+}
+
+.cq-diff-viewer {
+    margin: 0;
+    padding: 16px;
+    background: #0B0F19;
+    color: #E2E8F0;
+    font-family: var(--cq-font-mono);
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 520px;
+}
+
+.btn-cq-success {
+    background: var(--cq-success);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cq-success:hover {
+    background: #15803D;
+    color: #fff;
+}
+
+/* ================= 7. VIEW 5: AI DEBUGGING COPILOT ================= */
+.cq-copilot-container {
+    padding: 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cq-copilot-header {
+    margin-bottom: 20px;
+}
+
+.cq-copilot-badge {
+    background: var(--cq-primary-subtle);
+    color: var(--cq-primary);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.cq-copilot-actions-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.btn-cq-action-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 14px;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    box-shadow: var(--cq-shadow-sm);
+    transition: all 0.15s ease;
+}
+
+.btn-cq-action-card:hover {
+    border-color: var(--cq-primary);
+    transform: translateY(-1px);
+    box-shadow: var(--cq-shadow-md);
+}
+
+.btn-cq-action-card i {
+    font-size: 20px;
+    margin-top: 2px;
+}
+
+.cq-copilot-prompt-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-copilot-result-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    overflow: hidden;
+    box-shadow: var(--cq-shadow-md);
+}
+
+.cq-result-header {
+    height: 44px;
+    background: var(--cq-surface-subtle);
+    border-bottom: 1px solid var(--cq-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+
+.cq-result-body {
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--cq-text);
+}
+
+.btn-cq-success-sm {
+    background: var(--cq-success);
+    color: #fff;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.btn-cq-secondary-sm {
+    background: var(--cq-surface);
+    color: var(--cq-text);
+    border: 1px solid var(--cq-border);
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ================= 8. VIEW 6: SESSION MEMORY & NOTES ================= */
+.cq-notes-container {
+    padding: 24px;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.cq-notes-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+}
+
+.cq-notes-card, .cq-growth-card {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius);
+    padding: 20px;
+    box-shadow: var(--cq-shadow-sm);
+}
+
+.cq-checklist-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cq-check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.cq-growth-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.cq-growth-stat-box {
+    background: var(--cq-surface-subtle);
+    border: 1px solid var(--cq-border);
+    border-radius: 6px;
+    padding: 10px;
+    text-align: center;
+}
+
+.cq-stat-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--cq-primary);
+}
+
+.cq-stat-sub {
+    font-size: 11px;
+    color: var(--cq-text-muted);
+}
+
+.cq-achievement-pill {
+    background: var(--cq-warning-subtle);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #92400E;
+    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.cq-sync-note {
+    font-size: 11px;
+    color: var(--cq-text-muted);
+}
+
+.cq-divider {
+    border-color: var(--cq-border);
+}
+
+/* ================= 9. DOCKABLE HUDDLE SIDEBAR ================= */
+.cq-huddle-dock {
+    width: 380px;
+    background: var(--cq-surface);
+    border-left: 1px solid var(--cq-border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: transform 0.25s ease, width 0.25s ease;
+    overflow: hidden;
+}
+
+.cq-huddle-dock.collapsed {
+    width: 0;
+    border-left: none;
+    transform: translateX(100%);
+}
+
+.cq-stage-card {
+    height: 290px;
+    border-bottom: 1px solid var(--cq-border);
+    display: flex;
+    flex-direction: column;
+    background: #090D16;
+    position: relative;
+}
+
+.cq-stage-header {
+    height: 34px;
+    background: rgba(15, 23, 42, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    color: #F8FAFC;
+    z-index: 20;
+}
+
+.cq-stage-title {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cq-stage-view {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #000;
+}
+
+.cq-screenshare-indicator {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 15;
+}
+
+.cq-floating-reactions {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 30;
+}
+
+.cq-floating-emoji {
+    position: absolute;
+    font-size: 26px;
+    animation: riseFade 2.2s forwards ease-out;
+}
+
+@keyframes riseFade {
+    0% { transform: translateY(0) scale(0.6); opacity: 0; }
+    20% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+    100% { transform: translateY(-160px) scale(1); opacity: 0; }
+}
+
+.cq-video-tile.remote {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.cq-video-tile.remote video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.cq-video-tile.local {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    width: 96px;
+    height: 72px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    background: #111;
+}
+
+.cq-video-tile.local video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+.cq-avatar-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #0F172A;
+    color: #F8FAFC;
+}
+
+.cq-avatar-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #3B82F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.cq-avatar-circle.sm {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    margin-bottom: 0;
+}
+
+.cq-tile-username {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.cq-tile-status {
+    font-size: 11px;
+    color: #94A3B8;
+}
+
+.cq-tile-tag {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cq-media-controls-bar {
+    height: 46px;
+    background: rgba(15, 23, 42, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    border-top: 1px solid #1E293B;
+}
+
+.btn-cq-ctrl {
+    background: #1E293B;
+    border: 1px solid #334155;
+    color: #F8FAFC;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 13px;
     transition: all 0.15s ease;
 }
 
-.btn-chat-send:hover {
-    background: var(--slack-emerald);
-    border-color: var(--slack-emerald);
-    color: #ffffff;
+.btn-cq-ctrl:hover {
+    background: #334155;
 }
 
-/* ---------------- 8. Publish Modal (Slack Matte Slate Theme) ---------------- */
-.collab-modal-content {
-    background: #1e2227 !important;
-    border: 1px solid #33383e !important;
-    color: #f8fafc !important;
-    border-radius: 10px !important;
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7) !important;
+.btn-cq-ctrl.active-danger {
+    background: var(--cq-danger);
+    border-color: var(--cq-danger);
 }
 
-.collab-modal-content .modal-header {
-    border-bottom: 1px solid #2d3238 !important;
-    padding: 14px 18px !important;
-}
-
-.collab-modal-content .modal-title {
-    font-size: 0.95rem !important;
-    font-weight: 600 !important;
-    color: #f1f5f9 !important;
-}
-
-.publish-nav-pills {
-    gap: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #2d3238;
-}
-
-.publish-nav-pills .nav-link {
-    background: rgba(255, 255, 255, 0.03) !important;
-    color: #94a3b8 !important;
-    border: 1px solid #33383e !important;
-    border-radius: 6px !important;
-    font-size: 0.78rem !important;
-    font-weight: 500 !important;
-    padding: 6px 14px !important;
-    transition: all 0.15s ease !important;
-}
-
-.publish-nav-pills .nav-link.active {
-    background: #31373e !important;
-    color: #ffffff !important;
-    border-color: #4b535d !important;
-}
-
-.target-question-card {
-    background: #16181b !important;
-    border: 1px solid #2d3238 !important;
-}
-
-.collab-modal-input {
-    background: #121417 !important;
-    border: 1px solid #33383e !important;
-    color: #f1f5f9 !important;
-    font-size: 0.82rem !important;
-    border-radius: 6px !important;
-}
-
-.collab-modal-input:focus {
-    border-color: #555e69 !important;
-    box-shadow: none !important;
-    color: #ffffff !important;
-}
-
-.collab-modal-content .modal-footer {
-    border-top: 1px solid #2d3238 !important;
-    padding: 12px 18px !important;
-}
-
-.btn-collab-modal-cancel {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid #33383e !important;
-    color: #94a3b8 !important;
-    font-size: 0.8rem !important;
-    font-weight: 500 !important;
-    padding: 6px 14px !important;
-    border-radius: 6px !important;
-}
-
-.btn-collab-modal-cancel:hover {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-}
-
-.btn-collab-modal-publish {
-    background: #3b424a !important;
-    border: 1px solid #505963 !important;
-    color: #ffffff !important;
-    font-size: 0.8rem !important;
-    font-weight: 600 !important;
-    padding: 6px 16px !important;
-    border-radius: 6px !important;
-    transition: all 0.15s ease !important;
-}
-
-.btn-collab-modal-publish:hover {
-    background: var(--slack-emerald) !important;
-    border-color: var(--slack-emerald) !important;
-    color: #ffffff !important;
-}
-
-/* ---------------- 9. 3rd Person Room-Full Overlay ---------------- */
-.room-full-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(14, 16, 19, 0.96);
-    backdrop-filter: blur(10px);
-    z-index: 99999;
+.cq-emoji-popover {
+    position: absolute;
+    bottom: 50px;
+    background: #1E293B;
+    border: 1px solid #334155;
+    padding: 6px;
+    border-radius: 8px;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+    gap: 6px;
+    box-shadow: var(--cq-shadow-md);
+    z-index: 40;
 }
 
-.room-full-card {
-    background: #1e2227;
-    border: 1px solid #33383e;
-    border-radius: 12px;
-    padding: 32px 28px;
-    max-width: 460px;
-    width: 100%;
-    text-align: center;
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+.cq-emoji-btn {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: transform 0.1s ease;
 }
 
-.room-full-icon {
-    font-size: 2.4rem;
-    color: #f59e0b;
-    margin-bottom: 14px;
+.cq-emoji-btn:hover {
+    transform: scale(1.2);
 }
 
-.room-full-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #f8fafc;
-    margin-bottom: 8px;
-}
-
-.room-full-desc {
-    font-size: 0.85rem;
-    color: #94a3b8;
-    line-height: 1.5;
-    margin-bottom: 24px;
-}
-
-.room-full-actions {
+/* Chat Card in Sidebar */
+.cq-chat-card {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    overflow: hidden;
+    background: var(--cq-surface);
 }
 
-.btn-room-full-action {
-    padding: 9px 16px;
-    border-radius: 6px;
-    font-size: 0.82rem;
+.cq-chat-header {
+    height: 38px;
+    background: var(--cq-surface);
+    border-bottom: 1px solid var(--cq-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+}
+
+.cq-chat-title {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.cq-chat-badge {
+    font-size: 10px;
     font-weight: 600;
-    text-decoration: none;
+    color: var(--cq-success);
+    background: var(--cq-success-subtle);
+    padding: 1px 6px;
+    border-radius: 999px;
+}
+
+.cq-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cq-chat-system-message {
+    background: var(--cq-surface-subtle);
+    color: var(--cq-text-muted);
+    font-size: 11px;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px dashed var(--cq-border);
+}
+
+.cq-chat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.cq-chat-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+}
+
+.cq-chat-sender {
+    font-weight: 700;
+    color: var(--cq-text);
+}
+
+.cq-chat-time {
+    color: var(--cq-text-muted);
+    font-size: 10px;
+}
+
+.cq-chat-bubble {
+    background: var(--cq-surface-subtle);
+    color: var(--cq-text);
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 8px 12px;
+    border-radius: 8px;
+    word-break: break-word;
+    border: 1px solid var(--cq-border);
+}
+
+.cq-chat-item.outgoing .cq-chat-bubble {
+    background: var(--cq-primary-subtle);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.cq-chat-snippet {
+    background: #0B0F19;
+    color: #E2E8F0;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 4px;
+    border: 1px solid #1E293B;
+}
+
+.cq-snippet-header {
+    height: 26px;
+    background: #1E293B;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    font-size: 10px;
+    color: #94A3B8;
+}
+
+.cq-snippet-copy {
+    background: transparent;
+    border: none;
+    color: #38BDF8;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.cq-snippet-code {
+    padding: 8px;
+    font-family: var(--cq-font-mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.cq-chat-input-bar {
+    border-top: 1px solid var(--cq-border);
+    padding: 8px;
+    background: var(--cq-surface);
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+.btn-cq-chat-tool {
+    background: var(--cq-surface-subtle);
+    border: 1px solid var(--cq-border);
+    color: var(--cq-text-muted);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    transition: all 0.15s ease;
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
 }
 
-.btn-room-full-create {
-    background: #3b424a;
-    border: 1px solid #505963;
-    color: #ffffff;
+.btn-cq-chat-tool:hover {
+    background: var(--cq-surface-hover);
+    color: var(--cq-text);
 }
 
-.btn-room-full-create:hover {
-    background: var(--slack-emerald);
-    border-color: var(--slack-emerald);
-    color: #ffffff;
+.cq-chat-textarea {
+    resize: none;
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border-color: var(--cq-border);
+    max-height: 80px;
 }
 
-.btn-room-full-dash {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid #33383e;
-    color: #94a3b8;
+.btn-cq-chat-send {
+    background: var(--cq-primary);
+    color: #fff;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    flex-shrink: 0;
 }
 
-.btn-room-full-dash:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
+.btn-cq-chat-send:hover {
+    background: var(--cq-primary-hover);
+}
+
+/* Modals */
+.cq-modal-content {
+    background: var(--cq-surface);
+    border: 1px solid var(--cq-border);
+    border-radius: var(--cq-radius-lg);
+    box-shadow: var(--cq-shadow-md);
+}
+
+/* ================= 10. RESPONSIVE DESIGN (360px - 1440px) ================= */
+@media (max-width: 1100px) {
+    .cq-workspace-tabs .cq-tab-btn span {
+        display: none;
+    }
+    .cq-workspace-tabs .cq-tab-btn {
+        padding: 6px 8px;
+    }
+    .cq-huddle-dock {
+        width: 320px;
+    }
+    .cq-copilot-actions-bar {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .cq-huddle-dock {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 80;
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+    }
+    .cq-publish-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .cq-notes-grid {
+        grid-template-columns: 1fr;
+    }
+    .cq-history-grid {
+        grid-template-columns: 1fr;
+    }
+    .cq-presence-status .cq-timer-pill,
+    .cq-presence-status .cq-peer-count {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .cq-navbar {
+        padding: 0 8px;
+    }
+    .cq-brand-meta {
+        display: none;
+    }
+    .cq-room-pill {
+        padding: 2px 6px;
+        font-size: 11px;
+    }
+    .cq-lab-grid, .cq-test-grid {
+        grid-template-columns: 1fr;
+    }
+    .cq-copilot-actions-bar {
+        grid-template-columns: 1fr;
+    }
+    .cq-editor-card {
+        margin: 6px;
+    }
+    .cq-lab-container, .cq-publish-container, .cq-history-container, .cq-copilot-container, .cq-notes-container {
+        padding: 12px;
+    }
+    .cq-huddle-dock {
+        width: 100%;
+    }
 }
