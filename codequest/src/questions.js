@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const quickAskInput = document.getElementById("quickAskInput");
     const quickAskBtn = document.getElementById("quickAskBtn");
+    const quickCodeBtn = document.getElementById("quickCodeBtn");
+    const quickTagBtn = document.getElementById("quickTagBtn");
     const quickAskAvatar = document.getElementById("quickAskAvatar");
 
     const headerUserAvatar = document.getElementById("headerUserAvatar");
@@ -811,47 +813,100 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Quick Ask Handler
-    if (quickAskBtn && quickAskInput) {
-        quickAskBtn.addEventListener("click", async () => {
-            if (!currentUser) {
-                showAuthPrompt("Please sign in with GitHub to post a question.");
-                return;
-            }
-            const text = quickAskInput.value;
-            if (!text.trim()) {
-                quickAskInput.focus();
-                return;
-            }
-            quickAskBtn.disabled = true;
-            quickAskBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
-            const ok = await submitQuestion(text);
-            quickAskBtn.disabled = false;
-            quickAskBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Post`;
-            if (ok) quickAskInput.value = "";
-        });
+    // Unified Composer Opener: Seamlessly opens rich composer with user text, code block, or tags
+    function openComposerModal(initialText = "", focusTarget = "text", insertCode = false) {
+        if (!currentUser) {
+            showAuthPrompt("Please sign in with GitHub to post a question.");
+            return;
+        }
 
+        if (modalQuestionText) {
+            let val = (initialText || "").trim();
+            if (insertCode) {
+                if (val) {
+                    val += "\n\n```javascript\n// Paste or write code here\n```\n";
+                } else {
+                    val = "```javascript\n// Paste or write code here\n```\n";
+                }
+            }
+            modalQuestionText.value = val;
+        }
+
+        if (modalQuestionTags && focusTarget !== "tags") {
+            modalQuestionTags.value = "";
+        }
+
+        if (modalErrorMsg) {
+            modalErrorMsg.style.display = "none";
+        }
+
+        if (askModalInstance) {
+            askModalInstance.show();
+            setTimeout(() => {
+                if (focusTarget === "tags" && modalQuestionTags) {
+                    modalQuestionTags.focus();
+                } else if (modalQuestionText) {
+                    modalQuestionText.focus();
+                    if (insertCode) {
+                        const pos = modalQuestionText.value.indexOf("// Paste or write code here");
+                        if (pos !== -1) {
+                            modalQuestionText.setSelectionRange(pos, pos + "// Paste or write code here".length);
+                        }
+                    } else {
+                        modalQuestionText.setSelectionRange(modalQuestionText.value.length, modalQuestionText.value.length);
+                    }
+                }
+            }, 300);
+        }
+
+        if (quickAskInput) {
+            quickAskInput.value = "";
+        }
+    }
+
+    // Feed Composer: "Ask Question" Button
+    if (quickAskBtn) {
+        quickAskBtn.addEventListener("click", () => {
+            const text = quickAskInput ? quickAskInput.value : "";
+            openComposerModal(text, "text");
+        });
+    }
+
+    // Feed Composer: "Code" Quick Chip
+    if (quickCodeBtn) {
+        quickCodeBtn.addEventListener("click", () => {
+            const text = quickAskInput ? quickAskInput.value : "";
+            openComposerModal(text, "text", true);
+        });
+    }
+
+    // Feed Composer: "Tags" Quick Chip
+    if (quickTagBtn) {
+        quickTagBtn.addEventListener("click", () => {
+            const text = quickAskInput ? quickAskInput.value : "";
+            openComposerModal(text, "tags");
+        });
+    }
+
+    // Feed Composer: Enter Key in input
+    if (quickAskInput) {
         quickAskInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                quickAskBtn.click();
+                e.preventDefault();
+                const text = quickAskInput.value;
+                openComposerModal(text, "text");
             }
         });
     }
 
-    // Modal Ask Handler
+    // Header: "Ask Question" Button
     if (openAskModalBtn) {
         openAskModalBtn.addEventListener("click", () => {
-            if (!currentUser) {
-                showAuthPrompt("Please sign in with GitHub to post a question.");
-                return;
-            }
-            if (modalQuestionText) modalQuestionText.value = "";
-            if (modalQuestionTags) modalQuestionTags.value = "";
-            if (modalErrorMsg) modalErrorMsg.style.display = "none";
-            if (askModalInstance) askModalInstance.show();
+            openComposerModal("", "text");
         });
     }
 
+    // Modal Submit ("Post Question")
     if (modalSubmitBtn && modalQuestionText) {
         modalSubmitBtn.addEventListener("click", async () => {
             const text = modalQuestionText.value.trim();
@@ -859,7 +914,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!text) {
                 if (modalErrorMsg) {
-                    modalErrorMsg.textContent = "Please write a question before submitting.";
+                    modalErrorMsg.textContent = "Please write a question or code before submitting.";
                     modalErrorMsg.style.display = "block";
                 }
                 modalQuestionText.focus();
@@ -871,10 +926,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const ok = await submitQuestion(text, tags);
             modalSubmitBtn.disabled = false;
-            modalSubmitBtn.innerHTML = `<i class="fa-solid fa-plus"></i> Post Question`;
+            modalSubmitBtn.innerHTML = `<i class="fa-solid fa-paper-plane me-1"></i> Post Question`;
 
             if (ok && askModalInstance) {
                 askModalInstance.hide();
+                if (modalQuestionText) modalQuestionText.value = "";
+                if (modalQuestionTags) modalQuestionTags.value = "";
             }
         });
     }

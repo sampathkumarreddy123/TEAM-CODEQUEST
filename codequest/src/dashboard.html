@@ -98,14 +98,22 @@
                 </div>
             </div>
 
-            <!-- Quick Question Input Bar -->
-            <div class="quick-ask-card">
+            <!-- Quick Question Composer Bar -->
+            <div class="quick-ask-card" id="feedAskCard">
                 <img id="quickAskAvatar" src="default-avatar.png" class="user-avatar-sm" alt="User" onerror="this.src='default-avatar.png'">
                 <div class="quick-ask-input-wrap">
-                    <input type="text" id="quickAskInput" placeholder="Got a coding question? Type here (e.g. How to use promises? #javascript)..." />
-                    <button id="quickAskBtn" class="btn-quick-post">
-                        <i class="fa-solid fa-paper-plane"></i> Post
-                    </button>
+                    <input type="text" id="quickAskInput" placeholder="Got a coding question or bug? Type here or click to open full editor..." autocomplete="off" />
+                    <div class="quick-ask-actions">
+                        <button id="quickCodeBtn" type="button" class="btn-quick-chip" title="Insert Code Block">
+                            <i class="fa-solid fa-code text-primary"></i> <span class="d-none d-sm-inline">Code</span>
+                        </button>
+                        <button id="quickTagBtn" type="button" class="btn-quick-chip" title="Add Topic Tags">
+                            <i class="fa-solid fa-tags text-success"></i> <span class="d-none d-sm-inline">Tags</span>
+                        </button>
+                        <button id="quickAskBtn" type="button" class="btn-quick-post" title="Open Question Composer">
+                            <i class="fa-solid fa-plus"></i> <span>Ask Question</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -154,7 +162,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="modalSubmitBtn" class="btn btn-primary-cq">
-                        <i class="fa-solid fa-plus"></i> Post Question
+                        <i class="fa-solid fa-paper-plane me-1"></i> Post Question
                     </button>
                 </div>
             </div>
