@@ -2231,6 +2231,16 @@
 
                 if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
+                    if (res.status === 409 || errData.busy) {
+                        this.stopChimeLoop();
+                        const statusEl = document.getElementById("cqOutgoingStatus");
+                        if (statusEl) statusEl.textContent = `@${targetUsername} is busy in another 1-on-1 call. In-call notification sent to them.`;
+                        const timerEl = document.getElementById("cqOutgoingTimer");
+                        if (timerEl) timerEl.textContent = "Line Busy (Call Alert Sent)";
+                        showAppToast(`ℹ️ @${targetUsername} is currently in another 1-on-1 call. We sent an in-call notification to them.`, "warning");
+                        setTimeout(() => this.closeOutgoingModal(), 3500);
+                        return;
+                    }
                     throw new Error(errData.error || "Could not initiate call");
                 }
 

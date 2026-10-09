@@ -95,6 +95,17 @@
         </div>
     </header>
 
+    <!-- MOBILE / TABLET VIEW SWITCHER (Visible only on <= 991px) -->
+    <div class="cq-mobile-view-tabs" id="cqMobileViewTabs">
+        <button class="cq-mobile-tab-btn active" id="btnTabEditor" type="button">
+            <i class="fa-solid fa-code me-1"></i><span>Code & Output</span>
+        </button>
+        <button class="cq-mobile-tab-btn" id="btnTabHuddle" type="button">
+            <i class="fa-solid fa-video me-1"></i><span>Video & Chat</span>
+            <span class="cq-mobile-chat-badge" id="mobileChatBadge" style="display: none;">•</span>
+        </button>
+    </div>
+
     <!-- MAIN FOCUSED WORKSPACE (EDITOR, I/O, VIDEO CAM, CHAT) -->
     <main class="cq-main-layout">
         
@@ -369,26 +380,23 @@
 
     <!-- PARTNER LEFT HUDDLE POPUP MODAL -->
     <div class="modal fade" id="partnerLeftModal" tabindex="-1" aria-labelledby="partnerLeftModalLabel" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
             <div class="modal-content cq-slack-modal border-0 shadow-lg" style="background: #222529; color: #fff; border-radius: 14px; border: 1px solid #383a40 !important;">
                 <div class="modal-header border-0 pb-0 pt-4 px-4 text-center d-block">
-                    <div style="width: 58px; height: 58px; background: rgba(234, 179, 8, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
-                        <i class="fa-solid fa-person-walking-arrow-right fa-2xl" style="color: #eab308;"></i>
+                    <div style="width: 52px; height: 52px; background: rgba(234, 179, 8, 0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                        <i class="fa-solid fa-person-walking-arrow-right fa-xl" style="color: #eab308;"></i>
                     </div>
-                    <h5 class="modal-title fw-bold" id="partnerLeftModalLabel" style="font-size: 1.25rem; color: #f8fafc;">Partner Has Left The Meeting</h5>
+                    <h5 class="modal-title fw-bold" id="partnerLeftModalLabel" style="font-size: 1.15rem; color: #f8fafc;"><span id="partnerLeftUsername">He</span> is left</h5>
                 </div>
                 <div class="modal-body text-center py-2 px-4" style="color: #94a3b8; font-size: 0.95rem;">
-                    <span id="partnerLeftUsername" class="fw-semibold text-white">Your partner</span> has disconnected and left this 1-on-1 Huddle. You can invite another teammate using the room link, stay here to continue coding, or return to the dashboard.
+                    <p id="partnerLeftBodyText" class="mb-0 text-white fw-semibold">He is left</p>
                 </div>
-                <div class="modal-footer border-0 pt-3 pb-4 px-4 d-flex flex-wrap justify-content-center gap-2">
-                    <button type="button" class="btn btn-outline-light px-3 py-2 fw-semibold" id="partnerLeftCopyLinkBtn" style="border-radius: 8px; font-size: 0.88rem;">
-                        <i class="fa-solid fa-link me-1"></i> Copy Room Link
-                    </button>
+                <div class="modal-footer border-0 pt-3 pb-4 px-4 d-flex justify-content-center gap-2">
                     <button type="button" class="btn btn-secondary px-3 py-2 fw-semibold" data-bs-dismiss="modal" id="partnerLeftStayBtn" style="background: #33373d; border: 1px solid #4a4e57; border-radius: 8px; color: #e2e8f0; font-size: 0.88rem;">
-                        <i class="fa-solid fa-code me-1"></i> Stay & Code
+                        Stay
                     </button>
                     <a href="dashboard.html" class="btn btn-danger px-3 py-2 fw-semibold" id="partnerLeftExitBtn" style="background: #e01e5a; border: none; border-radius: 8px; font-size: 0.88rem; box-shadow: 0 4px 12px rgba(224, 30, 90, 0.35);">
-                        <i class="fa-solid fa-arrow-right-from-bracket me-1"></i> Go to Dashboard
+                        Leave
                     </a>
                 </div>
             </div>

@@ -2504,9 +2504,9 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
         let targetInCall = false;
         let activeRoomFound = null;
 
-        // 1. Check live collab rooms for 2+ members
+        // 1. Check live collab rooms for active members
         for (const [rId, room] of collabRooms.entries()) {
-            if (room.peers && room.peers.size >= 2) {
+            if (room.peers && room.peers.size >= 1) {
                 for (const peer of room.peers.values()) {
                     if (peer.user) {
                         const pId = String(peer.user.id || peer.user._id || "");
@@ -2542,7 +2542,8 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
                 type: "call-busy-waiting",
                 caller: req.user.username,
                 callerAvatar: req.user.avatarUrl || "default-avatar.png",
-                message: `@${req.user.username} tried to call you (User Busy in 1-on-1 call).`,
+                target: target.username,
+                message: `@${req.user.username} is calling ${target.username} (Line Busy).`,
                 timestamp: Date.now()
             };
 
@@ -2550,7 +2551,7 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
             notifyUserSocket(targetIdStr, busyAlert);
             notifyUserSocket(target.username, busyAlert);
 
-            // Broadcast into their live collab room so both users in call see the alert
+            // Broadcast into their live collab room so user in call gets the incoming call message
             if (activeRoomFound && activeRoomFound.peers) {
                 activeRoomFound.peers.forEach((peer) => {
                     if (peer.ws.readyState === WebSocket.OPEN) {
@@ -2560,7 +2561,7 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
             }
 
             return res.status(409).json({
-                error: `@${target.username} is currently in another 1-on-1 call. Line busy!`,
+                error: `@${target.username} is currently in another 1-on-1 call. A notification was sent to their screen.`,
                 busy: true
             });
         }

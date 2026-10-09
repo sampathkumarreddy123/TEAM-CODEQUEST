@@ -1404,3 +1404,287 @@ body.cq-collab-body {
 ::-webkit-scrollbar-thumb:hover {
     background: #4F5259;
 }
+
+/* ==========================================================================
+   IN-CALL BUSY CALL ALERT BANNER
+   ========================================================================== */
+.cq-in-call-alert-banner {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 1px solid rgba(234, 179, 8, 0.5);
+    border-radius: 8px;
+    color: #F8FAFC;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    animation: alertSlideDown 0.25s ease-out;
+}
+
+@keyframes alertSlideDown {
+    from { transform: translateY(-12px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ==========================================================================
+   MOBILE VIEW SWITCHER TABS (Hidden by default on Desktop/Laptop)
+   ========================================================================== */
+.cq-mobile-view-tabs {
+    display: none;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN ACROSS ALL DEVICES (DESKTOP, LAPTOP, TABLET, MOBILE)
+   ========================================================================== */
+
+/* 1. Large Desktops & Widescreens (> 1400px) */
+@media (min-width: 1400px) {
+    .cq-sidebar-column {
+        width: 430px;
+    }
+    .cq-stage-card {
+        height: 285px;
+    }
+    .cq-io-panel {
+        height: 220px;
+    }
+}
+
+/* 2. Standard Laptops (992px to 1200px) */
+@media (max-width: 1200px) and (min-width: 992px) {
+    .cq-sidebar-column {
+        width: 330px;
+    }
+    .cq-stage-card {
+        height: 225px;
+    }
+    .cq-io-panel {
+        height: 180px;
+    }
+    .cq-brand-badge {
+        display: none;
+    }
+}
+
+/* 3. Tablets & Small Laptops (768px to 991px) */
+@media (max-width: 991px) {
+    body.cq-collab-body {
+        height: 100vh;
+        height: 100dvh;
+        overflow-y: hidden;
+    }
+
+    .cq-navbar {
+        height: 50px;
+        padding: 0 12px;
+    }
+
+    .cq-presence-status {
+        padding: 2px 8px;
+    }
+
+    .cq-brand-badge {
+        display: none;
+    }
+
+    /* Mobile / Tablet Tab Switcher Bar */
+    .cq-mobile-view-tabs {
+        display: flex;
+        background: var(--slack-surface-subtle);
+        border-bottom: 1px solid var(--slack-border);
+        padding: 6px 12px;
+        gap: 8px;
+        flex-shrink: 0;
+        z-index: 50;
+    }
+
+    .cq-mobile-tab-btn {
+        flex: 1;
+        height: 36px;
+        background: var(--slack-surface);
+        border: 1px solid var(--slack-border);
+        color: var(--slack-text-secondary);
+        border-radius: var(--slack-radius);
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        position: relative;
+    }
+
+    .cq-mobile-tab-btn.active {
+        background: var(--slack-blue-subtle);
+        border-color: var(--slack-blue);
+        color: #FFFFFF;
+        box-shadow: 0 2px 8px rgba(18, 100, 163, 0.3);
+    }
+
+    .cq-mobile-chat-badge {
+        background: var(--slack-red);
+        color: #fff;
+        font-size: 10px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+    }
+
+    .cq-main-layout {
+        flex-direction: column;
+        overflow: hidden;
+        height: calc(100vh - 98px);
+        height: calc(100dvh - 98px);
+    }
+
+    /* Toggle visibility on <= 991px based on active tab */
+    .cq-main-layout[data-active-tab="editor"] .cq-editor-column {
+        display: flex !important;
+        width: 100% !important;
+        flex: 1;
+        overflow-y: auto;
+    }
+    .cq-main-layout[data-active-tab="editor"] .cq-sidebar-column {
+        display: none !important;
+    }
+
+    .cq-main-layout[data-active-tab="huddle"] .cq-editor-column {
+        display: none !important;
+    }
+    .cq-main-layout[data-active-tab="huddle"] .cq-sidebar-column {
+        display: flex !important;
+        width: 100% !important;
+        flex: 1;
+        padding: 10px;
+        overflow-y: auto;
+    }
+
+    .cq-sidebar-column {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .cq-stage-card {
+        height: 270px;
+    }
+
+    .cq-chat-card {
+        min-height: 320px;
+        flex: 1;
+    }
+
+    .cq-io-panel {
+        height: auto;
+        grid-template-columns: 1fr;
+        min-height: 230px;
+    }
+
+    .cq-io-box {
+        min-height: 110px;
+    }
+}
+
+/* 4. Mobile Phones (< 768px, down to 320px) */
+@media (max-width: 767px) {
+    .cq-navbar {
+        height: 48px;
+        padding: 0 8px;
+    }
+
+    .cq-brand-title {
+        font-size: 13px;
+    }
+
+    .cq-nav-center {
+        display: none !important;
+    }
+
+    .cq-room-pill {
+        height: 28px;
+        padding: 0 6px;
+        font-size: 10px;
+    }
+
+    .cq-select-sm {
+        height: 30px;
+        font-size: 11px;
+        padding: 0 16px 0 6px;
+        max-width: 105px;
+    }
+
+    .btn-slack-run {
+        height: 30px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
+    .btn-slack-secondary {
+        display: none;
+    }
+
+    .btn-slack-leave {
+        height: 30px;
+        padding: 0 8px;
+        font-size: 11px;
+    }
+
+    .cq-stage-card {
+        height: 220px;
+    }
+
+    .cq-stage-view {
+        gap: 4px;
+        padding: 4px;
+    }
+
+    .cq-tile-username {
+        font-size: 11px;
+    }
+
+    .cq-tile-status {
+        font-size: 9px;
+    }
+
+    .cq-media-controls-bar {
+        height: 40px;
+        gap: 4px;
+        padding: 4px;
+    }
+
+    .btn-cq-ctrl {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+
+    .cq-editor-card {
+        min-height: 200px;
+    }
+
+    .cq-code-textarea {
+        font-size: 12px;
+    }
+
+    .cq-chat-messages {
+        max-height: 260px;
+    }
+
+    .cq-chat-item {
+        font-size: 12px;
+    }
+
+    /* Modals Responsive Sizing */
+    .cq-call-card, .cq-slack-modal {
+        width: 95% !important;
+        margin: auto;
+    }
+}

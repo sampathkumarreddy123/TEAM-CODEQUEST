@@ -373,6 +373,10 @@
                 }
                 break;
 
+            case "call-busy-waiting":
+                handleIncomingCallWhileBusy(msg);
+                break;
+
             case "peer-status":
                 if (msg.peerId === remotePeerId || !remotePeerId) {
                     if (msg.isMuted !== undefined) {
@@ -1332,9 +1336,11 @@
     function showPartnerLeftModal(user) {
         const partnerName = (user && user.username && !user.username.startsWith("Developer_"))
             ? user.username
-            : (user && user.username ? user.username : "Your partner");
-        const nameEl = document.getElementById("partnerLeftUsername");
-        if (nameEl) nameEl.textContent = partnerName;
+            : "He";
+        const labelEl = document.getElementById("partnerLeftModalLabel");
+        if (labelEl) labelEl.textContent = `${partnerName} is left`;
+        const bodyEl = document.getElementById("partnerLeftBodyText");
+        if (bodyEl) bodyEl.textContent = `${partnerName} is left the meeting`;
         if (partnerLeftModal && window.bootstrap) {
             const modal = bootstrap.Modal.getOrCreateInstance(partnerLeftModal);
             modal.show();
@@ -1357,6 +1363,112 @@
             } catch(e) {
                 prompt("Copy this Huddle invite link:", inviteUrl);
             }
+        });
+    }
+
+    // In-Call Busy Incoming Call Alert Handler
+    function handleIncomingCallWhileBusy(msg) {
+        const callerName = msg.caller || "Someone";
+        const isForMe = msg.target && currentUser.username &&
+            msg.target.toLowerCase() === currentUser.username.toLowerCase();
+
+        // 1. Play soft dual-tone alert
+        playDoubleBeepAlert();
+
+        // 2. High-visibility Toast Notification
+        const alertText = isForMe
+            ? `📞 Incoming Call Alert: @${callerName} is calling you right now (Line Busy).`
+            : `📞 Incoming Call Alert: @${callerName} is calling @${msg.target || 'partner'} (Line Busy).`;
+        showToast(alertText, "warning");
+
+        // 3. Render into In-Call Pair Chat as a System Notification
+        renderChatMessage({
+            id: "call-alert-" + Date.now(),
+            fromPeerId: "system",
+            sender: "System Alert",
+            avatarUrl: msg.callerAvatar || "default-avatar.png",
+            message: `⚠️ Call Alert: @${callerName} tried to call ${isForMe ? 'you' : '@' + (msg.target || 'partner')} while in this active 1-on-1 Huddle.`,
+            timestamp: Date.now()
+        });
+
+        // 4. Floating Stage Banner Alert
+        showFloatingInCallAlert(callerName, isForMe ? 'you' : (msg.target || 'partner'));
+
+        // 5. Update mobile chat badge if on editor tab
+        const cqMainLayout = document.querySelector(".cq-main-layout");
+        const mobileChatBadge = document.getElementById("mobileChatBadge");
+        if (mobileChatBadge && cqMainLayout && cqMainLayout.getAttribute("data-active-tab") === "editor") {
+            mobileChatBadge.style.display = "inline-flex";
+        }
+    }
+
+    function showFloatingInCallAlert(caller, target) {
+        let alertBanner = document.getElementById("huddleCallAlertBanner");
+        if (!alertBanner) {
+            alertBanner = document.createElement("div");
+            alertBanner.id = "huddleCallAlertBanner";
+            alertBanner.className = "cq-in-call-alert-banner";
+            const stage = document.getElementById("huddleStageContainer") || document.body;
+            stage.prepend(alertBanner);
+        }
+        alertBanner.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between w-100 px-3 py-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-phone-volume text-warning"></i>
+                    <span><b>@${escapeHtml(caller)}</b> is calling ${escapeHtml(target)}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white btn-sm" onclick="this.closest('#huddleCallAlertBanner').remove()" aria-label="Dismiss"></button>
+            </div>
+        `;
+        alertBanner.style.display = "flex";
+        setTimeout(() => {
+            if (alertBanner) alertBanner.remove();
+        }, 8000);
+    }
+
+    function playDoubleBeepAlert() {
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+            gain.gain.setValueAtTime(0.2, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.35);
+        } catch(e) {}
+    }
+
+    // -------------------------------------------------------------
+    // MOBILE / TABLET VIEW SWITCHER LOGIC
+    // -------------------------------------------------------------
+    const cqMainLayout = document.querySelector(".cq-main-layout");
+    const btnTabEditor = document.getElementById("btnTabEditor");
+    const btnTabHuddle = document.getElementById("btnTabHuddle");
+    const mobileChatBadge = document.getElementById("mobileChatBadge");
+
+    if (cqMainLayout) {
+        cqMainLayout.setAttribute("data-active-tab", "editor");
+    }
+
+    if (btnTabEditor && btnTabHuddle && cqMainLayout) {
+        btnTabEditor.addEventListener("click", () => {
+            cqMainLayout.setAttribute("data-active-tab", "editor");
+            btnTabEditor.classList.add("active");
+            btnTabHuddle.classList.remove("active");
+        });
+
+        btnTabHuddle.addEventListener("click", () => {
+            cqMainLayout.setAttribute("data-active-tab", "huddle");
+            btnTabHuddle.classList.add("active");
+            btnTabEditor.classList.remove("active");
+            if (mobileChatBadge) mobileChatBadge.style.display = "none";
         });
     }
 

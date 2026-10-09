@@ -800,3 +800,116 @@ body.lightbox-open {
   gap: 5px;
   line-height: 1.2;
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN FOR PROFILE ACROSS MOBILE, TABLETS, LAPTOPS & DESKTOPS
+   ========================================================================== */
+
+/* Desktops and Laptops (> 992px) */
+@media (min-width: 992px) {
+  .profile-wrapper {
+    max-width: 860px;
+  }
+}
+
+/* Tablets (768px - 991px) */
+@media (max-width: 991px) {
+  .main-layout {
+    padding: 20px 16px 40px;
+  }
+
+  .profile-card {
+    padding: 24px;
+  }
+
+  .profile-header-content {
+    gap: 18px;
+  }
+}
+
+/* Mobile Phones (< 768px) */
+@media (max-width: 767px) {
+  .app-header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .brand-title {
+    font-size: 1.1rem;
+  }
+
+  .header-right {
+    gap: 6px;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .btn-collab-nav, .btn-vault-nav, .btn-back, .btn-logout {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+  }
+
+  .main-layout {
+    padding: 16px 12px 40px;
+  }
+
+  .profile-card {
+    padding: 20px 16px;
+  }
+
+  .profile-header-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .profile-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-meta .d-flex {
+    justify-content: center;
+  }
+
+  .profile-name {
+    font-size: 1.4rem;
+  }
+
+  .profile-call-action-wrap {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .btn-profile-call {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding-top: 16px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-value {
+    font-size: 1.3rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  .activity-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+}
