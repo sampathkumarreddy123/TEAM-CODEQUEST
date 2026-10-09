@@ -2176,8 +2176,8 @@ wss.on("connection", (ws, req) => {
                 return;
             }
 
-            // Synchronized Publish Events: broadcast to partner
-            if (type === "publish-modal-opened" || type === "solution-published") {
+            // Synchronized Publish & Reaction Events: broadcast to partner
+            if (type === "publish-modal-opened" || type === "publish-modal-closed" || type === "publish-code-change" || type === "solution-published" || type === "huddle-reaction") {
                 room.peers.forEach((peer, pId) => {
                     if (pId !== currentPeerId && peer.ws.readyState === WebSocket.OPEN) {
                         peer.ws.send(JSON.stringify({

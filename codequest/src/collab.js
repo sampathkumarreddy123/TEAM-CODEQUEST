@@ -1,10 +1,12 @@
 /**
  * CodeQuest Live 1-on-1 Collab Debug Room (Slack Huddle Architecture)
  * - P2P Face-to-Face WebRTC Video & Audio Stream (Dedicated Audio Track + Real Camera)
- * - Active Speaker Detection (Web Audio Analyser)
+ * - Fullscreen Video & Screen Sharing Mode (1-Click & Double Click)
+ * - Synchronized Multi-User Publish Modal (Opens on Both Systems Automatically)
+ * - Active Speaker Detection & Speaking-While-Muted Alert
  * - Real-Time Synchronized Code Editor & Sandbox Console
- * - Slack-Style Floating Controls Pill & Clean Participant Tiles
- * - Multi-Mode Publish & Export System
+ * - Slack-Style Floating Controls Pill, Call Timer & Floating Emoji Reactions
+ * - Enhanced In-Huddle Pair Chat with Code Formatting & Unread Counter
  */
 
 (function () {
@@ -42,8 +44,16 @@
     let isVideoOff = false;
     let isScreenSharing = false;
 
+    // Call Duration Timer
+    let callTimerInterval = null;
+    let callElapsedSeconds = 0;
+
     // Web Audio Active Speaker Detection
     let audioCtx = null;
+    let isMutedSpeakingDebounce = false;
+
+    // Chat unread count
+    let chatUnreadCount = 0;
 
     const rtcConfig = {
         iceServers: [
@@ -62,6 +72,7 @@
     const copiedTooltip = document.getElementById("copiedTooltip");
     const connStatusDot = document.getElementById("connStatusDot");
     const connStatusText = document.getElementById("connStatusText");
+    const huddleTimerBadge = document.getElementById("huddleTimerBadge");
     const activePeersCounter = document.getElementById("activePeersCounter");
 
     // Mobile View Tab Elements
@@ -88,6 +99,7 @@
     const remoteAudio = document.getElementById("remoteAudio");
     const localVideo = document.getElementById("localVideo");
     const remoteVideo = document.getElementById("remoteVideo");
+    const huddleStage = document.getElementById("huddleStage");
     const remotePeerTile = document.getElementById("remotePeerTile");
     const localPeerTile = document.getElementById("localPeerTile");
     const localVideoPlaceholder = document.getElementById("localVideoPlaceholder");
@@ -99,12 +111,23 @@
     const remoteAvatarInitials = document.getElementById("remoteAvatarInitials");
     const localAudioStatusIcon = document.getElementById("localAudioStatusIcon");
     const remoteAudioStatusIcon = document.getElementById("remoteAudioStatusIcon");
+    const stageFullscreenBtn = document.getElementById("stageFullscreenBtn");
+    const stageFullscreenIcon = document.getElementById("stageFullscreenIcon");
+    const ctrlFullscreenBtn = document.getElementById("ctrlFullscreenBtn");
+    const ctrlFullscreenIcon = document.getElementById("ctrlFullscreenIcon");
+    const screenShareActivePill = document.getElementById("screenShareActivePill");
+    const screenShareUserText = document.getElementById("screenShareUserText");
+    const speakingMutedAlert = document.getElementById("speakingMutedAlert");
+    const huddleFloatingReactions = document.getElementById("huddleFloatingReactions");
 
     // Slack Floating Controls
     const toggleMicBtn = document.getElementById("toggleMicBtn");
     const toggleCamBtn = document.getElementById("toggleCamBtn");
     const toggleScreenBtn = document.getElementById("toggleScreenBtn");
+    const toggleReactionBtn = document.getElementById("toggleReactionBtn");
+    const huddleReactionPopover = document.getElementById("huddleReactionPopover");
     const toggleChatBtn = document.getElementById("toggleChatBtn");
+    const chatUnreadBadge = document.getElementById("chatUnreadBadge");
     const hangupBtn = document.getElementById("hangupBtn");
     const leaveRoomBtn = document.getElementById("leaveRoomBtn");
     const huddleChatPanel = document.getElementById("huddleChatPanel");
@@ -114,6 +137,7 @@
     const chatMessagesContainer = document.getElementById("chatMessagesContainer");
     const chatInputForm = document.getElementById("chatInputForm");
     const chatMessageInput = document.getElementById("chatMessageInput");
+    const insertEditorCodeBtn = document.getElementById("insertEditorCodeBtn");
 
     // Publish Modal Elements
     const publishSolutionBtn = document.getElementById("publishSolutionBtn");
@@ -121,7 +145,10 @@
     const confirmPublishBtn = document.getElementById("confirmPublishBtn");
     const confirmPublishBtnText = document.getElementById("confirmPublishBtnText");
     const exportModalEl = document.getElementById("exportAnswerModal");
+    const modalCloseBtn = document.getElementById("modalCloseBtn");
+    const modalCancelBtn = document.getElementById("modalCancelBtn");
     let exportModalInstance = null;
+    let isPublishCodeSyncing = false;
 
     const tabModeAnswer = document.getElementById("tabModeAnswer");
     const tabModeQuestion = document.getElementById("tabModeQuestion");
@@ -226,6 +253,19 @@
         }
     }
 
+    // Call Duration Timer
+    function startCallTimer() {
+        if (callTimerInterval) clearInterval(callTimerInterval);
+        callElapsedSeconds = 0;
+        callTimerInterval = setInterval(() => {
+            callElapsedSeconds++;
+            const mins = Math.floor(callElapsedSeconds / 60);
+            const secs = callElapsedSeconds % 60;
+            const formatted = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+            if (huddleTimerBadge) huddleTimerBadge.textContent = formatted;
+        }, 1000);
+    }
+
     // -------------------------------------------------------------
     // 3. WEBSOCKET REAL-TIME NETWORKING
     // -------------------------------------------------------------
@@ -242,6 +282,7 @@
 
         ws.onopen = () => {
             updateConnStatus("connected", "In Huddle");
+            startCallTimer();
             ws.send(JSON.stringify({
                 type: "join-room",
                 roomId: roomId,
@@ -298,7 +339,6 @@
                     remotePeerId = primaryPeer.peerId;
                     setRemotePeerProfile(primaryPeer.user);
 
-                    // Initiator connects to existing peer
                     initiatePeerConnection(remotePeerId, true);
                 } else {
                     if (activePeersCounter) activePeersCounter.textContent = `1 in huddle`;
@@ -371,6 +411,17 @@
                         remotePlaceholderText.textContent = "Camera is turned off";
                     }
                 }
+                if (data.isScreenSharing !== undefined) {
+                    if (screenShareActivePill) {
+                        screenShareActivePill.style.display = data.isScreenSharing ? "flex" : "none";
+                        if (screenShareUserText) {
+                            screenShareUserText.textContent = `@${data.fromUser || "Partner"} is sharing screen`;
+                        }
+                    }
+                    if (data.isScreenSharing) {
+                        showToast(`🖥️ @${data.fromUser || "Partner"} started screen sharing`);
+                    }
+                }
                 break;
 
             case "peer-left":
@@ -381,6 +432,7 @@
                 if (remoteVideoPlaceholder) remoteVideoPlaceholder.style.display = "flex";
                 if (remotePlaceholderText) remotePlaceholderText.textContent = "Partner left. Waiting for partner...";
                 if (remotePeerTile) remotePeerTile.classList.remove("is-speaking");
+                if (screenShareActivePill) screenShareActivePill.style.display = "none";
 
                 if (peerConnection) {
                     peerConnection.close();
@@ -396,12 +448,33 @@
                 showToast(`Notice: @${data.visitor || "A developer"} tried to join, but 1-on-1 huddle is full.`);
                 break;
 
+            // Publish Synchronization: open modal automatically on partner's screen
             case "publish-modal-opened":
-                showToast(`@${data.fromUser || "Partner"} opened the Publish dialog`);
+                showToast(`@${data.fromUser || "Partner"} opened Collaborative Publish dialog`);
+                openPublishModal(false, data.code, data.mode);
+                break;
+
+            case "publish-modal-closed":
+                if (exportModalInstance) {
+                    exportModalInstance.hide();
+                }
+                break;
+
+            case "publish-code-change":
+                if (exportCodePreview && data.code !== undefined && !isPublishCodeSyncing) {
+                    exportCodePreview.value = data.code;
+                }
                 break;
 
             case "solution-published":
                 showPartnerPublishedModal(data);
+                break;
+
+            // Interactive Reactions: float emoji on video stage
+            case "huddle-reaction":
+                if (data.emoji) {
+                    showFloatingReaction(data.emoji);
+                }
                 break;
         }
     }
@@ -427,7 +500,6 @@
         }
 
         try {
-            // Request clean HD webcam and noise-suppressed microphone
             localStream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
                 audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
@@ -443,7 +515,6 @@
         } catch (err) {
             console.warn("Could not acquire video camera, falling back to audio-only:", err.name, err.message);
             try {
-                // Audio-only fallback
                 localStream = await navigator.mediaDevices.getUserMedia({
                     audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
                 });
@@ -485,7 +556,7 @@
     }
 
     /**
-     * Active Speaker Detection via Web Audio API (Slack-style green pulse)
+     * Active Speaker Detection via Web Audio API + Speaking While Muted Alert
      */
     function setupAudioAnalyser(stream, isLocal) {
         if (!window.AudioContext && !window.webkitAudioContext) return;
@@ -510,9 +581,7 @@
             function checkAudioLevel() {
                 analyser.getByteFrequencyData(buffer);
                 let sum = 0;
-                for (let i = 0; i < buffer.length; i++) {
-                    sum += buffer[i];
-                }
+                for (let i = 0; i < buffer.length; i++) sum += buffer[i];
                 const avg = sum / buffer.length;
                 const isSpeaking = avg > 20;
 
@@ -523,6 +592,16 @@
                     } else {
                         targetTile.classList.remove("is-speaking");
                     }
+                }
+
+                // If user speaks while local mic is muted, display warning alert
+                if (isLocal && isMicMuted && isSpeaking && !isMutedSpeakingDebounce) {
+                    isMutedSpeakingDebounce = true;
+                    if (speakingMutedAlert) speakingMutedAlert.style.display = "block";
+                    setTimeout(() => {
+                        if (speakingMutedAlert) speakingMutedAlert.style.display = "none";
+                        isMutedSpeakingDebounce = false;
+                    }, 2400);
                 }
 
                 requestAnimationFrame(checkAudioLevel);
@@ -544,14 +623,12 @@
 
         peerConnection = new RTCPeerConnection(rtcConfig);
 
-        // Attach local tracks
         if (localStream) {
             localStream.getTracks().forEach((track) => {
                 peerConnection.addTrack(track, localStream);
             });
         }
 
-        // Dedicated remote track handling
         peerConnection.ontrack = (event) => {
             console.log("📹 [WebRTC] Remote track arrived:", event.track.kind);
 
@@ -583,7 +660,6 @@
             }
         };
 
-        // ICE candidate exchange
         peerConnection.onicecandidate = (event) => {
             if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({
@@ -693,7 +769,119 @@
     window.addEventListener("keydown", unlockMediaAudio, { passive: true });
 
     // -------------------------------------------------------------
-    // 5. SLACK CONTROLS: MIC, CAMERA, SCREEN SHARE
+    // 5. FULLSCREEN VIDEO & SCREEN SHARING MODE
+    // -------------------------------------------------------------
+    function toggleStageFullscreen() {
+        if (!huddleStage) return;
+
+        const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || huddleStage.classList.contains("is-stage-fullscreen");
+
+        if (!isFullscreen) {
+            if (huddleStage.requestFullscreen) {
+                huddleStage.requestFullscreen().catch(() => {
+                    // Fallback to in-window maximized focus
+                    huddleStage.classList.add("is-stage-fullscreen");
+                    updateFullscreenIcons(true);
+                });
+            } else if (huddleStage.webkitRequestFullscreen) {
+                huddleStage.webkitRequestFullscreen();
+            } else {
+                huddleStage.classList.add("is-stage-fullscreen");
+                updateFullscreenIcons(true);
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch(() => {});
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+            huddleStage.classList.remove("is-stage-fullscreen");
+            updateFullscreenIcons(false);
+        }
+    }
+
+    function updateFullscreenIcons(isFs) {
+        if (stageFullscreenIcon) {
+            stageFullscreenIcon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+        }
+        if (ctrlFullscreenIcon) {
+            ctrlFullscreenIcon.className = isFs ? "fa-solid fa-compress" : "fa-solid fa-expand";
+        }
+    }
+
+    if (stageFullscreenBtn) stageFullscreenBtn.addEventListener("click", toggleStageFullscreen);
+    if (ctrlFullscreenBtn) ctrlFullscreenBtn.addEventListener("click", toggleStageFullscreen);
+
+    // Double-click stage to toggle fullscreen
+    if (huddleStage) {
+        huddleStage.addEventListener("dblclick", (e) => {
+            // Don't trigger if clicked on controls or buttons
+            if (e.target.closest("button") || e.target.closest(".huddle-controls-wrapper")) return;
+            toggleStageFullscreen();
+        });
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+        const isFs = !!document.fullscreenElement;
+        updateFullscreenIcons(isFs);
+    });
+
+    document.addEventListener("webkitfullscreenchange", () => {
+        const isFs = !!document.webkitFullscreenElement;
+        updateFullscreenIcons(isFs);
+    });
+
+    // -------------------------------------------------------------
+    // 6. FLOATING EMOJI REACTIONS (👍, 🔥, 💡, 🚀, 👏, ❤️)
+    // -------------------------------------------------------------
+    if (toggleReactionBtn && huddleReactionPopover) {
+        toggleReactionBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isHidden = huddleReactionPopover.style.display === "none";
+            huddleReactionPopover.style.display = isHidden ? "flex" : "none";
+        });
+    }
+
+    document.addEventListener("click", (e) => {
+        if (huddleReactionPopover && !e.target.closest("#huddleReactionPopover") && !e.target.closest("#toggleReactionBtn")) {
+            huddleReactionPopover.style.display = "none";
+        }
+    });
+
+    document.querySelectorAll(".btn-reaction-emoji").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const emoji = btn.dataset.emoji || "👍";
+            showFloatingReaction(emoji);
+            if (huddleReactionPopover) huddleReactionPopover.style.display = "none";
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "huddle-reaction",
+                    roomId: roomId,
+                    emoji: emoji
+                }));
+            }
+        });
+    });
+
+    function showFloatingReaction(emoji) {
+        if (!huddleFloatingReactions) return;
+        const item = document.createElement("div");
+        item.className = "floating-reaction-item";
+        item.textContent = emoji;
+
+        // Random horizontal start position between 20% and 80%
+        const randX = Math.floor(20 + Math.random() * 60);
+        item.style.left = `${randX}%`;
+
+        huddleFloatingReactions.appendChild(item);
+        setTimeout(() => {
+            item.remove();
+        }, 2700);
+    }
+
+    // -------------------------------------------------------------
+    // 7. SLACK CONTROLS: MIC, CAMERA, SCREEN SHARE
     // -------------------------------------------------------------
     if (toggleMicBtn) {
         toggleMicBtn.addEventListener("click", () => {
@@ -713,7 +901,6 @@
         toggleCamBtn.addEventListener("click", async () => {
             isVideoOff = !isVideoOff;
 
-            // If user turns video ON and has no existing video track, acquire video
             if (!isVideoOff && (!localStream || localStream.getVideoTracks().length === 0) && navigator.mediaDevices) {
                 try {
                     const vStream = await navigator.mediaDevices.getUserMedia({
@@ -778,6 +965,19 @@
                     isScreenSharing = true;
                     toggleScreenBtn.classList.add("is-active-share");
 
+                    if (screenShareActivePill) {
+                        screenShareActivePill.style.display = "flex";
+                        if (screenShareUserText) screenShareUserText.textContent = "You are sharing screen";
+                    }
+
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "peer-status",
+                            isScreenSharing: true,
+                            fromUser: currentUser ? currentUser.username : "Partner"
+                        }));
+                    }
+
                     screenTrack.onended = () => stopScreenShare();
                     showToast("Screen sharing active");
                 } catch (err) {
@@ -809,21 +1009,33 @@
         }
         isScreenSharing = false;
         toggleScreenBtn.classList.remove("is-active-share");
+
+        if (screenShareActivePill) screenShareActivePill.style.display = "none";
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: "peer-status",
+                isScreenSharing: false,
+                fromUser: currentUser ? currentUser.username : "Partner"
+            }));
+        }
         showToast("Screen sharing stopped");
     }
 
     // Toggle Chat Panel
-    if (toggleChatBtn && huddleChatPanel) {
-        toggleChatBtn.addEventListener("click", () => {
-            const isHidden = huddleChatPanel.style.display === "none";
-            huddleChatPanel.style.display = isHidden ? "flex" : "none";
-        });
+    function toggleChatPanel() {
+        if (!huddleChatPanel) return;
+        const isCollapsed = huddleChatPanel.classList.toggle("is-collapsed");
+        if (!isCollapsed) {
+            chatUnreadCount = 0;
+            if (chatUnreadBadge) chatUnreadBadge.style.display = "none";
+            if (chatMessageInput) chatMessageInput.focus();
+            if (chatMessagesContainer) chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
     }
-    if (closeChatBtn && huddleChatPanel) {
-        closeChatBtn.addEventListener("click", () => {
-            huddleChatPanel.style.display = "none";
-        });
-    }
+
+    if (toggleChatBtn) toggleChatBtn.addEventListener("click", toggleChatPanel);
+    if (closeChatBtn) closeChatBtn.addEventListener("click", toggleChatPanel);
 
     // Hangup / Leave Call
     function leaveHuddle() {
@@ -841,7 +1053,7 @@
     if (leaveRoomBtn) leaveRoomBtn.addEventListener("click", leaveHuddle);
 
     // -------------------------------------------------------------
-    // 6. SYNCHRONIZED CODE EDITOR & LINE NUMBERS
+    // 8. SYNCHRONIZED CODE EDITOR & LINE NUMBERS
     // -------------------------------------------------------------
     function updateLineNumbers() {
         const lines = (collabCodeInput.value || "").split("\n").length;
@@ -923,7 +1135,7 @@
     }
 
     // -------------------------------------------------------------
-    // 7. CODE EXECUTION & CONSOLE DRAWER
+    // 9. CODE EXECUTION & CONSOLE DRAWER
     // -------------------------------------------------------------
     runCollabCodeBtn.addEventListener("click", () => {
         const code = collabCodeInput.value;
@@ -1045,8 +1257,20 @@
     });
 
     // -------------------------------------------------------------
-    // 8. PAIR PROGRAMMING CHAT
+    // 10. ENHANCED IN-HUDDLE PAIR CHAT
     // -------------------------------------------------------------
+    if (insertEditorCodeBtn) {
+        insertEditorCodeBtn.addEventListener("click", () => {
+            const code = (collabCodeInput ? collabCodeInput.value : "").trim();
+            if (!code) {
+                showToast("Editor is empty. Write code first!");
+                return;
+            }
+            chatMessageInput.value = `\`\`\`\n${code}\n\`\`\``;
+            chatMessageInput.focus();
+        });
+    }
+
     chatInputForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const text = chatMessageInput.value.trim();
@@ -1074,12 +1298,30 @@
     function appendChatMessage(msg, isMine) {
         const bubble = document.createElement("div");
         bubble.className = `chat-message-bubble ${isMine ? "me" : "partner"}`;
+
+        let formattedBody = escapeHtml(msg.text);
+        if (msg.text.includes("```")) {
+            const parts = msg.text.split("```");
+            if (parts.length >= 3) {
+                formattedBody = `${escapeHtml(parts[0])}<pre><code>${escapeHtml(parts[1])}</code></pre>${escapeHtml(parts[2])}`;
+            }
+        }
+
         bubble.innerHTML = `
             ${!isMine ? `<span class="chat-bubble-author">@${escapeHtml(msg.user.username)}</span>` : ""}
-            <div class="chat-bubble-body">${escapeHtml(msg.text)}</div>
+            <div class="chat-bubble-body">${formattedBody}</div>
         `;
         chatMessagesContainer.appendChild(bubble);
         chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+        // If chat is collapsed and message is from partner, update unread count badge
+        if (!isMine && huddleChatPanel && huddleChatPanel.classList.contains("is-collapsed")) {
+            chatUnreadCount++;
+            if (chatUnreadBadge) {
+                chatUnreadBadge.textContent = chatUnreadCount;
+                chatUnreadBadge.style.display = "flex";
+            }
+        }
 
         if (!isMine && mobileUnreadDot && paneCollabMedia && paneCollabMedia.classList.contains("mobile-hidden")) {
             mobileUnreadDot.style.display = "inline-block";
@@ -1087,7 +1329,7 @@
     }
 
     // -------------------------------------------------------------
-    // 9. COPY INVITE LINK & MULTI-MODE PUBLISH MODAL
+    // 11. SYNCHRONIZED PUBLISH MODAL (OPENS ON BOTH SCREENS)
     // -------------------------------------------------------------
     function copyInviteLink() {
         const link = window.location.href;
@@ -1125,17 +1367,25 @@
         });
     }
 
-    function openPublishModal() {
-        const currentCode = (collabCodeInput ? collabCodeInput.value : "").trim();
+    function openPublishModal(shouldBroadcast = true, remoteCode = null, remoteMode = null) {
+        const currentCode = remoteCode !== null ? remoteCode : (collabCodeInput ? collabCodeInput.value : "").trim();
         if (exportCodePreview) {
             exportCodePreview.value = currentCode || "// Collaborative code snippet\nconsole.log('Ready to publish');";
         }
 
-        if (ws && ws.readyState === WebSocket.OPEN) {
+        if (remoteMode && remoteMode !== currentPublishMode) {
+            if (remoteMode === "question" && tabModeQuestion) tabModeQuestion.click();
+            else if (remoteMode === "vault" && tabModeVault) tabModeVault.click();
+            else if (tabModeAnswer) tabModeAnswer.click();
+        }
+
+        if (shouldBroadcast && ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({
                 type: "publish-modal-opened",
                 roomId: roomId,
-                fromUser: currentUser ? currentUser.username : "Partner"
+                fromUser: currentUser ? currentUser.username : "Partner",
+                code: exportCodePreview.value,
+                mode: currentPublishMode
             }));
         }
 
@@ -1155,7 +1405,42 @@
     }
 
     if (publishSolutionBtn) {
-        publishSolutionBtn.addEventListener("click", openPublishModal);
+        publishSolutionBtn.addEventListener("click", () => {
+            openPublishModal(true);
+        });
+    }
+
+    // Modal close broadcast
+    function handlePublishModalClose() {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: "publish-modal-closed",
+                roomId: roomId,
+                fromUser: currentUser ? currentUser.username : "Partner"
+            }));
+        }
+    }
+
+    if (modalCloseBtn) modalCloseBtn.addEventListener("click", handlePublishModalClose);
+    if (modalCancelBtn) modalCancelBtn.addEventListener("click", handlePublishModalClose);
+
+    // Sync typing in publish preview box
+    let publishCodeSyncTimeout = null;
+    if (exportCodePreview) {
+        exportCodePreview.addEventListener("input", () => {
+            isPublishCodeSyncing = true;
+            clearTimeout(publishCodeSyncTimeout);
+            publishCodeSyncTimeout = setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: "publish-code-change",
+                        roomId: roomId,
+                        code: exportCodePreview.value
+                    }));
+                }
+                isPublishCodeSyncing = false;
+            }, 120);
+        });
     }
 
     if (chooseQuestionSelect) {
@@ -1438,7 +1723,7 @@
     }
 
     // -------------------------------------------------------------
-    // 10. STARTUP ENTRY POINT
+    // 12. STARTUP ENTRY POINT
     // -------------------------------------------------------------
     async function start() {
         await initUser();
