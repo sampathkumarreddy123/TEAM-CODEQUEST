@@ -578,25 +578,302 @@
     }
 
     // -------------------------------------------------------------
-    // 8. RUN CODE (WITH CUSTOM INPUT BOX STDIN)
+    // 8. SMART INDENTATION & CODE FORMATTING ENGINE
+    // -------------------------------------------------------------
+    const formatCodeBtn = document.getElementById("formatCodeBtn");
+
+    function formatCode(rawCode, lang = "javascript") {
+        if (!rawCode || !rawCode.trim()) return rawCode;
+
+        const lines = rawCode.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+        let indentLevel = 0;
+        const indentStep = "    "; // Standard 4 spaces
+        const isPython = (lang === "python");
+        const formattedLines = [];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            if (trimmed === "") {
+                formattedLines.push("");
+                continue;
+            }
+
+            if (isPython) {
+                // Python: handle elif, else, except, finally dedent
+                const isDedent = /^(elif|else|except|finally)\b/.test(trimmed);
+                if (isDedent && indentLevel > 0) {
+                    indentLevel--;
+                }
+                formattedLines.push(indentStep.repeat(Math.max(0, indentLevel)) + trimmed);
+
+                if (trimmed.endsWith(":")) {
+                    indentLevel++;
+                }
+            } else {
+                // C-style languages (JS, TS, C++, Java, Rust, Go)
+                let leadingClosing = 0;
+                const matchLeading = trimmed.match(/^(\}|\)|\)])+/);
+                if (matchLeading) {
+                    leadingClosing = matchLeading[0].length;
+                }
+                if (/^(else|catch|finally)\b/.test(trimmed) && leadingClosing === 0) {
+                    leadingClosing = 1;
+                }
+
+                // Count open/close brackets excluding strings & comments
+                let opens = 0;
+                let closes = 0;
+                let inString = false;
+                let quoteChar = "";
+
+                for (let c = 0; c < trimmed.length; c++) {
+                    const char = trimmed[c];
+                    const nextChar = trimmed[c + 1] || "";
+
+                    if (!inString && char === "/" && nextChar === "/") {
+                        break;
+                    }
+
+                    if (!inString && (char === '"' || char === "'" || char === "`")) {
+                        inString = true;
+                        quoteChar = char;
+                    } else if (inString && char === quoteChar && trimmed[c - 1] !== "\\") {
+                        inString = false;
+                    } else if (!inString) {
+                        if (char === "{" || char === "(" || char === "[") {
+                            opens++;
+                        } else if (char === "}" || char === ")" || char === "]") {
+                            closes++;
+                        }
+                    }
+                }
+
+                const printIndent = Math.max(0, indentLevel - leadingClosing);
+                formattedLines.push(indentStep.repeat(printIndent) + trimmed);
+
+                indentLevel = Math.max(0, indentLevel - closes + opens);
+            }
+        }
+
+        return formattedLines.join("\n");
+    }
+
+    function formatEditorCode() {
+        if (!collabCodeInput) return;
+        const raw = collabCodeInput.value;
+        if (!raw.trim()) {
+            showToast("Editor is empty. Nothing to format.", "info");
+            return;
+        }
+
+        const lang = editorLangSelect ? editorLangSelect.value : "javascript";
+        const formatted = formatCode(raw, lang);
+
+        if (formatted !== raw) {
+            collabCodeInput.value = formatted;
+            lastKnownCode = formatted;
+            updateLineNumbers();
+            showSyncBadge("saving");
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "code-change",
+                    code: formatted,
+                    lang
+                }));
+                sendCursorPosition();
+            }
+
+            setTimeout(() => showSyncBadge("synced"), 400);
+            showToast("✨ Code formatted & indentation applied!", "success");
+        } else {
+            showToast("Code is already properly indented 👍", "info");
+        }
+    }
+
+    if (formatCodeBtn) {
+        formatCodeBtn.addEventListener("click", formatEditorCode);
+    }
+
+    // -------------------------------------------------------------
+    // RUN CODE & SMART KEYBOARD HANDLERS
     // -------------------------------------------------------------
     runCollabCodeBtn.addEventListener("click", runCode);
 
-    // Ctrl+Enter keyboard shortcut to execute code
     collabCodeInput.addEventListener("keydown", (e) => {
+        // 1. Run Code: Ctrl+Enter or Cmd+Enter
         if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
             e.preventDefault();
             runCode();
+            return;
         }
+
+        // 2. Format Code shortcut: Shift+Alt+F or Ctrl+Alt+F
+        if ((e.shiftKey && e.altKey && (e.key === "F" || e.key === "f")) ||
+            ((e.ctrlKey || e.metaKey) && e.altKey && (e.key === "F" || e.key === "f"))) {
+            e.preventDefault();
+            formatEditorCode();
+            return;
+        }
+
+        // 3. Smart Enter with Auto-Indentation & Brace Expansion
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            const start = collabCodeInput.selectionStart;
+            const end = collabCodeInput.selectionEnd;
+            const val = collabCodeInput.value;
+
+            // Find current line up to cursor
+            const lastNewline = val.lastIndexOf("\n", start - 1);
+            const lineStart = lastNewline === -1 ? 0 : lastNewline + 1;
+            const currentLine = val.substring(lineStart, start);
+
+            // Existing indentation
+            const indentMatch = currentLine.match(/^[ \t]*/);
+            const currentIndent = indentMatch ? indentMatch[0] : "";
+
+            const trimmedLine = currentLine.trim();
+            const charBefore = val.charAt(start - 1);
+            const charAfter = val.charAt(start);
+            const lang = editorLangSelect ? editorLangSelect.value : "javascript";
+
+            const isBlockOpen = charBefore === "{" || charBefore === "(" || charBefore === "[" || (lang === "python" && trimmedLine.endsWith(":"));
+
+            if (isBlockOpen) {
+                const extraIndent = "    ";
+                // If cursor is between opening and closing braces {|}
+                if ((charBefore === "{" && charAfter === "}") ||
+                    (charBefore === "(" && charAfter === ")") ||
+                    (charBefore === "[" && charAfter === "]")) {
+                    const insert = "\n" + currentIndent + extraIndent + "\n" + currentIndent;
+                    collabCodeInput.value = val.substring(0, start) + insert + val.substring(end);
+                    collabCodeInput.selectionStart = collabCodeInput.selectionEnd = start + 1 + currentIndent.length + extraIndent.length;
+                } else {
+                    const insert = "\n" + currentIndent + extraIndent;
+                    collabCodeInput.value = val.substring(0, start) + insert + val.substring(end);
+                    collabCodeInput.selectionStart = collabCodeInput.selectionEnd = start + insert.length;
+                }
+            } else {
+                // Maintain current indentation
+                const insert = "\n" + currentIndent;
+                collabCodeInput.value = val.substring(0, start) + insert + val.substring(end);
+                collabCodeInput.selectionStart = collabCodeInput.selectionEnd = start + insert.length;
+            }
+
+            updateLineNumbers();
+            triggerCodeInputSync();
+            return;
+        }
+
+        // 4. Tab and Shift+Tab (Multi-line and Single-line Indent/Unindent)
         if (e.key === "Tab") {
             e.preventDefault();
             const start = collabCodeInput.selectionStart;
             const end = collabCodeInput.selectionEnd;
-            collabCodeInput.value = collabCodeInput.value.substring(0, start) + "    " + collabCodeInput.value.substring(end);
-            collabCodeInput.selectionStart = collabCodeInput.selectionEnd = start + 4;
+            const val = collabCodeInput.value;
+
+            if (start !== end && val.substring(start, end).includes("\n")) {
+                const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+                let lineEnd = val.indexOf("\n", end);
+                if (lineEnd === -1) lineEnd = val.length;
+
+                const selectedBlock = val.substring(lineStart, lineEnd);
+                const blockLines = selectedBlock.split("\n");
+
+                let modifiedBlock;
+                let charDiff = 0;
+
+                if (e.shiftKey) {
+                    // Outdent
+                    modifiedBlock = blockLines.map(line => {
+                        if (line.startsWith("    ")) {
+                            charDiff -= 4;
+                            return line.substring(4);
+                        } else if (line.startsWith("\t")) {
+                            charDiff -= 1;
+                            return line.substring(1);
+                        } else {
+                            const spaces = line.match(/^ +/);
+                            if (spaces) {
+                                const removeCount = Math.min(spaces[0].length, 4);
+                                charDiff -= removeCount;
+                                return line.substring(removeCount);
+                            }
+                            return line;
+                        }
+                    }).join("\n");
+                } else {
+                    // Indent
+                    modifiedBlock = blockLines.map(line => {
+                        charDiff += 4;
+                        return "    " + line;
+                    }).join("\n");
+                }
+
+                collabCodeInput.value = val.substring(0, lineStart) + modifiedBlock + val.substring(lineEnd);
+                collabCodeInput.selectionStart = lineStart;
+                collabCodeInput.selectionEnd = lineEnd + charDiff;
+            } else {
+                if (e.shiftKey) {
+                    // Outdent current line
+                    const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+                    const lineContent = val.substring(lineStart);
+                    if (lineContent.startsWith("    ")) {
+                        collabCodeInput.value = val.substring(0, lineStart) + lineContent.substring(4);
+                        collabCodeInput.selectionStart = collabCodeInput.selectionEnd = Math.max(lineStart, start - 4);
+                    }
+                } else {
+                    // Insert 4 spaces
+                    collabCodeInput.value = val.substring(0, start) + "    " + val.substring(end);
+                    collabCodeInput.selectionStart = collabCodeInput.selectionEnd = start + 4;
+                }
+            }
+
             updateLineNumbers();
+            triggerCodeInputSync();
+            return;
+        }
+
+        // 5. Auto-outdent on closing brace '}'
+        if (e.key === "}" && !e.ctrlKey && !e.metaKey) {
+            const start = collabCodeInput.selectionStart;
+            const val = collabCodeInput.value;
+            const lineStart = val.lastIndexOf("\n", start - 1) + 1;
+            const currentLineBefore = val.substring(lineStart, start);
+            if (/^[ ]{4,}$/.test(currentLineBefore)) {
+                e.preventDefault();
+                const dedentedLine = currentLineBefore.substring(4) + "}";
+                collabCodeInput.value = val.substring(0, lineStart) + dedentedLine + val.substring(start);
+                collabCodeInput.selectionStart = collabCodeInput.selectionEnd = lineStart + dedentedLine.length;
+                updateLineNumbers();
+                triggerCodeInputSync();
+                return;
+            }
         }
     });
+
+    function triggerCodeInputSync() {
+        if (isRemoteTyping) return;
+        const code = collabCodeInput.value;
+        const lang = editorLangSelect ? editorLangSelect.value : "javascript";
+        lastKnownCode = code;
+        showSyncBadge("saving");
+
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: "code-change",
+                code,
+                lang
+            }));
+            sendCursorPosition();
+        }
+
+        debounce(() => {
+            showSyncBadge("synced");
+        }, 600)();
+    }
 
     async function runCode() {
         const code = collabCodeInput.value.trim();
