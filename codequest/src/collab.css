@@ -140,13 +140,14 @@ body.cq-collab-body {
     background: var(--slack-surface-subtle);
     border: 1px solid var(--slack-border);
     color: var(--slack-text-secondary);
-    padding: 4px 10px;
+    height: 30px;
+    padding: 0 10px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     font-family: var(--slack-font-mono);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     position: relative;
     transition: all 0.15s ease;
@@ -198,13 +199,15 @@ body.cq-collab-body {
     background: var(--slack-surface-subtle);
     border: 1px solid var(--slack-border);
     color: var(--slack-text-secondary);
-    padding: 4px 9px;
+    height: 28px;
+    padding: 0 8px;
     border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    gap: 4px;
     transition: all 0.15s ease;
 }
 
@@ -226,13 +229,14 @@ body.cq-collab-body {
 }
 
 .cq-presence-status {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     background: var(--slack-surface-subtle);
     border: 1px solid var(--slack-border);
-    padding: 4px 12px;
+    height: 30px;
+    padding: 0 10px;
     border-radius: var(--slack-radius-pill);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 500;
 }
 
@@ -273,17 +277,21 @@ body.cq-collab-body {
 .cq-nav-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .cq-select-sm {
+    height: 32px;
     font-size: 12px;
-    padding: 5px 24px 5px 10px;
+    padding: 0 24px 0 10px;
     border-radius: 6px;
     border: 1px solid var(--slack-border);
     background-color: var(--slack-surface-subtle);
     color: var(--slack-text);
     font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
 }
 
 .cq-select-sm:focus {
@@ -298,15 +306,18 @@ body.cq-collab-body {
     background: var(--slack-green);
     color: #FFFFFF;
     border: none;
-    padding: 6px 14px;
+    height: 32px;
+    padding: 0 12px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s ease, transform 0.05s ease;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
+    white-space: nowrap;
 }
 
 .btn-slack-run:hover {
@@ -322,15 +333,18 @@ body.cq-collab-body {
     background: var(--slack-surface-elevated);
     color: var(--slack-text);
     border: 1px solid var(--slack-border);
-    padding: 6px 12px;
+    height: 32px;
+    padding: 0 11px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.15s ease;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
+    white-space: nowrap;
 }
 
 .btn-slack-secondary:hover {
@@ -343,15 +357,18 @@ body.cq-collab-body {
     background: var(--slack-red);
     color: #FFFFFF;
     border: none;
-    padding: 6px 14px;
+    height: 32px;
+    padding: 0 12px;
     border-radius: 6px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 5px;
+    white-space: nowrap;
     transition: background 0.15s ease;
 }
 
@@ -667,7 +684,7 @@ body.cq-collab-body {
 
 /* Video Stage Card */
 .cq-stage-card {
-    height: 270px;
+    height: 255px;
     border: 1px solid var(--slack-border);
     border-radius: var(--slack-radius-lg);
     display: flex;
@@ -680,8 +697,8 @@ body.cq-collab-body {
 }
 
 .cq-stage-header {
-    height: 32px;
-    background: rgba(26, 29, 33, 0.9);
+    height: 30px;
+    background: rgba(26, 29, 33, 0.95);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -692,16 +709,31 @@ body.cq-collab-body {
 }
 
 .cq-stage-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--slack-text-secondary);
 }
 
+/* Side-by-Side Video Stage View (50% / 50% split) */
 .cq-stage-view {
     flex: 1;
     position: relative;
     overflow: hidden;
     background: #0B0C0E;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 6px;
+}
+
+.cq-stage-view:fullscreen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 16px;
+    background: #0B0C0E;
+    width: 100vw;
+    height: 100vh;
 }
 
 .cq-screenshare-indicator {
@@ -737,50 +769,50 @@ body.cq-collab-body {
     100% { transform: translateY(-160px) scale(1); opacity: 0; }
 }
 
-/* Remote Video Tile */
-.cq-video-tile.remote {
+/* Common Video Tile for Both Local and Remote (Side-by-Side) */
+.cq-video-tile {
+    position: relative;
     width: 100%;
     height: 100%;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #141618;
+    border: 1px solid var(--slack-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.cq-video-tile.local,
+.cq-video-tile.remote {
     position: relative;
-    transition: box-shadow 0.25s ease;
+    width: 100%;
+    height: 100%;
+    top: auto;
+    bottom: auto;
+    left: auto;
+    right: auto;
+    z-index: 1;
 }
 
-/* Slack Glowing Active Speaker Ring */
-.cq-video-tile.remote.speaking {
-    box-shadow: inset 0 0 0 3px #2EB67D, 0 0 16px rgba(46, 182, 125, 0.5);
-}
-
-.cq-video-tile.remote video {
+.cq-video-tile video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-}
-
-/* Local Video Tile (PiP) */
-.cq-video-tile.local {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 96px;
-    height: 72px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-    z-index: 10;
-    background: #141618;
-    transition: box-shadow 0.25s ease;
-}
-
-.cq-video-tile.local.speaking {
-    box-shadow: 0 0 0 2px #2EB67D, 0 4px 12px rgba(0, 0, 0, 0.6);
+    display: block;
 }
 
 .cq-video-tile.local video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
     transform: scaleX(-1);
+}
+
+/* Slack Glowing Active Speaker Ring */
+.cq-video-tile.speaking {
+    border-color: #2EB67D;
+    box-shadow: inset 0 0 0 2px #2EB67D, 0 0 10px rgba(46, 182, 125, 0.45);
 }
 
 /* Fallback Avatar Placeholder (Slack Style) */
@@ -791,42 +823,46 @@ body.cq-collab-body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: #1A1D21;
+    background: #181A1E;
     color: #FFFFFF;
+    padding: 8px;
+    text-align: center;
+    user-select: none;
 }
 
 .cq-avatar-circle {
-    width: 52px;
-    height: 52px;
+    width: 44px;
+    height: 44px;
     border-radius: 10px;
     background: var(--slack-aubergine);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 6px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.cq-avatar-circle.sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 6px;
-    font-size: 11px;
-    margin-bottom: 0;
+.cq-video-tile.local .cq-avatar-circle {
+    background: #1264A3; /* Slack blue for self */
 }
 
 .cq-tile-username {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: #FFFFFF;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%;
 }
 
 .cq-tile-status {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--slack-text-muted);
+    white-space: nowrap;
 }
 
 /* Audio Wave Visualizer */
@@ -835,7 +871,7 @@ body.cq-collab-body {
     align-items: center;
     gap: 3px;
     height: 12px;
-    margin-top: 6px;
+    margin-top: 5px;
 }
 
 .cq-audio-bar {
@@ -857,17 +893,22 @@ body.cq-collab-body {
 .cq-tile-tag {
     position: absolute;
     bottom: 6px;
-    left: 8px;
-    background: rgba(0, 0, 0, 0.7);
+    left: 6px;
+    background: rgba(0, 0, 0, 0.75);
     color: #FFFFFF;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    padding: 2px 7px;
+    padding: 2px 6px;
     border-radius: 4px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     backdrop-filter: blur(4px);
+    z-index: 5;
+    max-width: calc(100% - 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .cq-speaker-dot {
@@ -875,6 +916,7 @@ body.cq-collab-body {
     height: 6px;
     border-radius: 50%;
     background: var(--slack-text-muted);
+    flex-shrink: 0;
 }
 
 .cq-speaker-dot.active {
@@ -882,36 +924,37 @@ body.cq-collab-body {
     box-shadow: 0 0 6px var(--slack-green-light);
 }
 
-/* Slack Floating Media Controls Bar */
+/* Slack Floating Media Controls Bar (Compact Sleek Proportions) */
 .cq-media-controls-bar {
-    height: 48px;
-    background: rgba(26, 29, 33, 0.95);
+    height: 42px;
+    background: rgba(22, 24, 28, 0.98);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--slack-border);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     position: relative;
 }
 
 .btn-cq-ctrl {
-    background: #2C3136;
-    border: 1px solid #383A40;
-    color: #F8F8F8;
-    width: 34px;
-    height: 34px;
+    background: #25282C;
+    border: 1px solid #36393E;
+    color: #F0F0F0;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 12px;
+    padding: 0;
     transition: all 0.15s ease;
 }
 
 .btn-cq-ctrl:hover {
-    background: #3B4048;
+    background: #363B42;
     color: #FFFFFF;
 }
 
@@ -1253,6 +1296,52 @@ body.cq-collab-body {
     font-size: 11px;
     color: var(--slack-text-muted);
     margin-top: 8px;
+}
+
+.btn-cq-primary {
+    background: var(--slack-green);
+    border: 1px solid var(--slack-green);
+    color: #FFFFFF;
+    font-size: 12px;
+    font-weight: 600;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-cq-primary:hover {
+    background: var(--slack-green-hover);
+    border-color: var(--slack-green-hover);
+    color: #FFFFFF;
+}
+
+.btn-cq-secondary {
+    background: var(--slack-surface-subtle);
+    border: 1px solid var(--slack-border);
+    color: var(--slack-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    height: 32px;
+    padding: 0 14px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-cq-secondary:hover {
+    background: var(--slack-surface-hover);
+    border-color: var(--slack-border-focus);
+    color: #FFFFFF;
 }
 
 /* Scrollbar Customization */

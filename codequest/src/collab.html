@@ -192,7 +192,30 @@
                     <!-- Floating Emoji Layer -->
                     <div class="cq-floating-reactions" id="huddleFloatingReactions"></div>
 
-                    <!-- Remote Peer Video Tile with Slack Speaking Ring -->
+                    <!-- Local Peer Video Tile (Side-by-Side Left) -->
+                    <div class="cq-video-tile local" id="localPeerTile">
+                        <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
+                        <!-- Fallback Slack Avatar placeholder when camera is off -->
+                        <div class="cq-avatar-placeholder" id="localVideoPlaceholder" style="display: none;">
+                            <div class="cq-avatar-circle" id="localAvatarCircle">
+                                <span id="localAvatarInitials">You</span>
+                            </div>
+                            <div class="cq-tile-username" id="localUserName">You</div>
+                            <div class="cq-tile-status" id="localPlaceholderText">Camera muted</div>
+                            <div class="cq-audio-wave" id="localAudioWave" style="display: none;">
+                                <span class="cq-audio-bar"></span>
+                                <span class="cq-audio-bar"></span>
+                                <span class="cq-audio-bar"></span>
+                            </div>
+                        </div>
+                        <div class="cq-tile-tag" id="localTileTag">
+                            <span class="cq-speaker-dot" id="localSpeakerDot"></span>
+                            <span id="localUserTagLabel">You</span>
+                            <span id="localAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
+                        </div>
+                    </div>
+
+                    <!-- Remote Peer Video Tile (Side-by-Side Right) -->
                     <div class="cq-video-tile remote" id="remotePeerTile">
                         <video id="remoteVideo" autoplay playsinline webkit-playsinline></video>
                         <!-- Fallback Slack Avatar placeholder when camera is off -->
@@ -212,21 +235,6 @@
                             <span class="cq-speaker-dot" id="remoteSpeakerDot"></span>
                             <span id="remoteUserTagLabel">Partner</span>
                             <span id="remoteAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
-                        </div>
-                    </div>
-
-                    <!-- Local Peer Video Tile (PiP) -->
-                    <div class="cq-video-tile local" id="localPeerTile">
-                        <video id="localVideo" autoplay muted playsinline webkit-playsinline></video>
-                        <div class="cq-avatar-placeholder sm" id="localVideoPlaceholder" style="display: none;">
-                            <div class="cq-avatar-circle sm">
-                                <span id="localAvatarInitials">You</span>
-                            </div>
-                        </div>
-                        <div class="cq-tile-tag" id="localTileTag">
-                            <span class="cq-speaker-dot" id="localSpeakerDot"></span>
-                            <span>You</span>
-                            <span id="localAudioStatusIcon"><i class="fa-solid fa-microphone text-success"></i></span>
                         </div>
                     </div>
 

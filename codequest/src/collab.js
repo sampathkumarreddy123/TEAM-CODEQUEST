@@ -138,6 +138,13 @@
                     currentUser.username = u.username || currentUser.username;
                     currentUser.avatarUrl = u.avatarUrl || "default-avatar.png";
                     currentUser.id = u._id || u.id;
+
+                    const localNameEl = document.getElementById("localUserName");
+                    if (localNameEl) localNameEl.textContent = `${currentUser.username} (You)`;
+                    const localInitialsEl = document.getElementById("localAvatarInitials");
+                    if (localInitialsEl) localInitialsEl.textContent = currentUser.username.charAt(0).toUpperCase();
+                    const localUserTagLabel = document.getElementById("localUserTagLabel");
+                    if (localUserTagLabel) localUserTagLabel.textContent = `${currentUser.username} (You)`;
                 }
             }
         } catch (e) {
@@ -616,13 +623,13 @@
                 localVideo.srcObject = localStream;
             }
             if (localVideoPlaceholder) localVideoPlaceholder.style.display = "none";
-            setupAudioActivityMonitor(localStream, localPeerTile, null, document.getElementById("localSpeakerDot"));
+            setupAudioActivityMonitor(localStream, localPeerTile, document.getElementById("localAudioWave"), document.getElementById("localSpeakerDot"));
         } catch (err) {
             console.warn("Camera/mic access warning:", err.message);
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 if (localVideoPlaceholder) localVideoPlaceholder.style.display = "flex";
-                setupAudioActivityMonitor(localStream, localPeerTile, null, document.getElementById("localSpeakerDot"));
+                setupAudioActivityMonitor(localStream, localPeerTile, document.getElementById("localAudioWave"), document.getElementById("localSpeakerDot"));
             } catch (aErr) {
                 console.warn("Microphone access warning:", aErr.message);
             }

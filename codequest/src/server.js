@@ -1460,30 +1460,78 @@ app.post("/api/collab/publish-challenge", async (req, res) => {
 
         await challenge.save();
 
-        // Also publish as a community Question so it appears on the dashboard in the standard format
+        // Publish Question & linked Answer matching standard CodeQuest structure
         const cleanTitle = title.trim();
         const cleanDesc = (problemStatement || description || "").trim();
         const cleanLang = (language || "javascript").trim().toLowerCase();
         const cleanCode = (solutionCode || "").trim();
 
+        // 1. Question: Problem Statement & Sample Input
         let questionBody = `${cleanTitle}\n\n`;
         if (cleanDesc && cleanDesc.toLowerCase() !== cleanTitle.toLowerCase()) {
             questionBody += `${cleanDesc}\n\n`;
         }
-        if (cleanCode) {
-            questionBody += `\`\`\`${cleanLang}\n${cleanCode}\n\`\`\`\n\n`;
-        }
         if (sampleInput && sampleInput.trim()) {
             questionBody += `**Sample Input:**\n\`\`\`\n${sampleInput.trim()}\n\`\`\`\n\n`;
         }
-        questionBody += `*Co-authored in CodeQuest Live Huddle by @${author.username || "Developer"}${coAuthor ? ` and @${coAuthor}` : ""}.*`;
 
         const question = new Question({
             userId: author._id,
-            questionText: questionBody,
-            tags: [cleanLang, "pair-programming", "challenge"]
+            questionText: questionBody.trim(),
+            tags: [cleanLang, "pair-programming", "challenge"],
+            isSolved: true
         });
         await question.save();
+
+        // 2. Answer: Solution Code & Pair-Programming Co-authorship
+        let answerBody = "";
+        if (cleanCode) {
+            answerBody += `\`\`\`${cleanLang}\n${cleanCode}\n\`\`\`\n\n`;
+        }
+        answerBody += `*Co-authored in CodeQuest Live Huddle by @${author.username || "Developer"}${coAuthor ? ` and @${coAuthor}` : ""}.*`;
+
+        const newAnswer = new Answer({
+            userId: author._id,
+            questionId: question._id,
+            answerText: answerBody.trim()
+        });
+        await newAnswer.save();
+
+        // Link answer as the solved solution for the question
+        question.solvedAnswerId = newAnswer._id;
+        await question.save();
+
+        // Broadcast standard CodeQuest events so published solution instantly appears in feeds
+        try {
+            const populatedQuestion = await Question.findById(question._id)
+                .populate("userId", "username avatarUrl isAdmin");
+            const qObj = {
+                ...populatedQuestion.toObject(),
+                answerCount: 1,
+                isPinned: false,
+                isLocked: false,
+                isSolved: true,
+                solvedAnswerId: newAnswer._id,
+                authorIsAdmin: checkIsAdmin(author)
+            };
+            broadcastEvent("new_question", { question: qObj });
+
+            const populatedAnswer = await Answer.findById(newAnswer._id)
+                .populate("userId", "username avatarUrl isAdmin");
+            broadcastEvent("new_answer", {
+                questionId: question._id,
+                answer: { ...populatedAnswer.toObject(), likes: 0, authorIsAdmin: checkIsAdmin(author), isAcceptedSolution: true },
+                answerCount: 1
+            });
+
+            broadcastEvent("question_solved", {
+                questionId: question._id,
+                isSolved: true,
+                solvedAnswerId: newAnswer._id
+            });
+        } catch (bErr) {
+            console.warn("Broadcast note on publish:", bErr.message);
+        }
 
         // Update room draft status
         if (roomId && collabRooms.has(String(roomId).trim().toUpperCase())) {
@@ -1509,8 +1557,9 @@ app.post("/api/collab/publish-challenge", async (req, res) => {
             success: true,
             challengeId: challenge._id,
             questionId: question._id,
+            answerId: newAnswer._id,
             questionUrl: `/answers.html?id=${question._id}`,
-            message: "Challenge published successfully!"
+            message: "Challenge & Solution published successfully!"
         });
     } catch (err) {
         console.error("Error publishing challenge:", err);
