@@ -156,13 +156,13 @@
     // -------------------------------------------------------------
     async function initUser() {
         try {
-            const res = await fetch("/api/auth/status", { credentials: "include" });
+            const res = await fetch("/auth/status", { credentials: "include" });
             const data = await res.json();
-            if (data.authenticated && data.user) {
+            if (data && data.loggedIn) {
                 currentUser = {
-                    username: data.user.username,
-                    avatarUrl: data.user.avatarUrl || "default-avatar.png",
-                    id: data.user._id || data.user.id
+                    username: data.username,
+                    avatarUrl: data.avatarUrl || "default-avatar.png",
+                    id: data.userId || (data.user && data.user._id)
                 };
             }
         } catch (e) {

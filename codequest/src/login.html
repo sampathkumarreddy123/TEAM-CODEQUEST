@@ -136,9 +136,44 @@
             font-size: 1.25rem;
         }
 
+        .btn-guest {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: white;
+            border: 1px solid #1d4ed8;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+        }
 
+        .btn-guest:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
+        }
 
-        .features-pill-row {
+        .btn-guest i {
+            font-size: 1.15rem;
+        }
+
+        .divider-or {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 4px 0;
+            color: var(--text-muted);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .divider-or::before, .divider-or::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .divider-or span {
+            padding: 0 10px;
+        }
             display: flex;
             justify-content: center;
             gap: 16px;
@@ -224,12 +259,17 @@
                 <i class="fa-brands fa-github"></i>
                 <span>Continue with GitHub</span>
             </button>
+            <div class="divider-or"><span>or test calling with 2nd account</span></div>
+            <button class="btn btn-guest" id="guestLoginBtn" onclick="guestLogin()">
+                <i class="fa-solid fa-user-astronaut"></i>
+                <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>
+            </button>
         </div>
 
         <div class="features-pill-row">
             <span><i class="fa-solid fa-comments"></i> Developer Q&A</span>
             <span><i class="fa-solid fa-thumbs-up"></i> Upvoting</span>
-            <span><i class="fa-solid fa-code"></i> Code Solutions</span>
+            <span><i class="fa-solid fa-video"></i> Live 1-on-1 Calls</span>
         </div>
     </div>
 
@@ -268,6 +308,31 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to GitHub...';
             btn.style.pointerEvents = 'none';
             window.location.href = '/auth/github';
+        }
+
+        async function guestLogin() {
+            const btn = document.getElementById('guestLoginBtn');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Setting up test account...';
+            btn.style.pointerEvents = 'none';
+            try {
+                const res = await fetch('/auth/guest-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/dashboard.html';
+                } else {
+                    alert('Guest login failed: ' + (data.error || 'Unknown error'));
+                    btn.innerHTML = '<i class="fa-solid fa-user-astronaut"></i> <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>';
+                    btn.style.pointerEvents = 'auto';
+                }
+            } catch (e) {
+                alert('Connection error: ' + e.message);
+                btn.innerHTML = '<i class="fa-solid fa-user-astronaut"></i> <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>';
+                btn.style.pointerEvents = 'auto';
+            }
         }
     </script>
 </body>

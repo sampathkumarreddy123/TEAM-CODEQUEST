@@ -1951,8 +1951,12 @@
         chimeInterval: null,
         pollTimer: null,
         outgoingCountdown: null,
+        audioCtx: null,
 
         async init() {
+            // Do not run call popup manager if already inside a collab room
+            if (window.location.pathname.includes("collab.html")) return;
+
             try {
                 const res = await fetch("/auth/status", { credentials: "include" });
                 if (!res.ok) return;
@@ -1968,7 +1972,7 @@
         },
 
         connectSocket() {
-            if (!this.currentUser) return;
+            if (!this.currentUser || window.location.pathname.includes("collab.html")) return;
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             const wsUrl = `${protocol}//${window.location.host}/ws/collab`;
 
@@ -1976,10 +1980,11 @@
                 this.activeWs = new WebSocket(wsUrl);
 
                 this.activeWs.onopen = () => {
-                    if (this.activeWs.readyState === WebSocket.OPEN) {
+                    if (this.activeWs.readyState === WebSocket.OPEN && this.currentUser) {
                         this.activeWs.send(JSON.stringify({
                             type: "register-user",
-                            userId: this.currentUser.userId
+                            userId: this.currentUser.userId || (this.currentUser.user && this.currentUser.user._id),
+                            username: this.currentUser.username
                         }));
                     }
                 };
@@ -2001,8 +2006,10 @@
 
                 this.activeWs.onclose = () => {
                     setTimeout(() => {
-                        if (this.currentUser) this.connectSocket();
-                    }, 6000);
+                        if (this.currentUser && !window.location.pathname.includes("collab.html")) {
+                            this.connectSocket();
+                        }
+                    }, 4000);
                 };
             } catch (e) {
                 console.warn("Call WS note:", e);
@@ -2012,41 +2019,61 @@
         startPoll() {
             if (this.pollTimer) clearInterval(this.pollTimer);
             this.pollTimer = setInterval(async () => {
-                if (!this.currentUser) return;
+                if (!this.currentUser || window.location.pathname.includes("collab.html")) return;
                 try {
                     const res = await fetch("/api/calls/active", { credentials: "include" });
                     if (!res.ok) return;
                     const data = await res.json();
-                    if (data.incoming && (!this.activeIncomingCall || this.activeIncomingCall.callId !== data.incoming.callId)) {
-                        this.handleIncomingCall(data.incoming);
+
+                    // Check incoming call
+                    if (data.incoming) {
+                        if (!this.activeIncomingCall || this.activeIncomingCall.callId !== data.incoming.callId) {
+                            this.handleIncomingCall(data.incoming);
+                        }
+                    } else if (this.activeIncomingCall) {
+                        // Call was cancelled or timed out
+                        this.handleIncomingCancelled();
                     }
+
+                    // Check outgoing call
                     if (this.activeOutgoingCall && data.outgoing) {
                         if (data.outgoing.status === "accepted") {
                             this.handleOutgoingAccepted(data.outgoing);
                         } else if (data.outgoing.status === "declined") {
                             this.handleOutgoingDeclined(data.outgoing);
+                        } else if (data.outgoing.status === "timeout") {
+                            this.closeOutgoingModal();
+                            this.activeOutgoingCall = null;
+                            showAppToast("ℹ️ Call timed out. Developer is unavailable.");
                         }
                     }
                 } catch (e) {}
-            }, 3000);
+            }, 2500);
         },
 
         playMelodicChime() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (!AudioCtx) return;
-                const ctx = new AudioCtx();
+                if (!this.audioCtx || this.audioCtx.state === "closed") {
+                    this.audioCtx = new AudioCtx();
+                }
+                if (this.audioCtx.state === "suspended") {
+                    this.audioCtx.resume().catch(() => {});
+                }
+                const ctx = this.audioCtx;
+                const now = ctx.currentTime;
                 const playTone = (freq, start, duration) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.type = "sine";
-                    osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
-                    gain.gain.setValueAtTime(0.07, ctx.currentTime + start);
-                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + duration);
+                    osc.frequency.setValueAtTime(freq, now + start);
+                    gain.gain.setValueAtTime(0.08, now + start);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
                     osc.connect(gain);
                     gain.connect(ctx.destination);
-                    osc.start(ctx.currentTime + start);
-                    osc.stop(ctx.currentTime + start + duration);
+                    osc.start(now + start);
+                    osc.stop(now + start + duration);
                 };
                 playTone(659.25, 0.0, 0.35); // E5
                 playTone(880.00, 0.18, 0.55); // A5
@@ -2176,8 +2203,13 @@
                 }
             }
 
-            if (String(this.currentUser.userId) === String(targetUserId)) {
-                showAppToast("ℹ️ You cannot call yourself.");
+            const myId = String(this.currentUser.userId || (this.currentUser.user && this.currentUser.user._id) || "");
+            const myUsername = String(this.currentUser.username || "").toLowerCase();
+            const isSelf = (targetUserId && String(targetUserId) === myId) ||
+                           (targetUsername && String(targetUsername).toLowerCase() === myUsername);
+
+            if (isSelf) {
+                showAppToast("ℹ️ You cannot call yourself. Open in another browser or invite a partner.");
                 return;
             }
 
@@ -2310,7 +2342,7 @@
     };
 
     // Auto-initialize when DOM is ready
-    document.addEventListener("DOMContentLoaded", () => {
+    function initFeaturesApp() {
         CodeVault.updateCountBadge();
         enhanceCodeSnippetBlocks();
         initAllTextareaFormatters();
@@ -2344,7 +2376,13 @@
             initAllTextareaFormatters();
         });
         observer.observe(document.body, { childList: true, subtree: true });
-    });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initFeaturesApp);
+    } else {
+        initFeaturesApp();
+    }
 
     // Expose Global API for pages
     window.CodeQuestPro = {

@@ -362,17 +362,17 @@ app.get("/auth/github/callback", async (req, res) => {
 
 
 
-// Check authentication status
-app.get("/auth/status", async (req, res) => {
+// Check authentication status (supports both /auth/status and /api/auth/status)
+app.get(["/auth/status", "/api/auth/status"], async (req, res) => {
     try {
         const token = req.cookies.token;
         if (!token) {
-            return res.json({ loggedIn: false });
+            return res.json({ loggedIn: false, authenticated: false });
         }
 
         const user = await User.findOne({ token });
         if (!user) {
-            return res.json({ loggedIn: false });
+            return res.json({ loggedIn: false, authenticated: false });
         }
 
         const isAdmin = checkIsAdmin(user);
@@ -383,14 +383,74 @@ app.get("/auth/status", async (req, res) => {
 
         res.json({
             loggedIn: true,
-            userId: user._id,
+            authenticated: true,
+            userId: String(user._id),
             username: user.username,
             avatarUrl: user.avatarUrl || "default-avatar.png",
-            isAdmin
+            isAdmin,
+            user: {
+                _id: String(user._id),
+                id: String(user._id),
+                username: user.username,
+                avatarUrl: user.avatarUrl || "default-avatar.png",
+                isAdmin
+            }
         });
     } catch (error) {
         console.error("❌ Error checking auth status:", error);
-        res.status(500).json({ loggedIn: false, error: "Auth check failed" });
+        res.status(500).json({ loggedIn: false, authenticated: false, error: "Auth check failed" });
+    }
+});
+
+// Quick Guest / Demo Developer login for testing 1-on-1 calls across browsers/devices
+app.post("/auth/guest-login", async (req, res) => {
+    try {
+        const guestNum = Math.floor(1000 + Math.random() * 9000);
+        const guestUsername = req.body && req.body.username ? String(req.body.username).trim() : `Coder_${guestNum}`;
+        const guestToken = "guest_token_" + Date.now() + "_" + Math.random().toString(36).substring(2, 8);
+        const guestAvatar = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(guestUsername)}&backgroundColor=3B82F6`;
+
+        let guestUser = await User.findOne({ username: guestUsername });
+        if (!guestUser) {
+            guestUser = new User({
+                githubId: "guest_" + Date.now() + "_" + guestNum,
+                username: guestUsername,
+                avatarUrl: guestAvatar,
+                token: guestToken,
+                isAdmin: false
+            });
+            await guestUser.save();
+        } else {
+            guestUser.token = guestToken;
+            guestUser.avatarUrl = guestAvatar;
+            await guestUser.save();
+        }
+
+        const isProduction = process.env.NODE_ENV === "production";
+        const cookieOpts = {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: isProduction,
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        res.cookie("token", guestToken, cookieOpts);
+        res.cookie("username", guestUser.username, { ...cookieOpts, httpOnly: false });
+        res.cookie("avatarUrl", guestUser.avatarUrl, { ...cookieOpts, httpOnly: false });
+        res.cookie("isAdmin", "false", { ...cookieOpts, httpOnly: false });
+
+        res.json({
+            success: true,
+            user: {
+                _id: String(guestUser._id),
+                username: guestUser.username,
+                avatarUrl: guestUser.avatarUrl
+            }
+        });
+    } catch (err) {
+        console.error("Guest login error:", err);
+        res.status(500).json({ error: "Failed to login as guest developer" });
     }
 });
 
@@ -1656,12 +1716,12 @@ app.post("/api/execute-code", async (req, res) => {
 
 // ----------------- Real-Time 1-on-1 Call Signaling & Invitations -----------------
 const activeCalls = new Map(); // callId -> callData
-const activeUserSockets = new Map(); // userId -> Set<WebSocket>
+const activeUserSockets = new Map(); // identifier (userId or lowercase username) -> Set<WebSocket>
 
-function notifyUserSocket(userId, payload) {
-    if (!userId) return;
-    const uid = String(userId);
-    const set = activeUserSockets.get(uid);
+function notifyUserSocket(identifier, payload) {
+    if (!identifier) return;
+    const key = String(identifier).toLowerCase();
+    const set = activeUserSockets.get(key) || activeUserSockets.get(String(identifier));
     if (set && set.size > 0) {
         const msg = JSON.stringify(payload);
         set.forEach(ws => {
@@ -1675,7 +1735,10 @@ function notifyUserSocket(userId, payload) {
 // 1. Initiate 1-on-1 Call from Profile or Author Card
 app.post("/api/calls/initiate", verifyToken, async (req, res) => {
     try {
-        const { targetUserId, targetUsername } = req.body;
+        let { targetUserId, targetUsername } = req.body;
+        if (targetUserId === "undefined" || targetUserId === "null") targetUserId = null;
+        if (targetUsername === "undefined" || targetUsername === "null") targetUsername = null;
+
         if (!targetUserId && !targetUsername) {
             return res.status(400).json({ error: "Target user ID or username is required" });
         }
@@ -1685,14 +1748,14 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
             try { target = await User.findById(targetUserId); } catch(e){}
         }
         if (!target && targetUsername) {
-            target = await User.findOne({ username: targetUsername });
+            target = await User.findOne({ username: new RegExp("^" + String(targetUsername).trim() + "$", "i") });
         }
         if (!target) {
-            return res.status(404).json({ error: "Target user not found" });
+            return res.status(404).json({ error: `User "${targetUsername || targetUserId}" not found` });
         }
 
         if (String(target._id) === String(req.user._id)) {
-            return res.status(400).json({ error: "You cannot call yourself" });
+            return res.status(400).json({ error: "You cannot call yourself. Open in another browser or invite a partner." });
         }
 
         const roomId = "CALL-" + Math.floor(100000 + Math.random() * 900000);
@@ -1723,8 +1786,12 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
             lang: "javascript"
         });
 
-        // Push real-time notification to recipient via WebSocket
+        // Push real-time notification to recipient via WebSocket (by ID AND username)
         notifyUserSocket(String(target._id), {
+            type: "incoming-call",
+            call: callData
+        });
+        notifyUserSocket(target.username, {
             type: "incoming-call",
             call: callData
         });
@@ -1745,6 +1812,7 @@ app.get("/api/calls/active", async (req, res) => {
         if (!user) return res.json({ incoming: null, outgoing: null });
 
         const currentUserId = String(user._id);
+        const currentUsername = String(user.username || "").toLowerCase();
         const now = Date.now();
 
         // Expire calls older than 50 seconds
@@ -1759,10 +1827,15 @@ app.get("/api/calls/active", async (req, res) => {
         let outgoing = null;
 
         for (const call of activeCalls.values()) {
-            if (call.target.id === currentUserId && call.status === "ringing") {
+            const isTarget = (call.target.id && String(call.target.id) === currentUserId) ||
+                             (call.target.username && String(call.target.username).toLowerCase() === currentUsername);
+            if (isTarget && call.status === "ringing") {
                 incoming = call;
             }
-            if (call.caller.id === currentUserId && (call.status === "ringing" || call.status === "accepted" || call.status === "declined" || call.status === "cancelled")) {
+
+            const isCaller = (call.caller.id && String(call.caller.id) === currentUserId) ||
+                             (call.caller.username && String(call.caller.username).toLowerCase() === currentUsername);
+            if (isCaller && (call.status === "ringing" || call.status === "accepted" || call.status === "declined" || call.status === "cancelled")) {
                 outgoing = call;
             }
         }
@@ -1783,15 +1856,26 @@ app.post("/api/calls/respond", verifyToken, async (req, res) => {
         }
 
         const currentUserId = String(req.user._id);
+        const currentUsername = String(req.user.username || "").toLowerCase();
+
+        const isTarget = (call.target.id && String(call.target.id) === currentUserId) ||
+                         (call.target.username && String(call.target.username).toLowerCase() === currentUsername);
+        const isCaller = (call.caller.id && String(call.caller.id) === currentUserId) ||
+                         (call.caller.username && String(call.caller.username).toLowerCase() === currentUsername);
 
         if (action === "accept") {
-            if (call.target.id !== currentUserId) {
+            if (!isTarget) {
                 return res.status(403).json({ error: "Only the recipient can accept this call" });
             }
             call.status = "accepted";
 
-            // Push to caller
+            // Push to caller (by ID and by username)
             notifyUserSocket(call.caller.id, {
+                type: "call-accepted",
+                callId: call.callId,
+                roomId: call.roomId
+            });
+            notifyUserSocket(call.caller.username, {
                 type: "call-accepted",
                 callId: call.callId,
                 roomId: call.roomId
@@ -1809,10 +1893,18 @@ app.post("/api/calls/respond", verifyToken, async (req, res) => {
                 type: "call-declined",
                 callId: call.callId
             });
+            notifyUserSocket(call.caller.username, {
+                type: "call-declined",
+                callId: call.callId
+            });
             return res.json({ success: true, status: "declined" });
         } else if (action === "cancel") {
             call.status = "cancelled";
             notifyUserSocket(call.target.id, {
+                type: "call-cancelled",
+                callId: call.callId
+            });
+            notifyUserSocket(call.target.username, {
                 type: "call-cancelled",
                 callId: call.callId
             });
@@ -1842,14 +1934,20 @@ wss.on("connection", (ws, req) => {
             const data = JSON.parse(raw);
             const { type, roomId } = data;
 
-            // Global user registration for incoming call notifications
-            if (type === "register-user" && data.userId) {
-                const uid = String(data.userId);
-                if (!activeUserSockets.has(uid)) {
-                    activeUserSockets.set(uid, new Set());
+            // Global user registration for incoming call notifications (by ID AND username)
+            if (type === "register-user") {
+                if (data.userId) {
+                    const uid = String(data.userId);
+                    if (!activeUserSockets.has(uid)) activeUserSockets.set(uid, new Set());
+                    activeUserSockets.get(uid).add(ws);
+                    ws.registeredUserId = uid;
                 }
-                activeUserSockets.get(uid).add(ws);
-                ws.registeredUserId = uid;
+                if (data.username) {
+                    const uname = String(data.username).toLowerCase();
+                    if (!activeUserSockets.has(uname)) activeUserSockets.set(uname, new Set());
+                    activeUserSockets.get(uname).add(ws);
+                    ws.registeredUsername = uname;
+                }
                 return;
             }
 
@@ -1998,6 +2096,11 @@ wss.on("connection", (ws, req) => {
             const set = activeUserSockets.get(ws.registeredUserId);
             set.delete(ws);
             if (set.size === 0) activeUserSockets.delete(ws.registeredUserId);
+        }
+        if (ws.registeredUsername && activeUserSockets.has(ws.registeredUsername)) {
+            const set = activeUserSockets.get(ws.registeredUsername);
+            set.delete(ws);
+            if (set.size === 0) activeUserSockets.delete(ws.registeredUsername);
         }
 
         if (currentRoomId && currentPeerId && collabRooms.has(currentRoomId)) {
