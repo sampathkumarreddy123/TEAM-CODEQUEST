@@ -936,25 +936,58 @@ document.addEventListener("DOMContentLoaded", async function () {
     const startPairDebugBtn = document.getElementById("startPairDebugBtn");
     if (startPairDebugBtn) {
         startPairDebugBtn.addEventListener("click", async () => {
+            const originalHtml = startPairDebugBtn.innerHTML;
+            startPairDebugBtn.disabled = true;
             startPairDebugBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Starting Room...`;
             try {
+                // Extract clean question title and code if available
+                let rawTitle = "";
+                if (questionData && questionData.questionText) {
+                    rawTitle = questionData.questionText;
+                } else if (questionTitle) {
+                    rawTitle = questionTitle.innerText || questionTitle.textContent || "";
+                }
+                const cleanTitle = rawTitle.replace(/```[\s\S]*?```/g, "").replace(/\s+/g, " ").trim().slice(0, 100) || "Debug Session";
+
+                // Extract code snippet if present in question
+                let starterCode = "";
+                let starterLang = "javascript";
+                if (questionData && questionData.questionText) {
+                    const codeMatch = questionData.questionText.match(/```([a-zA-Z0-9_+#.-]*)\s*\n([\s\S]*?)```/);
+                    if (codeMatch) {
+                        starterLang = codeMatch[1]?.trim() || "javascript";
+                        starterCode = codeMatch[2]?.trim() || "";
+                    }
+                }
+
                 const res = await fetch("/api/collab/create-room", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        questionId: currentQuestionId,
-                        title: currentQuestionText || "Debug Session"
+                        questionId: questionId || "",
+                        title: cleanTitle,
+                        code: starterCode,
+                        lang: starterLang
                     })
                 });
                 const data = await res.json();
                 if (data.success && data.roomUrl) {
                     window.location.href = data.roomUrl;
+                } else if (data.roomId) {
+                    window.location.href = `collab.html?room=${encodeURIComponent(data.roomId)}&questionId=${encodeURIComponent(questionId || "")}`;
                 } else {
-                    window.location.href = `collab.html?questionId=${currentQuestionId}`;
+                    window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
                 }
             } catch (err) {
                 console.error("Collab create room error:", err);
-                window.location.href = `collab.html?questionId=${currentQuestionId}`;
+                window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
+            } finally {
+                setTimeout(() => {
+                    if (startPairDebugBtn) {
+                        startPairDebugBtn.disabled = false;
+                        startPairDebugBtn.innerHTML = originalHtml;
+                    }
+                }, 2000);
             }
         });
     }
