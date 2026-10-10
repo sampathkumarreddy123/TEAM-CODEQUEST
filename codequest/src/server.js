@@ -529,7 +529,11 @@ async function sendSmsOtp(phoneNumber, otp) {
             });
             const data = await res.json();
             console.log(`📨 [Fast2SMS] Dispatched to ${tenDigit}:`, data);
-            return { success: true, provider: "Fast2SMS" };
+            if (data && data.return) {
+                return { success: true, provider: "Fast2SMS" };
+            } else if (data && data.status_code === 996) {
+                console.warn(`⚠️ [Fast2SMS] Account requires 1-step KYC verification: Visit Fast2SMS -> "Smart OTP" -> Click "KYC" to enable carrier SMS delivery.`);
+            }
         } catch (e) {
             console.error("❌ Fast2SMS Delivery Error:", e.message);
         }
