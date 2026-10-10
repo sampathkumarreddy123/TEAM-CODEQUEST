@@ -507,6 +507,69 @@ app.post("/auth/guest-login", async (req, res) => {
 // ----------------- Phone Number OTP Authentication -----------------
 const phoneOtpStore = new Map(); // normalizedPhone -> { otp, expiresAt, attempts }
 
+// Helper: Send Real SMS OTP to Indian / International Phone Numbers
+async function sendSmsOtp(phoneNumber, otp) {
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+    const tenDigit = digitsOnly.slice(-10);
+
+    // 1. Fast2SMS (India's leading instant SMS API - fast2sms.com)
+    if (process.env.FAST2SMS_API_KEY) {
+        try {
+            const res = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+                method: "POST",
+                headers: {
+                    "authorization": process.env.FAST2SMS_API_KEY,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    route: "otp",
+                    variables_values: otp,
+                    numbers: tenDigit
+                })
+            });
+            const data = await res.json();
+            console.log(`📨 [Fast2SMS] Dispatched to ${tenDigit}:`, data);
+            return { success: true, provider: "Fast2SMS" };
+        } catch (e) {
+            console.error("❌ Fast2SMS Delivery Error:", e.message);
+        }
+    }
+
+    // 2. Twilio (Global SMS API)
+    if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+        try {
+            const url = `https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`;
+            const params = new URLSearchParams();
+            params.append("To", phoneNumber.startsWith("+") ? phoneNumber : `+91${tenDigit}`);
+            params.append("From", process.env.TWILIO_PHONE_NUMBER);
+            params.append("Body", `Your CodeQuest OTP is: ${otp}. Valid for 5 minutes.`);
+
+            const res = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Authorization": "Basic " + Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString("base64"),
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: params.toString()
+            });
+            const data = await res.json();
+            console.log(`📨 [Twilio] Dispatched to ${phoneNumber}:`, data);
+            return { success: true, provider: "Twilio" };
+        } catch (e) {
+            console.error("❌ Twilio Delivery Error:", e.message);
+        }
+    }
+
+    // 3. Fallback when SMS API key is not yet set in .env:
+    // Securely logs to server terminal only - NEVER exposed to browser!
+    console.log(`\n======================================================`);
+    console.log(`📲 [SMS GATEWAY] Sending OTP to Mobile: ${phoneNumber}`);
+    console.log(`🔑 SECURE OTP: ${otp}`);
+    console.log(`💡 To deliver carrier SMS to mobile phones, add FAST2SMS_API_KEY in .env`);
+    console.log(`======================================================\n`);
+    return { success: true, provider: "Local" };
+}
+
 // Send 6-digit OTP
 app.post("/auth/phone/send-otp", async (req, res) => {
     try {
@@ -531,17 +594,17 @@ app.post("/auth/phone/send-otp", async (req, res) => {
             attempts: 0
         });
 
-        console.log(`📱 [PHONE OTP] Generated for ${normalizedPhone}: ${otp} (valid for 5 mins)`);
+        // Send OTP via SMS
+        await sendSmsOtp(normalizedPhone, otp);
 
         const existingUser = await User.findOne({ phone: normalizedPhone });
 
         res.json({
             success: true,
-            message: `OTP sent to ${normalizedPhone}`,
+            message: `OTP has been sent to ${normalizedPhone}. Please check your SMS.`,
             phone: normalizedPhone,
             isExistingUser: !!existingUser,
             existingUsername: existingUser ? existingUser.username : null,
-            testOtp: otp, // Provided for instant zero-cost testing & college demo evaluation
             expiresIn: 300
         });
     } catch (err) {

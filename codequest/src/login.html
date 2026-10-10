@@ -345,53 +345,19 @@
             text-decoration: underline;
         }
 
-        /* Demo OTP notification box for fail-proof testing */
-        .demo-otp-box {
-            background: #ecfdf5;
-            border: 1px solid #a7f3d0;
+        /* SMS dispatched notification box */
+        .sms-notice-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
             border-radius: 8px;
-            padding: 10px 12px;
+            padding: 10px 14px;
             margin-bottom: 14px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            gap: 12px;
             text-align: left;
-        }
-
-        .demo-otp-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .demo-otp-pill {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 700;
-            font-size: 1.05rem;
-            color: #065f46;
-            letter-spacing: 2px;
-            background: #d1fae5;
-            padding: 2px 8px;
-            border-radius: 4px;
-        }
-
-        .btn-autofill-otp {
-            background: #059669;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 5px 10px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.15s;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .btn-autofill-otp:hover {
-            background: #047857;
+            font-size: 0.86rem;
+            color: #166534;
         }
 
         .resend-row {
@@ -572,16 +538,13 @@
                     </button>
                 </div>
 
-                <!-- Instant Demo OTP Helper (Ensures 100% fail-proof demo testing for project evaluations) -->
-                <div id="demoOtpHelper" class="demo-otp-box" style="display: none;">
-                    <div class="demo-otp-left">
-                        <i class="fa-solid fa-key text-success"></i>
-                        <span>OTP:</span>
-                        <span id="demoOtpDisplay" class="demo-otp-pill">123456</span>
+                <!-- Real SMS notification banner -->
+                <div class="sms-notice-box">
+                    <i class="fa-solid fa-envelope-open-text fs-5 text-success"></i>
+                    <div>
+                        <strong style="color: #0f172a; display: block; font-size: 0.88rem;">Check Your Mobile SMS</strong>
+                        <span style="color: #475569; font-size: 0.82rem;">Enter the 6-digit verification code sent to your phone messages.</span>
                     </div>
-                    <button type="button" class="btn-autofill-otp" onclick="autofillDemoOtp()">
-                        <i class="fa-solid fa-bolt"></i> Auto-Fill
-                    </button>
                 </div>
 
                 <label class="input-group-label" for="otpInput">Enter 6-Digit Verification Code</label>
@@ -758,18 +721,10 @@
 
                 // OTP sent successfully! Move to Step 2
                 currentTargetPhone = data.phone;
-                lastReceivedOtp = data.testOtp || '';
 
                 document.getElementById('displayPhoneFormatted').textContent = data.phone;
                 document.getElementById('phoneStep1').style.display = 'none';
                 document.getElementById('phoneStep2').style.display = 'block';
-
-                // Display Demo OTP Banner for fail-proof testing & college project evaluation
-                if (data.testOtp) {
-                    const demoBox = document.getElementById('demoOtpHelper');
-                    document.getElementById('demoOtpDisplay').textContent = data.testOtp;
-                    demoBox.style.display = 'flex';
-                }
 
                 // If not an existing user, show optional Name field
                 if (!data.isExistingUser) {
@@ -842,21 +797,12 @@
             }
         }
 
-        function autofillDemoOtp() {
-            if (lastReceivedOtp) {
-                otpInput.value = lastReceivedOtp;
-                hideAlert();
-                verifyMobileOtp();
-            }
-        }
-
         function backToStep1() {
             hideAlert();
             if (countdownTimer) clearInterval(countdownTimer);
             document.getElementById('phoneStep2').style.display = 'none';
             document.getElementById('phoneStep1').style.display = 'block';
             document.getElementById('otpInput').value = '';
-            document.getElementById('demoOtpHelper').style.display = 'none';
             phoneInput.focus();
         }
 
