@@ -189,6 +189,10 @@
 
         // Initialize local camera & mic
         await setupLocalMedia();
+        // Load question details immediately if present in URL
+        if (questionId) {
+            loadAndDisplayQuestion(questionId, null);
+        }
         // Connect WebSocket
         connectWebSocket();
         // Hydrate initial room state via REST
@@ -291,6 +295,9 @@
                     createWebRtcPeer(true);
                 }
                 updatePeerCountDisplay();
+                if (msg.questionId || questionId || msg.title || msg.authorName) {
+                    loadAndDisplayQuestion(msg.questionId || questionId, msg);
+                }
                 break;
 
             case "peer-joined":
@@ -416,11 +423,141 @@
                     if (r.code && !collabCodeInput.value.trim()) {
                         setEditorContent(r.code, r.lang || "javascript");
                     }
+                    if (r.questionId || questionId || r.title || r.authorName) {
+                        loadAndDisplayQuestion(r.questionId || questionId, r);
+                    }
                 }
             }
         } catch (e) {
             console.warn("Hydrate state note:", e);
         }
+    }
+
+    // -------------------------------------------------------------
+    // 6b. QUESTION CONTEXT RENDERER & SYNC
+    // -------------------------------------------------------------
+    let currentQuestionContext = null;
+
+    async function loadAndDisplayQuestion(qId, fallbackInfo) {
+        const banner = document.getElementById("cqQuestionContextBanner");
+        if (!banner) return;
+
+        let qData = null;
+        if (qId) {
+            try {
+                const res = await fetch(`/questions/${qId}`);
+                if (res.ok) {
+                    qData = await res.json();
+                }
+            } catch (err) {
+                console.warn("Could not fetch question details:", err);
+            }
+        }
+
+        const author = qData?.userId || {};
+        const authorName = author.username || fallbackInfo?.authorName || "Question Author";
+        const authorAvatar = author.avatarUrl || fallbackInfo?.authorAvatar || "default-avatar.png";
+        const authorId = author._id || fallbackInfo?.authorId || "";
+        const rawText = qData?.questionText || fallbackInfo?.title || "";
+
+        if (!rawText && !authorName) return;
+
+        // Clean title (remove code block if present in title snippet)
+        const cleanTitle = rawText.replace(/```[\s\S]*?```/g, "").replace(/\s+/g, " ").trim().slice(0, 140) || rawText.slice(0, 80) || "Live Pair Debugging Session";
+
+        const titleEl = document.getElementById("cqQTitle");
+        if (titleEl) titleEl.textContent = cleanTitle;
+
+        const authorNameEl = document.getElementById("cqQAuthorName");
+        if (authorNameEl) authorNameEl.textContent = authorName;
+
+        const authorAvatarEl = document.getElementById("cqQAuthorAvatar");
+        if (authorAvatarEl) authorAvatarEl.src = authorAvatar;
+
+        const authorLinkEl = document.getElementById("cqQAuthorLink");
+        if (authorLinkEl) {
+            authorLinkEl.href = authorId ? `profile.html?userId=${authorId}` : "#";
+        }
+
+        const timeEl = document.getElementById("cqQTime");
+        if (timeEl && qData?.createdAt) {
+            const date = new Date(qData.createdAt);
+            timeEl.textContent = `• Asked ${date.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+        }
+
+        // Tags
+        const tagsContainer = document.getElementById("cqQTags");
+        if (tagsContainer) {
+            const tags = Array.isArray(qData?.tags) ? qData.tags : (Array.isArray(fallbackInfo?.tags) ? fallbackInfo.tags : []);
+            if (tags.length > 0) {
+                tagsContainer.innerHTML = tags.map(t => `<span class="cq-q-tag">#${escapeHtml(t)}</span>`).join("");
+                tagsContainer.style.display = "flex";
+            } else {
+                tagsContainer.style.display = "none";
+            }
+        }
+
+        // Description / full question text
+        const descEl = document.getElementById("cqQDesc");
+        if (descEl) {
+            descEl.textContent = rawText;
+        }
+
+        // Original Post link
+        const postLink = document.getElementById("cqQViewPostBtn");
+        if (postLink && (qId || qData?._id)) {
+            const actualId = qId || qData?._id;
+            postLink.href = `messageDetails.html?questionId=${actualId}`;
+            postLink.style.display = "inline-flex";
+        }
+
+        // Show banner
+        banner.style.display = "block";
+
+        // Auto-detect code snippet and set editor if editor is currently empty or has default text
+        if (!collabCodeInput.value.trim() || collabCodeInput.value.includes("Ready to pair-program!")) {
+            const codeMatch = rawText.match(/```([a-zA-Z0-9_+#.-]*)\s*\n([\s\S]*?)```/);
+            if (codeMatch && codeMatch[2]?.trim()) {
+                let starterLang = codeMatch[1]?.trim().toLowerCase() || "javascript";
+                if (starterLang === "js") starterLang = "javascript";
+                if (starterLang === "py") starterLang = "python";
+                setEditorContent(codeMatch[2].trim(), starterLang);
+            } else {
+                if (/\b(java|public\s+class|System\.out)\b/i.test(rawText)) {
+                    if (editorLangSelect) {
+                        editorLangSelect.value = "java";
+                        updateFileTabName("java");
+                    }
+                } else if (/\b(python|def\s+\w+|print\()\b/i.test(rawText)) {
+                    if (editorLangSelect) {
+                        editorLangSelect.value = "python";
+                        updateFileTabName("python");
+                    }
+                } else if (/\b(c\+\+|cpp|#include|cout)\b/i.test(rawText)) {
+                    if (editorLangSelect) {
+                        editorLangSelect.value = "cpp";
+                        updateFileTabName("cpp");
+                    }
+                }
+            }
+        }
+
+        currentQuestionContext = { qId, qData, authorName, cleanTitle };
+    }
+
+    // Toggle problem statement details
+    const toggleQBtn = document.getElementById("cqToggleQDescBtn");
+    if (toggleQBtn) {
+        toggleQBtn.addEventListener("click", () => {
+            const descEl = document.getElementById("cqQDesc");
+            const icon = document.getElementById("cqToggleQIcon");
+            const text = document.getElementById("cqToggleQText");
+            if (!descEl) return;
+            const isHidden = descEl.style.display === "none";
+            descEl.style.display = isHidden ? "block" : "none";
+            if (icon) icon.className = isHidden ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down";
+            if (text) text.textContent = isHidden ? "Hide" : "Details";
+        });
     }
 
     // -------------------------------------------------------------

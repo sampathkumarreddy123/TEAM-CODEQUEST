@@ -231,6 +231,22 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (questionLikesCount) questionLikesCount.textContent = questionData.likes || 0;
 
+            // Direct Call Author Button in question hero
+            const callAuthorBtn = document.getElementById("callQuestionAuthorBtn");
+            if (callAuthorBtn) {
+                const isAuthor = currentUser && (String(currentUser.userId || currentUser._id) === String(authorId));
+                if (!isAuthor && authorId && currentUser) {
+                    callAuthorBtn.style.display = "inline-flex";
+                    callAuthorBtn.dataset.userId = authorId;
+                    callAuthorBtn.dataset.username = authorName;
+                    callAuthorBtn.dataset.avatar = authorAvatar;
+                    callAuthorBtn.dataset.questionId = questionId;
+                    callAuthorBtn.dataset.questionTitle = questionData.questionText.slice(0, 80);
+                } else {
+                    callAuthorBtn.style.display = "none";
+                }
+            }
+
             // Admin badge on author
             const authorAdminBadge = document.getElementById("questionAuthorAdminBadge");
             if (authorAdminBadge) {
@@ -933,62 +949,127 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // Start Live 1-on-1 Pair Programming Debug Room
-    const startPairDebugBtn = document.getElementById("startPairDebugBtn");
-    if (startPairDebugBtn) {
-        startPairDebugBtn.addEventListener("click", async () => {
-            const originalHtml = startPairDebugBtn.innerHTML;
-            startPairDebugBtn.disabled = true;
-            startPairDebugBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Starting Room...`;
-            try {
-                // Extract clean question title and code if available
-                let rawTitle = "";
-                if (questionData && questionData.questionText) {
-                    rawTitle = questionData.questionText;
-                } else if (questionTitle) {
-                    rawTitle = questionTitle.innerText || questionTitle.textContent || "";
-                }
-                const cleanTitle = rawTitle.replace(/```[\s\S]*?```/g, "").replace(/\s+/g, " ").trim().slice(0, 100) || "Debug Session";
-
-                // Extract code snippet if present in question
-                let starterCode = "";
-                let starterLang = "javascript";
-                if (questionData && questionData.questionText) {
-                    const codeMatch = questionData.questionText.match(/```([a-zA-Z0-9_+#.-]*)\s*\n([\s\S]*?)```/);
-                    if (codeMatch) {
-                        starterLang = codeMatch[1]?.trim() || "javascript";
-                        starterCode = codeMatch[2]?.trim() || "";
-                    }
-                }
-
-                const res = await fetch("/api/collab/create-room", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        questionId: questionId || "",
-                        title: cleanTitle,
-                        code: starterCode,
-                        lang: starterLang
-                    })
-                });
-                const data = await res.json();
-                if (data.success && data.roomUrl) {
-                    window.location.href = data.roomUrl;
-                } else if (data.roomId) {
-                    window.location.href = `collab.html?room=${encodeURIComponent(data.roomId)}&questionId=${encodeURIComponent(questionId || "")}`;
-                } else {
-                    window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
-                }
-            } catch (err) {
-                console.error("Collab create room error:", err);
-                window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
-            } finally {
-                setTimeout(() => {
-                    if (startPairDebugBtn) {
-                        startPairDebugBtn.disabled = false;
-                        startPairDebugBtn.innerHTML = originalHtml;
-                    }
-                }, 2000);
+    async function launchLiveCollabRoom() {
+        if (!startPairDebugBtn) return;
+        const originalHtml = startPairDebugBtn.innerHTML;
+        startPairDebugBtn.disabled = true;
+        startPairDebugBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i>Starting Room...`;
+        try {
+            let rawTitle = "";
+            if (questionData && questionData.questionText) {
+                rawTitle = questionData.questionText;
+            } else if (questionTitle) {
+                rawTitle = questionTitle.innerText || questionTitle.textContent || "";
             }
+            const cleanTitle = rawTitle.replace(/```[\s\S]*?```/g, "").replace(/\s+/g, " ").trim().slice(0, 100) || "Debug Session";
+
+            let starterCode = "";
+            let starterLang = "javascript";
+            if (questionData && questionData.questionText) {
+                const codeMatch = questionData.questionText.match(/```([a-zA-Z0-9_+#.-]*)\s*\n([\s\S]*?)```/);
+                if (codeMatch) {
+                    starterLang = codeMatch[1]?.trim() || "javascript";
+                    starterCode = codeMatch[2]?.trim() || "";
+                }
+            }
+
+            const author = questionData?.userId;
+            const authorName = author?.username || "Anonymous";
+            const authorAvatar = author?.avatarUrl || "default-avatar.png";
+            const authorId = author?._id || "";
+
+            const res = await fetch("/api/collab/create-room", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    questionId: questionId || "",
+                    title: cleanTitle,
+                    code: starterCode,
+                    lang: starterLang,
+                    authorName: authorName,
+                    authorAvatar: authorAvatar,
+                    authorId: authorId,
+                    tags: Array.isArray(questionData?.tags) ? questionData.tags : []
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.roomUrl) {
+                window.location.href = data.roomUrl;
+            } else if (data.roomId) {
+                window.location.href = `collab.html?room=${encodeURIComponent(data.roomId)}&questionId=${encodeURIComponent(questionId || "")}`;
+            } else {
+                window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
+            }
+        } catch (err) {
+            console.error("Collab create room error:", err);
+            window.location.href = `collab.html?questionId=${encodeURIComponent(questionId || "")}`;
+        } finally {
+            setTimeout(() => {
+                if (startPairDebugBtn) {
+                    startPairDebugBtn.disabled = false;
+                    startPairDebugBtn.innerHTML = originalHtml;
+                }
+            }, 2000);
+        }
+    }
+
+    const startPairDebugBtn = document.getElementById("startPairDebugBtn");
+    const debugTogetherModalEl = document.getElementById("debugTogetherModal");
+    let debugTogetherModal = null;
+    if (debugTogetherModalEl && window.bootstrap) {
+        debugTogetherModal = new bootstrap.Modal(debugTogetherModalEl);
+    }
+
+    if (startPairDebugBtn) {
+        startPairDebugBtn.addEventListener("click", () => {
+            const author = questionData?.userId;
+            const authorId = author?._id || "";
+            const authorName = author?.username || "Author";
+            const isAuthor = currentUser && (String(currentUser.userId || currentUser._id) === String(authorId));
+
+            // If viewer is logged in and not the author of this question, present choice modal
+            if (currentUser && !isAuthor && authorId && debugTogetherModal) {
+                const nameSpan = document.getElementById("modalAuthorNameSpan");
+                if (nameSpan) nameSpan.textContent = `@${authorName}`;
+                debugTogetherModal.show();
+            } else {
+                launchLiveCollabRoom();
+            }
+        });
+    }
+
+    // Modal action: Call Author Live
+    const modalCallAuthorLiveBtn = document.getElementById("modalCallAuthorLiveBtn");
+    if (modalCallAuthorLiveBtn) {
+        modalCallAuthorLiveBtn.addEventListener("click", () => {
+            if (debugTogetherModal) debugTogetherModal.hide();
+            const author = questionData?.userId;
+            const authorId = author?._id || "";
+            const authorName = author?.username || "Author";
+            const authorAvatar = author?.avatarUrl || "default-avatar.png";
+            const rawTitle = questionData?.questionText || "";
+            const cleanTitle = rawTitle.replace(/```[\s\S]*?```/g, "").replace(/\s+/g, " ").trim().slice(0, 100);
+
+            if (window.CodeQuestPro && window.CodeQuestPro.LiveCallManager) {
+                window.CodeQuestPro.LiveCallManager.startCallWithUser({
+                    targetUserId: authorId,
+                    targetUsername: authorName,
+                    targetAvatarUrl: authorAvatar,
+                    questionId: questionId,
+                    questionTitle: cleanTitle
+                });
+            } else {
+                launchLiveCollabRoom();
+            }
+        });
+    }
+
+    // Modal action: Open Live Debug Room
+    const modalOpenLiveRoomBtn = document.getElementById("modalOpenLiveRoomBtn");
+    if (modalOpenLiveRoomBtn) {
+        modalOpenLiveRoomBtn.addEventListener("click", () => {
+            if (debugTogetherModal) debugTogetherModal.hide();
+            launchLiveCollabRoom();
         });
     }
 

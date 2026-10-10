@@ -1374,6 +1374,10 @@ function getOrCreateRoom(roomId, initialData = {}) {
             id: cleanId,
             questionId: initialData.questionId || null,
             title: initialData.title || "Collaborative Debug Session",
+            authorName: initialData.authorName || null,
+            authorAvatar: initialData.authorAvatar || null,
+            authorId: initialData.authorId || null,
+            tags: initialData.tags || [],
             code: initialData.code || '// Welcome to CodeQuest Live Debug Room!\n// Both developers can code and debug face-to-face in real-time.\n\nfunction solution() {\n    console.log("Ready to pair-program!");\n}\n\nsolution();\n',
             lang: initialData.lang || "javascript",
             peers: new Map(), // peerId -> { ws, user, isMuted, isVideoOff }
@@ -1425,9 +1429,9 @@ function getOrCreateRoom(roomId, initialData = {}) {
 // Create or join room endpoint
 app.post("/api/collab/create-room", async (req, res) => {
     try {
-        const { questionId, title, code, lang } = req.body || {};
+        const { questionId, title, code, lang, authorName, authorAvatar, authorId, tags } = req.body || {};
         const randomCode = `CQ-${Math.floor(1000 + Math.random() * 9000)}`;
-        const room = getOrCreateRoom(randomCode, { questionId, title, code, lang });
+        const room = getOrCreateRoom(randomCode, { questionId, title, code, lang, authorName, authorAvatar, authorId, tags });
         res.json({
             success: true,
             roomId: room.id,
@@ -1452,6 +1456,10 @@ app.get("/api/collab/room/:roomId", (req, res) => {
             id: room.id,
             questionId: room.questionId,
             title: room.title,
+            authorName: room.authorName,
+            authorAvatar: room.authorAvatar,
+            authorId: room.authorId,
+            tags: room.tags,
             code: room.code,
             lang: room.lang,
             publishDraft: room.publishDraft,
@@ -2475,7 +2483,7 @@ function notifyUserSocket(identifier, payload) {
 // 1. Initiate 1-on-1 Call from Profile or Author Card
 app.post("/api/calls/initiate", verifyToken, async (req, res) => {
     try {
-        let { targetUserId, targetUsername } = req.body;
+        let { targetUserId, targetUsername, questionId, questionTitle } = req.body;
         if (targetUserId === "undefined" || targetUserId === "null") targetUserId = null;
         if (targetUsername === "undefined" || targetUsername === "null") targetUsername = null;
 
@@ -2582,15 +2590,21 @@ app.post("/api/calls/initiate", verifyToken, async (req, res) => {
                 avatarUrl: target.avatarUrl || "default-avatar.png"
             },
             roomId,
+            questionId: questionId || null,
+            questionTitle: questionTitle || null,
             status: "ringing",
             createdAt: Date.now()
         };
 
         activeCalls.set(callId, callData);
 
-        // Pre-create room for instant entry
+        // Pre-create room for instant entry with question details bound
         getOrCreateRoom(roomId, {
-            title: `1-on-1 Call: ${req.user.username} & ${target.username}`,
+            title: questionTitle || `1-on-1 Call: ${req.user.username} & ${target.username}`,
+            questionId: questionId || null,
+            authorName: target.username,
+            authorAvatar: target.avatarUrl,
+            authorId: String(target._id),
             lang: "javascript"
         });
 
@@ -2681,19 +2695,21 @@ app.post("/api/calls/respond", verifyToken, async (req, res) => {
             notifyUserSocket(call.caller.id, {
                 type: "call-accepted",
                 callId: call.callId,
-                roomId: call.roomId
+                roomId: call.roomId,
+                questionId: call.questionId || null
             });
             notifyUserSocket(call.caller.username, {
                 type: "call-accepted",
                 callId: call.callId,
-                roomId: call.roomId
+                roomId: call.roomId,
+                questionId: call.questionId || null
             });
 
             return res.json({
                 success: true,
                 call,
                 roomId: call.roomId,
-                roomUrl: `/collab.html?room=${call.roomId}`
+                roomUrl: `/collab.html?room=${call.roomId}` + (call.questionId ? `&questionId=${call.questionId}` : "")
             });
         } else if (action === "decline") {
             call.status = "declined";
@@ -2869,6 +2885,10 @@ wss.on("connection", async (ws, req) => {
                     lang: room.lang,
                     title: room.title,
                     questionId: room.questionId,
+                    authorName: room.authorName,
+                    authorAvatar: room.authorAvatar,
+                    authorId: room.authorId,
+                    tags: room.tags,
                     publishDraft: room.publishDraft,
                     testCases: room.testCases,
                     sessionNotes: room.sessionNotes,

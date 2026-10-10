@@ -2131,7 +2131,7 @@
                             <img src="${escapeHtml(call.caller.avatarUrl || 'default-avatar.png')}" alt="${escapeHtml(call.caller.username)}" class="cq-call-avatar" onerror="this.src='default-avatar.png'">
                         </div>
                         <h3 class="cq-call-username">${escapeHtml(call.caller.username)}</h3>
-                        <p class="cq-call-desc">wants to connect face-to-face for live pair-programming & collaborative debugging.</p>
+                        <p class="cq-call-desc">${call.questionTitle ? `wants to debug together live on: <strong class="text-warning">"${escapeHtml(call.questionTitle)}"</strong>` : `wants to connect face-to-face for live pair-programming & collaborative debugging.`}</p>
                     </div>
                     <div class="cq-call-footer">
                         <button type="button" class="btn-cq-call-decline" id="btnDeclineIncomingCall">
@@ -2160,10 +2160,10 @@
                     if (data && data.roomUrl) {
                         window.location.href = data.roomUrl;
                     } else if (call.roomId) {
-                        window.location.href = `/collab.html?room=${call.roomId}`;
+                        window.location.href = `/collab.html?room=${call.roomId}` + (call.questionId ? `&questionId=${call.questionId}` : "");
                     }
                 } catch (err) {
-                    if (call.roomId) window.location.href = `/collab.html?room=${call.roomId}`;
+                    if (call.roomId) window.location.href = `/collab.html?room=${call.roomId}` + (call.questionId ? `&questionId=${call.questionId}` : "");
                 }
             });
 
@@ -2192,7 +2192,7 @@
         },
 
         // Initiate call to a user
-        async startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl }) {
+        async startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl, questionId, questionTitle }) {
             if (!this.currentUser) {
                 try {
                     const res = await fetch("/auth/status", { credentials: "include" });
@@ -2226,7 +2226,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
-                    body: JSON.stringify({ targetUserId, targetUsername })
+                    body: JSON.stringify({ targetUserId, targetUsername, questionId, questionTitle })
                 });
 
                 if (!res.ok) {
@@ -2343,9 +2343,10 @@
             setTimeout(() => {
                 this.closeOutgoingModal();
                 const rId = data.roomId || (this.activeOutgoingCall ? this.activeOutgoingCall.roomId : null);
+                const qId = data.questionId || (this.activeOutgoingCall ? this.activeOutgoingCall.questionId : null);
                 this.activeOutgoingCall = null;
                 if (rId) {
-                    window.location.href = `/collab.html?room=${rId}`;
+                    window.location.href = `/collab.html?room=${rId}` + (qId ? `&questionId=${qId}` : "");
                 }
             }, 800);
         },
@@ -2388,7 +2389,9 @@
                 const targetUserId = callBtn.dataset.userId;
                 const targetUsername = callBtn.dataset.username;
                 const targetAvatarUrl = callBtn.dataset.avatar;
-                LiveCallManager.startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl });
+                const questionId = callBtn.dataset.questionId || null;
+                const questionTitle = callBtn.dataset.questionTitle || null;
+                LiveCallManager.startCallWithUser({ targetUserId, targetUsername, targetAvatarUrl, questionId, questionTitle });
             }
         });
 

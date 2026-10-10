@@ -112,6 +112,37 @@
         <!-- LEFT COLUMN: CODE EDITOR & INPUT / OUTPUT DRAWERS -->
         <section class="cq-editor-column">
             
+            <!-- Question Context Banner (Shows question details & author when debugging a post) -->
+            <div class="cq-question-context-banner" id="cqQuestionContextBanner" style="display: none;">
+                <div class="cq-q-banner-top">
+                    <div class="cq-q-banner-author-wrap">
+                        <span class="cq-q-badge"><i class="fa-solid fa-code-merge text-danger me-1"></i> Debugging Question</span>
+                        <a id="cqQAuthorLink" href="#" target="_blank" class="cq-q-author-chip" title="View question author profile">
+                            <img id="cqQAuthorAvatar" src="default-avatar.png" alt="Author" class="cq-q-author-avatar" onerror="this.src='default-avatar.png'">
+                            <span id="cqQAuthorName" class="cq-q-author-name">Developer</span>
+                            <span class="cq-q-author-tag"><i class="fa-solid fa-user me-1"></i>Author</span>
+                        </a>
+                        <span id="cqQTime" class="cq-q-time text-muted small"></span>
+                    </div>
+                    <div class="cq-q-banner-actions">
+                        <button type="button" class="btn btn-cq-banner-sm" id="cqToggleQDescBtn" title="Toggle full problem statement">
+                            <i class="fa-solid fa-chevron-down" id="cqToggleQIcon"></i>
+                            <span id="cqToggleQText">Details</span>
+                        </button>
+                        <a id="cqQViewPostBtn" href="#" target="_blank" class="btn btn-cq-banner-sm text-decoration-none" title="Open question on CodeQuest in new tab">
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i><span>Original Post</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="cq-q-banner-content">
+                    <div class="cq-q-title-row">
+                        <h4 class="cq-q-title" id="cqQTitle">Loading question...</h4>
+                    </div>
+                    <div class="cq-q-full-desc" id="cqQDesc" style="display: none;"></div>
+                    <div class="cq-q-tags" id="cqQTags"></div>
+                </div>
+            </div>
+
             <!-- Code Editor Card -->
             <div class="cq-editor-card">
                 <!-- Editor Top Header -->

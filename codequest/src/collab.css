@@ -1688,3 +1688,147 @@ body.cq-collab-body {
         margin: auto;
     }
 }
+
+/* ==========================================================================
+   QUESTION CONTEXT BANNER (LIVE PAIR-DEBUGGING)
+   ========================================================================== */
+.cq-question-context-banner {
+    background: #1e2227;
+    border: 1px solid #2d333b;
+    border-left: 4px solid #e01e5a;
+    border-radius: var(--slack-radius, 8px);
+    margin-bottom: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    transition: all 0.2s ease;
+}
+
+.cq-q-banner-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.cq-q-banner-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cq-q-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(224, 30, 90, 0.15);
+    color: #ff6b8b;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    border: 1px solid rgba(224, 30, 90, 0.3);
+}
+
+.cq-q-author-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-decoration: none;
+    color: #f0f6fc;
+    font-weight: 600;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 10px 3px 4px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.15s ease;
+}
+
+.cq-q-author-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #58a6ff;
+}
+
+.cq-q-author-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #2eb67d;
+}
+
+.cq-q-author-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 9999px;
+    background: rgba(46, 182, 125, 0.2);
+    color: #3fb950;
+    font-weight: 600;
+}
+
+.cq-q-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-cq-banner-sm {
+    background: #2b3038;
+    color: #c9d1d9;
+    border: 1px solid #3d444d;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+
+.btn-cq-banner-sm:hover {
+    background: #383f4a;
+    color: #ffffff;
+    border-color: #58a6ff;
+}
+
+.cq-q-title {
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.cq-q-full-desc {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 13px;
+    color: #adbac7;
+    line-height: 1.6;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.cq-q-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+
+.cq-q-tag {
+    font-size: 11px;
+    color: #58a6ff;
+    background: rgba(56, 139, 253, 0.12);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--slack-font-mono, monospace);
+}

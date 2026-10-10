@@ -84,6 +84,9 @@
                             <div class="d-flex align-items-center gap-1">
                                 <span id="questionAuthorName" class="author-name">Loading...</span>
                                 <span id="questionAuthorAdminBadge" class="badge-admin-tag" style="display: none;"><i class="fa-solid fa-shield-halved"></i> Admin</span>
+                                <button type="button" class="btn-direct-call-user ms-2" id="callQuestionAuthorBtn" style="display: none;" title="Start live 1-on-1 debug call with author">
+                                    <i class="fa-solid fa-phone me-1"></i>Call Author
+                                </button>
                             </div>
                             <span id="questionTime" class="post-time">Posted on ...</span>
                         </div>
@@ -380,6 +383,43 @@
             </div>
             <div id="avatarLightboxCaption" class="avatar-lightbox-caption"></div>
             <div id="avatarLightboxHint" class="avatar-lightbox-hint"><i class="fa-solid fa-magnifying-glass-plus me-1"></i>Click picture to zoom in</div>
+        </div>
+    <!-- Debug Together Live Options Modal -->
+    <div class="modal fade" id="debugTogetherModal" tabindex="-1" aria-labelledby="debugTogetherModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background: #1e2227; color: #f0f6fc; border: 1px solid #30363d; border-radius: 12px;">
+                <div class="modal-header" style="border-bottom: 1px solid #30363d;">
+                    <h5 class="modal-title" id="debugTogetherModalLabel">
+                        <i class="fa-solid fa-video text-danger me-2"></i>Debug Together Live
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <p class="text-secondary small mb-3">Choose how you want to debug this question live:</p>
+                    
+                    <div class="d-grid gap-3">
+                        <button type="button" class="btn btn-outline-success text-start p-3 d-flex align-items-center gap-3" id="modalCallAuthorLiveBtn" style="border-radius: 8px;">
+                            <div class="rounded-circle bg-success bg-opacity-25 p-3 text-success d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                <i class="fa-solid fa-phone fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-white">Call Author Live</div>
+                                <div class="text-secondary small">Ring <span id="modalAuthorNameSpan" class="text-info">@author</span> face-to-face to debug together</div>
+                            </div>
+                        </button>
+
+                        <button type="button" class="btn btn-outline-primary text-start p-3 d-flex align-items-center gap-3" id="modalOpenLiveRoomBtn" style="border-radius: 8px;">
+                            <div class="rounded-circle bg-primary bg-opacity-25 p-3 text-primary d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                <i class="fa-solid fa-laptop-code fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-white">Open Live Debug Room</div>
+                                <div class="text-secondary small">Jump straight into the collaborative editor & invite peers via link</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
