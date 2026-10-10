@@ -73,6 +73,7 @@ connectMongoDB();
 // ----------------- Mongoose Schemas -----------------
 const userSchema = new mongoose.Schema({
     githubId: { type: String, default: null },
+    phone: { type: String, default: null, index: true },
     username: { type: String, required: true },
     avatarUrl: { type: String, default: "default-avatar.png" },
     token: { type: String, required: true },
@@ -500,6 +501,156 @@ app.post("/auth/guest-login", async (req, res) => {
     } catch (err) {
         console.error("Guest login error:", err);
         res.status(500).json({ error: "Failed to login as guest developer" });
+    }
+});
+
+// ----------------- Phone Number OTP Authentication -----------------
+const phoneOtpStore = new Map(); // normalizedPhone -> { otp, expiresAt, attempts }
+
+// Send 6-digit OTP
+app.post("/auth/phone/send-otp", async (req, res) => {
+    try {
+        let { phone } = req.body || {};
+        if (!phone) {
+            return res.status(400).json({ error: "Mobile number is required." });
+        }
+
+        const cleanPhone = String(phone).replace(/[\s-]/g, "");
+        const digitsOnly = cleanPhone.replace(/\D/g, "");
+        if (digitsOnly.length < 10) {
+            return res.status(400).json({ error: "Please enter a valid 10-digit mobile number." });
+        }
+
+        const normalizedPhone = digitsOnly.length === 10 ? `+91${digitsOnly}` : (cleanPhone.startsWith("+") ? cleanPhone : `+${digitsOnly}`);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+        phoneOtpStore.set(normalizedPhone, {
+            otp,
+            expiresAt,
+            attempts: 0
+        });
+
+        console.log(`📱 [PHONE OTP] Generated for ${normalizedPhone}: ${otp} (valid for 5 mins)`);
+
+        const existingUser = await User.findOne({ phone: normalizedPhone });
+
+        res.json({
+            success: true,
+            message: `OTP sent to ${normalizedPhone}`,
+            phone: normalizedPhone,
+            isExistingUser: !!existingUser,
+            existingUsername: existingUser ? existingUser.username : null,
+            testOtp: otp, // Provided for instant zero-cost testing & college demo evaluation
+            expiresIn: 300
+        });
+    } catch (err) {
+        console.error("❌ Send OTP Error:", err);
+        res.status(500).json({ error: "Failed to send OTP: " + err.message });
+    }
+});
+
+// Verify 6-digit OTP and Login / Register
+app.post("/auth/phone/verify-otp", async (req, res) => {
+    try {
+        let { phone, otp, username } = req.body || {};
+        if (!phone || !otp) {
+            return res.status(400).json({ error: "Mobile number and 6-digit OTP are required." });
+        }
+
+        const cleanPhone = String(phone).replace(/[\s-]/g, "");
+        const digitsOnly = cleanPhone.replace(/\D/g, "");
+        const normalizedPhone = digitsOnly.length === 10 ? `+91${digitsOnly}` : (cleanPhone.startsWith("+") ? cleanPhone : `+${digitsOnly}`);
+
+        const record = phoneOtpStore.get(normalizedPhone);
+        if (!record) {
+            return res.status(400).json({ error: "No OTP was requested for this mobile number or it has expired. Please request a new OTP." });
+        }
+
+        if (Date.now() > record.expiresAt) {
+            phoneOtpStore.delete(normalizedPhone);
+            return res.status(400).json({ error: "OTP has expired. Please request a new OTP." });
+        }
+
+        if (record.attempts >= 5) {
+            phoneOtpStore.delete(normalizedPhone);
+            return res.status(429).json({ error: "Too many failed attempts. Please request a new OTP." });
+        }
+
+        if (String(otp).trim() !== record.otp) {
+            record.attempts += 1;
+            return res.status(400).json({ error: "Invalid OTP code. Please check and try again." });
+        }
+
+        // OTP verified successfully! Clear OTP
+        phoneOtpStore.delete(normalizedPhone);
+
+        // Find or create user
+        let user = await User.findOne({ phone: normalizedPhone });
+        const userToken = "phone_tok_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+
+        if (!user) {
+            // New user registration via Mobile
+            const suffix = normalizedPhone.slice(-4);
+            const chosenUsername = (username && username.trim()) ? username.trim() : `Coder_${suffix}`;
+            
+            let finalUsername = chosenUsername;
+            let counter = 1;
+            while (await User.findOne({ username: finalUsername })) {
+                finalUsername = `${chosenUsername}_${counter}`;
+                counter++;
+            }
+
+            const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(finalUsername)}&backgroundColor=10B981`;
+
+            user = new User({
+                phone: normalizedPhone,
+                githubId: "phone_" + Date.now(),
+                username: finalUsername,
+                avatarUrl,
+                token: userToken,
+                isAdmin: false
+            });
+            await user.save();
+        } else {
+            // Existing user login
+            user.token = userToken;
+            if (username && username.trim() && user.username !== username.trim()) {
+                const existingWithName = await User.findOne({ username: username.trim(), _id: { $ne: user._id } });
+                if (!existingWithName) {
+                    user.username = username.trim();
+                }
+            }
+            await user.save();
+        }
+
+        const isProduction = process.env.NODE_ENV === "production";
+        const cookieOpts = {
+            httpOnly: true,
+            sameSite: "lax",
+            secure: isProduction,
+            path: "/",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        };
+
+        res.cookie("token", userToken, cookieOpts);
+        res.cookie("username", user.username, { ...cookieOpts, httpOnly: false });
+        res.cookie("avatarUrl", user.avatarUrl, { ...cookieOpts, httpOnly: false });
+        res.cookie("isAdmin", String(user.isAdmin || false), { ...cookieOpts, httpOnly: false });
+
+        res.json({
+            success: true,
+            message: "Authentication successful",
+            user: {
+                _id: String(user._id),
+                username: user.username,
+                phone: user.phone,
+                avatarUrl: user.avatarUrl
+            }
+        });
+    } catch (err) {
+        console.error("❌ Verify OTP Error:", err);
+        res.status(500).json({ error: "Failed to verify OTP: " + err.message });
     }
 });
 
