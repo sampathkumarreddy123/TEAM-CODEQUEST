@@ -8,7 +8,7 @@
     <link rel="shortcut icon" type="image/png" href="assets/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
@@ -19,12 +19,6 @@
             --text-primary: #0f172a;
             --text-secondary: #475569;
             --text-muted: #64748b;
-            --primary-btn: #1e293b;
-            --primary-btn-hover: #0f172a;
-            --accent-btn: #2563eb;
-            --accent-btn-hover: #1d4ed8;
-            --emerald-btn: #059669;
-            --emerald-btn-hover: #047857;
             --radius-lg: 16px;
             --radius-md: 10px;
         }
@@ -52,117 +46,69 @@
             background-color: var(--bg-surface);
             border: 1px solid var(--border-light);
             border-radius: var(--radius-lg);
-            padding: 38px 32px;
+            padding: 42px 36px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
             text-align: center;
         }
 
         .brand-header {
-            margin-bottom: 24px;
+            margin-bottom: 28px;
         }
 
         .logo-container {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 14px;
+            margin-bottom: 16px;
             background-color: #0f172a;
             border: 1px solid #1e293b;
-            padding: 8px 20px;
+            padding: 10px 24px;
             border-radius: 999px;
-            gap: 10px;
+            gap: 12px;
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
         }
 
         .logo-container img {
-            height: 32px;
+            height: 36px;
             object-fit: contain;
         }
 
         .brand-name {
-            font-size: 1.15rem;
+            font-size: 1.25rem;
             font-weight: 800;
             letter-spacing: 1px;
             color: #ffffff;
         }
 
         h1 {
-            font-size: 1.55rem;
+            font-size: 1.65rem;
             font-weight: 800;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: #0f172a;
-            letter-spacing: -0.3px;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.45;
+            font-size: 0.92rem;
+            line-height: 1.5;
         }
 
-        /* ---------------- Authentication Tabs ---------------- */
-        .auth-tab-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            background: #f1f5f9;
-            padding: 4px;
-            border-radius: var(--radius-md);
-            margin: 20px 0 18px 0;
-            border: 1px solid var(--border-light);
+        .actions-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 24px;
         }
 
-        .tab-btn {
-            border: none;
-            background: transparent;
-            padding: 9px 12px;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .tab-btn.active {
-            background: #ffffff;
-            color: #0f172a;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
-        }
-
-        .tab-btn i {
-            font-size: 0.95rem;
-        }
-
-        /* ---------------- Tab Panes ---------------- */
-        .tab-content-pane {
-            display: none;
-            animation: fadeIn 0.25s ease forwards;
-        }
-
-        .tab-content-pane.active {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(3px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ---------------- Buttons ---------------- */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             width: 100%;
-            padding: 13px 20px;
+            padding: 14px 20px;
             border-radius: var(--radius-md);
-            font-size: 0.96rem;
+            font-size: 0.98rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
@@ -181,216 +127,34 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .btn-phone-primary {
-            background: linear-gradient(135deg, #059669, #047857);
-            color: white;
-            box-shadow: 0 3px 10px rgba(5, 150, 105, 0.25);
-        }
-
-        .btn-phone-primary:hover {
-            background: linear-gradient(135deg, #047857, #065f46);
-            box-shadow: 0 5px 16px rgba(5, 150, 105, 0.35);
-            transform: translateY(-1px);
+        .btn-github i {
+            font-size: 1.25rem;
         }
 
         .btn-guest {
             background: linear-gradient(135deg, #2563eb, #1d4ed8);
             color: white;
             border: 1px solid #1d4ed8;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
         }
 
         .btn-guest:hover {
             background: linear-gradient(135deg, #1d4ed8, #1e40af);
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
             transform: translateY(-1px);
         }
 
-        /* ---------------- Mobile Form Fields ---------------- */
-        .input-group-label {
-            display: block;
-            text-align: left;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
+        .btn-guest i {
+            font-size: 1.15rem;
         }
 
-        .phone-input-wrapper {
-            display: flex;
-            align-items: center;
-            border: 1.5px solid var(--border-medium);
-            border-radius: var(--radius-md);
-            background: #ffffff;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            overflow: hidden;
-            margin-bottom: 14px;
-        }
-
-        .phone-input-wrapper:focus-within {
-            border-color: #059669;
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
-        }
-
-        .country-prefix {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: #f8fafc;
-            padding: 0 12px;
-            height: 48px;
-            font-weight: 700;
-            font-size: 0.92rem;
-            color: var(--text-primary);
-            border-right: 1.5px solid var(--border-light);
-            user-select: none;
-        }
-
-        .phone-input-wrapper input {
-            flex: 1;
-            border: none;
-            outline: none;
-            padding: 0 14px;
-            height: 48px;
-            font-size: 1rem;
-            font-weight: 600;
-            font-family: inherit;
-            color: var(--text-primary);
-            letter-spacing: 1px;
-        }
-
-        .phone-input-wrapper input::placeholder {
-            color: #94a3b8;
-            font-weight: 400;
-            letter-spacing: normal;
-        }
-
-        .otp-input-box {
-            width: 100%;
-            height: 52px;
-            border: 1.5px solid var(--border-medium);
-            border-radius: var(--radius-md);
-            outline: none;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-align: center;
-            letter-spacing: 12px;
-            color: #0f172a;
-            background: #ffffff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            margin-bottom: 14px;
-        }
-
-        .otp-input-box:focus {
-            border-color: #059669;
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
-        }
-
-        .otp-input-box::placeholder {
-            color: #cbd5e1;
-            letter-spacing: 8px;
-        }
-
-        .text-input-field {
-            width: 100%;
-            height: 46px;
-            border: 1.5px solid var(--border-medium);
-            border-radius: var(--radius-md);
-            outline: none;
-            padding: 0 14px;
-            font-size: 0.95rem;
-            font-family: inherit;
-            color: var(--text-primary);
-            margin-bottom: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .text-input-field:focus {
-            border-color: #059669;
-            box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
-        }
-
-        /* ---------------- Step 2 Meta & Demo OTP ---------------- */
-        .otp-sent-meta {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.84rem;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            background: #f1f5f9;
-            border-radius: 8px;
-        }
-
-        .otp-sent-meta strong {
-            color: #0f172a;
-        }
-
-        .btn-change-phone {
-            background: none;
-            border: none;
-            color: #2563eb;
-            font-size: 0.82rem;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 0;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .btn-change-phone:hover {
-            text-decoration: underline;
-        }
-
-        /* SMS dispatched notification box */
-        .sms-notice-box {
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 8px;
-            padding: 10px 14px;
-            margin-bottom: 14px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-align: left;
-            font-size: 0.86rem;
-            color: #166534;
-        }
-
-        .resend-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-            margin-top: 12px;
-            gap: 6px;
-        }
-
-        .btn-resend-otp {
-            background: none;
-            border: none;
-            color: #059669;
-            font-weight: 700;
-            cursor: pointer;
-            padding: 0;
-        }
-
-        .btn-resend-otp:hover {
-            text-decoration: underline;
-        }
-
-        /* ---------------- Common Dividers & Pills ---------------- */
         .divider-or {
             display: flex;
             align-items: center;
             text-align: center;
-            margin: 16px 0;
+            margin: 6px 0;
             color: var(--text-muted);
-            font-size: 0.76rem;
+            font-size: 0.78rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 600;
@@ -410,8 +174,8 @@
             display: flex;
             justify-content: center;
             gap: 16px;
-            margin-top: 24px;
-            padding-top: 18px;
+            margin-top: 28px;
+            padding-top: 20px;
             border-top: 1px solid var(--border-light);
             font-size: 0.8rem;
             color: var(--text-secondary);
@@ -427,27 +191,16 @@
             color: #2563eb;
         }
 
-        .alert-box {
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
             padding: 10px 14px;
             border-radius: var(--radius-md);
             font-size: 0.88rem;
             margin-bottom: 16px;
             display: none;
             text-align: left;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .alert-error {
-            background-color: #fef2f2;
-            border: 1px solid #fecaca;
-            color: #b91c1c;
-        }
-
-        .alert-success {
-            background-color: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            color: #166534;
         }
 
         /* ---------------- Tablet & Mobile Responsive ---------------- */
@@ -456,24 +209,24 @@
                 padding: 12px;
             }
             .login-wrapper {
-                padding: 28px 18px;
+                padding: 30px 20px;
                 border-radius: var(--radius-md);
             }
             .logo-container {
-                padding: 6px 14px;
+                padding: 8px 16px;
             }
             .brand-name {
-                font-size: 1rem;
+                font-size: 1.05rem;
             }
             h1 {
-                font-size: 1.35rem;
+                font-size: 1.4rem;
             }
             .subtitle {
-                font-size: 0.84rem;
+                font-size: 0.88rem;
             }
             .btn {
-                padding: 12px;
-                font-size: 0.92rem;
+                padding: 13px;
+                font-size: 0.95rem;
             }
             .features-pill-row {
                 flex-direction: column;
@@ -494,98 +247,22 @@
             <p class="subtitle">Join our developer community to ask questions, solve programming bugs, and debug live.</p>
         </div>
 
-        <!-- Alert Notification Box -->
-        <div id="statusAlert" class="alert-box alert-error">
-            <i class="fa-solid fa-circle-exclamation"></i>
-            <span id="statusMessage">Authentication failed. Please try again.</span>
+        <div id="errorAlert" class="alert-error">
+            <i class="fa-solid fa-circle-exclamation me-1"></i> <span id="errorMessage">Authentication failed. Please try again.</span>
         </div>
 
-        <!-- Authentication Tabs (Mobile OTP vs GitHub) -->
-        <div class="auth-tab-row">
-            <button type="button" class="tab-btn active" id="tabPhone" onclick="switchLoginMode('phone')">
-                <i class="fa-solid fa-mobile-screen-button text-success"></i> Mobile OTP
-            </button>
-            <button type="button" class="tab-btn" id="tabGithub" onclick="switchLoginMode('github')">
-                <i class="fa-brands fa-github text-dark"></i> GitHub
-            </button>
-        </div>
-
-        <!-- TAB 1: MOBILE NUMBER OTP LOGIN -->
-        <div id="panePhone" class="tab-content-pane active">
-            
-            <!-- Step 1: Enter Phone Number -->
-            <div id="phoneStep1">
-                <label class="input-group-label" for="phoneInput">Enter 10-Digit Mobile Number</label>
-                <div class="phone-input-wrapper">
-                    <div class="country-prefix">
-                        <span>🇮🇳 +91</span>
-                    </div>
-                    <input type="tel" id="phoneInput" placeholder="98765 43210" maxlength="10" inputmode="numeric" autocomplete="tel">
-                </div>
-
-                <button type="button" class="btn btn-phone-primary" id="btnSendOtp" onclick="sendMobileOtp()">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>Get 6-Digit OTP</span>
-                </button>
-            </div>
-
-            <!-- Step 2: Enter and Verify 6-Digit OTP -->
-            <div id="phoneStep2" style="display: none;">
-                <div class="otp-sent-meta">
-                    <span>Sent to <strong id="displayPhoneFormatted">+91 ...</strong></span>
-                    <button type="button" class="btn-change-phone" onclick="backToStep1()">
-                        <i class="fa-solid fa-pen-to-square"></i> Change
-                    </button>
-                </div>
-
-                <!-- Real SMS notification banner -->
-                <div class="sms-notice-box">
-                    <i class="fa-solid fa-envelope-open-text fs-5 text-success"></i>
-                    <div>
-                        <strong style="color: #0f172a; display: block; font-size: 0.88rem;">Check Your Mobile SMS</strong>
-                        <span style="color: #475569; font-size: 0.82rem;">Enter the 6-digit verification code sent to your phone messages.</span>
-                    </div>
-                </div>
-
-                <label class="input-group-label" for="otpInput">Enter 6-Digit Verification Code</label>
-                <input type="text" id="otpInput" class="otp-input-box" placeholder="••••••" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
-
-                <!-- Optional Username field for new phone registrations -->
-                <div id="nameFieldWrap" style="display: none;">
-                    <label class="input-group-label" for="nameInput">Your Name (for new developer profile)</label>
-                    <input type="text" id="nameInput" class="text-input-field" placeholder="e.g. John Doe">
-                </div>
-
-                <button type="button" class="btn btn-phone-primary" id="btnVerifyOtp" onclick="verifyMobileOtp()">
-                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                    <span>Verify & Enter CodeQuest</span>
-                </button>
-
-                <div class="resend-row">
-                    <span id="resendTimerLabel">Resend code in <strong id="resendCountdown">45</strong>s</span>
-                    <button type="button" id="btnResendOtp" class="btn-resend-otp" style="display: none;" onclick="sendMobileOtp()">Resend OTP</button>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- TAB 2: GITHUB OAUTH LOGIN -->
-        <div id="paneGithub" class="tab-content-pane">
+        <div class="actions-section">
             <button class="btn btn-github" id="githubLoginBtn" onclick="githubLogin()">
-                <i class="fa-brands fa-github fs-5"></i>
+                <i class="fa-brands fa-github"></i>
                 <span>Continue with GitHub</span>
             </button>
-            <p class="text-secondary small mt-2" style="font-size: 0.8rem; color: #64748b;">Sign in with your GitHub developer profile and repositories.</p>
+            <div class="divider-or"><span>or test calling with 2nd account</span></div>
+            <button class="btn btn-guest" id="guestLoginBtn" onclick="guestLogin()">
+                <i class="fa-solid fa-user-astronaut"></i>
+                <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>
+            </button>
         </div>
 
-        <!-- Optional Guest Developer Login (For live 1-on-1 debug call testing) -->
-        <div class="divider-or"><span>or test calling with 2nd account</span></div>
-        <button class="btn btn-guest" id="guestLoginBtn" onclick="guestLogin()">
-            <i class="fa-solid fa-user-astronaut"></i>
-            <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>
-        </button>
-
-        <!-- Feature Pills Footer -->
         <div class="features-pill-row">
             <span><i class="fa-solid fa-comments"></i> Developer Q&A</span>
             <span><i class="fa-solid fa-thumbs-up"></i> Upvoting</span>
@@ -594,7 +271,6 @@
     </div>
 
     <script>
-        // Check if already authenticated
         async function checkAlreadyLoggedIn() {
             try {
                 const res = await fetch('/auth/status');
@@ -608,229 +284,22 @@
         }
         checkAlreadyLoggedIn();
 
-        // Check for URL query errors
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('error')) {
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
             const errType = urlParams.get('error');
             const msg = urlParams.get('msg');
-            showAlert(msg ? decodeURIComponent(msg) : 'Authentication failed. Please try again.', 'error');
+            if (msg) {
+                errorMessage.textContent = decodeURIComponent(msg);
+            } else if (errType === 'github_auth_failed' || errType === 'github_token_failed') {
+                errorMessage.textContent = 'GitHub authorization could not be completed. Please try again.';
+            } else if (errType === 'missing_code') {
+                errorMessage.textContent = 'GitHub login was cancelled. Please try again.';
+            }
+            errorAlert.style.display = 'block';
         }
 
-        // Switch between Phone OTP and GitHub tabs
-        function switchLoginMode(mode) {
-            hideAlert();
-            const tabPhone = document.getElementById('tabPhone');
-            const tabGithub = document.getElementById('tabGithub');
-            const panePhone = document.getElementById('panePhone');
-            const paneGithub = document.getElementById('paneGithub');
-
-            if (mode === 'phone') {
-                tabPhone.classList.add('active');
-                tabGithub.classList.remove('active');
-                panePhone.classList.add('active');
-                paneGithub.classList.remove('active');
-                document.getElementById('phoneInput').focus();
-            } else {
-                tabGithub.classList.add('active');
-                tabPhone.classList.remove('active');
-                paneGithub.classList.add('active');
-                panePhone.classList.remove('active');
-            }
-        }
-
-        // Alert message helper
-        function showAlert(msg, type = 'error') {
-            const box = document.getElementById('statusAlert');
-            const messageEl = document.getElementById('statusMessage');
-            box.className = `alert-box alert-${type === 'success' ? 'success' : 'error'}`;
-            box.querySelector('i').className = type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation';
-            messageEl.textContent = msg;
-            box.style.display = 'flex';
-        }
-
-        function hideAlert() {
-            const box = document.getElementById('statusAlert');
-            box.style.display = 'none';
-        }
-
-        // -------------------------------------------------------------
-        // MOBILE OTP FLOW
-        // -------------------------------------------------------------
-        let currentTargetPhone = '';
-        let lastReceivedOtp = '';
-        let countdownTimer = null;
-
-        // Clean phone input on typing (allow digits only)
-        const phoneInput = document.getElementById('phoneInput');
-        phoneInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
-            if (e.target.value.length === 10) {
-                hideAlert();
-            }
-        });
-        phoneInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                sendMobileOtp();
-            }
-        });
-
-        const otpInput = document.getElementById('otpInput');
-        otpInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
-            if (e.target.value.length === 6) {
-                verifyMobileOtp();
-            }
-        });
-        otpInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                verifyMobileOtp();
-            }
-        });
-
-        // 1. Send OTP Request
-        async function sendMobileOtp() {
-            hideAlert();
-            const rawPhone = phoneInput.value.trim();
-            if (rawPhone.length !== 10) {
-                showAlert('Please enter a valid 10-digit mobile number.');
-                phoneInput.focus();
-                return;
-            }
-
-            const btn = document.getElementById('btnSendOtp');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Sending OTP...</span>';
-            btn.style.pointerEvents = 'none';
-
-            try {
-                const res = await fetch('/auth/phone/send-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: rawPhone })
-                });
-
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    showAlert(data.error || 'Failed to send OTP. Please try again.');
-                    btn.innerHTML = originalText;
-                    btn.style.pointerEvents = 'auto';
-                    return;
-                }
-
-                // OTP sent successfully! Move to Step 2
-                currentTargetPhone = data.phone;
-
-                document.getElementById('displayPhoneFormatted').textContent = data.phone;
-                document.getElementById('phoneStep1').style.display = 'none';
-                document.getElementById('phoneStep2').style.display = 'block';
-
-                // If not an existing user, show optional Name field
-                if (!data.isExistingUser) {
-                    document.getElementById('nameFieldWrap').style.display = 'block';
-                } else {
-                    document.getElementById('nameFieldWrap').style.display = 'none';
-                }
-
-                showAlert(`OTP sent successfully to ${data.phone}`, 'success');
-                startResendCountdown(45);
-                setTimeout(() => otpInput.focus(), 150);
-
-            } catch (err) {
-                showAlert('Network error sending OTP: ' + err.message);
-            } finally {
-                btn.innerHTML = originalText;
-                btn.style.pointerEvents = 'auto';
-            }
-        }
-
-        // 2. Verify OTP Request
-        async function verifyMobileOtp() {
-            hideAlert();
-            const otpCode = otpInput.value.trim();
-            if (otpCode.length !== 6) {
-                showAlert('Please enter the full 6-digit OTP code.');
-                otpInput.focus();
-                return;
-            }
-
-            const btn = document.getElementById('btnVerifyOtp');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Verifying...</span>';
-            btn.style.pointerEvents = 'none';
-
-            const nameVal = document.getElementById('nameInput').value.trim();
-
-            try {
-                const res = await fetch('/auth/phone/verify-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        phone: currentTargetPhone,
-                        otp: otpCode,
-                        username: nameVal || null
-                    })
-                });
-
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    showAlert(data.error || 'Invalid OTP code. Please try again.');
-                    btn.innerHTML = originalText;
-                    btn.style.pointerEvents = 'auto';
-                    return;
-                }
-
-                // Success! Redirect to Dashboard
-                showAlert('Verified! Welcome to CodeQuest...', 'success');
-                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> <span>Success! Entering Dashboard...</span>';
-                
-                setTimeout(() => {
-                    window.location.href = '/dashboard.html';
-                }, 400);
-
-            } catch (err) {
-                showAlert('Verification error: ' + err.message);
-                btn.innerHTML = originalText;
-                btn.style.pointerEvents = 'auto';
-            }
-        }
-
-        function backToStep1() {
-            hideAlert();
-            if (countdownTimer) clearInterval(countdownTimer);
-            document.getElementById('phoneStep2').style.display = 'none';
-            document.getElementById('phoneStep1').style.display = 'block';
-            document.getElementById('otpInput').value = '';
-            phoneInput.focus();
-        }
-
-        function startResendCountdown(seconds) {
-            if (countdownTimer) clearInterval(countdownTimer);
-            let remaining = seconds;
-            const timerLabel = document.getElementById('resendTimerLabel');
-            const countdownEl = document.getElementById('resendCountdown');
-            const resendBtn = document.getElementById('btnResendOtp');
-
-            timerLabel.style.display = 'inline';
-            resendBtn.style.display = 'none';
-            countdownEl.textContent = remaining;
-
-            countdownTimer = setInterval(() => {
-                remaining--;
-                countdownEl.textContent = remaining;
-                if (remaining <= 0) {
-                    clearInterval(countdownTimer);
-                    timerLabel.style.display = 'none';
-                    resendBtn.style.display = 'inline';
-                }
-            }, 1000);
-        }
-
-        // -------------------------------------------------------------
-        // GITHUB & GUEST FLOWS
-        // -------------------------------------------------------------
         function githubLogin() {
             const btn = document.getElementById('githubLoginBtn');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Connecting to GitHub...';
@@ -852,12 +321,12 @@
                 if (data.success) {
                     window.location.href = '/dashboard.html';
                 } else {
-                    showAlert('Guest login failed: ' + (data.error || 'Unknown error'));
+                    alert('Guest login failed: ' + (data.error || 'Unknown error'));
                     btn.innerHTML = '<i class="fa-solid fa-user-astronaut"></i> <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>';
                     btn.style.pointerEvents = 'auto';
                 }
             } catch (e) {
-                showAlert('Connection error: ' + e.message);
+                alert('Connection error: ' + e.message);
                 btn.innerHTML = '<i class="fa-solid fa-user-astronaut"></i> <span>Sign in as Guest Developer (Test 1-on-1 Calls)</span>';
                 btn.style.pointerEvents = 'auto';
             }
